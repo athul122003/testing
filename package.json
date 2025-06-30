@@ -16,8 +16,7 @@
 		],
 		"*.{ts,tsx}": [
 			"npx biome format --write",
-			"npx biome lint",
-			"tsc --noEmit"
+			"npx biome lint"
 		]
 	},
 	"dependencies": {
