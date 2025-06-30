@@ -146,7 +146,7 @@ model Event {
   Organiser     Organiser[]
   Team          Team[]
   Attendance    Attendance[]
-  Winner        Winner[]
+  Prize         Prize[]
   Certificate   Certificate[]
   Feedback      Feedback[]
 
@@ -200,7 +200,7 @@ model Team {
   Leader   User @relation("leaderOfTeam", fields: [leaderId], references: [id])
 
   Members User[]
-  Winner  Winner?
+  Prize   Prize?
 
   paymentId String?  @unique
   Payment   Payment? @relation(fields: [paymentId], references: [id])
@@ -209,9 +209,9 @@ model Team {
   updatedAt DateTime @updatedAt
 }
 
-model Winner {
-  id         String     @id @default(cuid())
-  winnerType WinnerType
+model Prize {
+  id        String    @id @default(cuid())
+  prizeType PrizeType
 
   eventId Int
   Event   Event @relation(fields: [eventId], references: [id])
@@ -380,7 +380,7 @@ enum EventType {
   TEAM
 }
 
-enum WinnerType {
+enum PrizeType {
   WINNER
   RUNNER_UP
   SECOND_RUNNER_UP

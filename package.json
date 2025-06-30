@@ -10,10 +10,6 @@
 		"prepare": "husky"
 	},
 	"lint-staged": {
-		"**/!(*.ts|*.tsx)": [
-			"npx biome format --write",
-			"npx biome lint"
-		],
 		"*.{ts,tsx}": [
 			"npx biome format --write",
 			"npx biome lint"
