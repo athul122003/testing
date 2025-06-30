@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../generated/prisma"
@@ -12,4 +6,430 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+//User and Profile
+model User {
+  id                  Int       @id @default(autoincrement())
+  name                String
+  slug                String?   @unique //new
+  email               String    @unique
+  emailVerified       DateTime?
+  usn                 String    @unique
+  password            String
+  phone               String
+  image               String?
+  year                String
+  role                Role      @default(USER)
+  bio                 String    @default("")
+  memberSince         DateTime?
+  totalActivityPoints Int       @default(0)
+
+  reasonToJoin String?
+  expectations String?
+  contribution String?
+  githubLink   String?
+
+  // Relations
+  branchId  String?
+  Branch    Branch?    @relation(fields: [branchId], references: [id], onDelete: SetNull) //modified
+  UserLink  UserLink[]
+  Blog      Blog[]
+  paymentId String?    @unique
+  Payment   Payment?   @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  Attendance        Attendance[]
+  TeamLeader        Team[]              @relation("leaderOfTeam")
+  Team              Team[]
+  Organiser         Organiser[]
+  Core              Core[]
+  ActivityPoint     ActivityPoint[]
+  Certificate       Certificate[]
+  QuizResponse      QuizResponse[]
+  FeedbackResponse  FeedbackResponse[]
+  RefreshToken      RefreshToken[]
+  VerificationToken VerificationToken[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Branch {
+  id       String @id @default(cuid())
+  nickName String
+  name     String
+
+  User User[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserLink {
+  id       String @id @default(cuid())
+  linkName String
+  url      String
+
+  userId Int?
+  User   User? @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Core {
+  id     String @id @default(cuid())
+  User   User   @relation(fields: [userId], references: [id])
+  userId Int
+
+  type     CoreType @default(OFFICE_BEARER)
+  position String
+  year     String
+  priority Int
+}
+
+//Auth 
+model RefreshToken {
+  id          String  @id @unique
+  hashedToken String
+  revoked     Boolean @default(false)
+
+  userId Int
+  User   User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([id, hashedToken])
+}
+
+model VerificationToken {
+  id      String           @id @unique @default(cuid())
+  revoked Boolean          @default(false)
+  type    VerificationType @default(EMAIL_VERIFICATION)
+
+  userId Int
+  User   User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//Events , Feedback and Participation
+model Event {
+  id          Int     @id @default(autoincrement())
+  name        String
+  slug        String? @unique //new
+  imgSrc      String?
+  description String?
+  venue       String?
+
+  eventType EventType
+  category  EventCategory
+
+  fromDate    DateTime
+  toDate      DateTime
+  deadline    DateTime?
+  maxTeams    Int       @default(0)
+  minTeamSize Int       @default(1)
+  maxTeamSize Int       @default(1)
+
+  isMembersOnly Boolean @default(false)
+  flcAmount     Int     @default(0)
+  nonFlcAmount  Int     @default(0)
+
+  state    EventState @default(DRAFT)
+  isLegacy Boolean    @default(false)
+
+  //Relations
+  ActivityPoint ActivityPoint[]
+  Organiser     Organiser[]
+  Team          Team[]
+  Attendance    Attendance[]
+  Winner        Winner[]
+  Certificate   Certificate[]
+  Feedback      Feedback[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Attendance {
+  id          String  @id @default(cuid())
+  hasAttended Boolean @default(false)
+
+  eventId Int
+  Event   Event @relation(fields: [eventId], references: [id])
+
+  userId Int
+  User   User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, eventId])
+  @@index([userId, eventId])
+}
+
+model Organiser {
+  id String @id @default(cuid())
+
+  eventId Int
+  Event   Event @relation(fields: [eventId], references: [id])
+
+  userId Int
+  User   User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, eventId])
+  @@index([userId, eventId])
+}
+
+model Team {
+  id          String  @id @default(cuid())
+  name        String
+  isConfirmed Boolean @default(false)
+  hasAttended Boolean @default(false)
+
+  eventId Int
+  Event   Event @relation(fields: [eventId], references: [id])
+
+  leaderId Int
+  Leader   User @relation("leaderOfTeam", fields: [leaderId], references: [id])
+
+  Members User[]
+  Winner  Winner?
+
+  paymentId String?  @unique
+  Payment   Payment? @relation(fields: [paymentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Winner {
+  id         String     @id @default(cuid())
+  winnerType WinnerType
+
+  eventId Int
+  Event   Event @relation(fields: [eventId], references: [id])
+
+  teamId String @unique
+  Team   Team   @relation(fields: [teamId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([eventId, teamId])
+  @@index([eventId, teamId])
+}
+
+model Feedback {
+  id            String        @id @default(cuid())
+  title         String
+  feedbackState FeedbackState @default(DRAFT)
+  questions     Json[] // feedbackQuestionZ
+
+  eventId Int
+  Event   Event @relation(fields: [eventId], references: [id])
+
+  FeedbackResponse FeedbackResponse[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FeedbackResponse {
+  id      String @id @default(cuid())
+  answers Json[] // feedbackAnswerZ
+
+  userId Int
+  User   User @relation(fields: [userId], references: [id])
+
+  feedbackId String
+  Feedback   Feedback @relation(fields: [feedbackId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, feedbackId])
+  @@index([userId, feedbackId])
+}
+
+//Activity Points and Certificates
+model ActivityPoint {
+  id    String  @id @default(cuid())
+  point Int
+  name  String? @default("Event")
+
+  eventId Int?
+  Event   Event? @relation(fields: [eventId], references: [id])
+
+  User User[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Certificate {
+  id              String          @id @default(cuid())
+  issuedOn        DateTime
+  certificateType CertificateType
+
+  eventId Int
+  Event   Event @relation(fields: [eventId], references: [id])
+
+  userId Int
+  User   User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([eventId, userId])
+  @@index([userId, eventId])
+}
+
+// Blog
+model Blog {
+  id          String    @id @unique @default(cuid())
+  title       String
+  slug        String?   @unique //new
+  description String //corrected spelling
+  content     String
+  readTime    Int
+  words       Int
+  images      Json[]
+  blogState   BlogState @default(DRAFT)
+
+  userId Int
+  User   User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//Quiz
+model Quiz {
+  id        String    @id @default(cuid())
+  title     String
+  quizState QuizState @default(DRAFT)
+  timeLimit Int
+  maxPoints Int
+  questions Json[] // quizQuestionZ
+
+  QuizResponse QuizResponse[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model QuizResponse {
+  id      String @id @default(cuid())
+  score   Int    @default(0)
+  answers Json[] // quizAnswerZ
+
+  userId Int
+  User   User @relation(fields: [userId], references: [id])
+
+  quizId String
+  Quiz   Quiz   @relation(fields: [quizId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now())
+
+  @@unique([userId, quizId])
+  @@index([userId, quizId])
+}
+
+//Payment
+model Payment {
+  id          String      @id @default(cuid())
+  paymentName String
+  amount      Int
+  paymentType PaymentType
+
+  razorpayOrderId   String
+  razorpayPaymentId String
+  razorpaySignature String
+
+  User User?
+  Team Team?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+//Enums
+enum Role {
+  USER
+  ORGANISER
+  ADMIN
+}
+
+enum EventCategory {
+  WORKSHOP
+  COMPETITION
+  HACKATHON
+  SPECIAL
+}
+
+enum EventType {
+  SOLO
+  TEAM
+}
+
+enum WinnerType {
+  WINNER
+  RUNNER_UP
+  SECOND_RUNNER_UP
+}
+
+enum CertificateType {
+  WINNER
+  RUNNER_UP
+  SECOND_RUNNER_UP
+  PARTICIPATION
+}
+
+enum VerificationType {
+  PASSWORD_RESET
+  EMAIL_VERIFICATION
+}
+
+enum EventState {
+  DRAFT
+  PUBLISHED
+  LIVE
+  COMPLETED
+}
+
+enum FeedbackState {
+  DRAFT
+  PUBLISHED
+  LIVE
+  COMPLETED
+}
+
+enum QuizState {
+  DRAFT
+  PUBLISHED
+  LIVE
+  COMPLETED
+}
+
+enum BlogState {
+  DRAFT
+  PUBLISHED
+}
+
+enum PaymentType {
+  MEMBERSHIP
+  EVENT
+}
+
+enum CoreType {
+  OFFICE_BEARER
+  FACULTY_COORDINATOR
 }
