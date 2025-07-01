@@ -1,5 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { getPaymentInfo } from "~/actions/payment-info";
+import { formatDateTime } from "~/lib/formatDateTime";
 import {
 	AlertCircle,
 	CreditCard,
@@ -9,7 +12,6 @@ import {
 	Search,
 	TrendingUp,
 } from "lucide-react";
-import { useState } from "react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -30,81 +32,59 @@ import {
 	TableRow,
 } from "~/components/ui/table";
 
-const initialPayments = [
-	{
-		id: "PAY001",
-		userId: "USR001",
-		username: "john_doe",
-		email: "john@example.com",
-		date: "2024-01-15",
-		time: "10:30 AM",
-		amount: 99.0,
-		status: "success",
-		event: "Tech Conference 2024",
-		method: "Credit Card",
-	},
-	{
-		id: "PAY002",
-		userId: "USR002",
-		username: "jane_smith",
-		email: "jane@example.com",
-		date: "2024-01-14",
-		time: "2:15 PM",
-		amount: 149.0,
-		status: "failed",
-		event: "Workshop: React Basics",
-		method: "PayPal",
-	},
-	{
-		id: "PAY003",
-		userId: "USR003",
-		username: "mike_wilson",
-		email: "mike@example.com",
-		date: "2024-01-13",
-		time: "4:45 PM",
-		amount: 75.0,
-		status: "success",
-		event: "Design Meetup",
-		method: "Bank Transfer",
-	},
-	{
-		id: "PAY004",
-		userId: "USR004",
-		username: "sarah_jones",
-		email: "sarah@example.com",
-		date: "2024-01-12",
-		time: "11:20 AM",
-		amount: 199.0,
-		status: "pending",
-		event: "Advanced Workshop",
-		method: "Credit Card",
-	},
-];
+type PaymentWithUser = Awaited<ReturnType<typeof getPaymentInfo>>[number];
 
 export function PaymentsPage() {
-	const [payments] = useState(initialPayments);
+	const [payments, setPayments] = useState<PaymentWithUser[]>([]);
+	const [loading, setLoading] = useState(true);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [statusFilter, setStatusFilter] = useState("all");
 
 	const filteredPayments = payments.filter((payment) => {
+		const lowerSearch = searchTerm.toLowerCase();
 		const matchesSearch =
-			payment.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			payment.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			payment.event.toLowerCase().includes(searchTerm.toLowerCase());
-		const matchesStatus =
-			statusFilter === "all" || payment.status === statusFilter;
+			payment.User?.name.toLowerCase().includes(lowerSearch) ||
+			payment.User?.id?.toString().includes(lowerSearch) ||
+			payment.User?.email.includes(lowerSearch) ||
+			payment.id.toLowerCase().includes(lowerSearch) ||
+			payment.paymentType?.toLowerCase().includes(lowerSearch);
+		const matchesStatus = statusFilter === "all";
 		return matchesSearch && matchesStatus;
 	});
 
-	const totalRevenue = payments
-		.filter((p) => p.status === "success")
-		.reduce((sum, p) => sum + p.amount, 0);
+	useEffect(() => {
+		const fetchPayments = async () => {
+			try {
+				const data = await getPaymentInfo();
+				setPayments(data);
+			} catch (err) {
+				console.error("Failed to fetch payments:", err);
+			} finally {
+				setLoading(false);
+			}
+		};
 
-	const successfulPayments = payments.filter(
-		(p) => p.status === "success",
+		fetchPayments();
+	}, []);
+
+	function isSuccessful(payment: PaymentWithUser) {
+		return !!payment.razorpayPaymentId && !!payment.razorpaySignature;
+	}
+
+	const totalRevenue = payments
+		.filter(isSuccessful)
+		.reduce((sum, p) => sum + p.amount, 0);
+	const successfulPayments = payments.filter(isSuccessful).length;
+	const failedPayments = payments.filter(
+		(p) => !isSuccessful(p) && p.razorpayOrderId,
 	).length;
-	const failedPayments = payments.filter((p) => p.status === "failed").length;
-	const pendingPayments = payments.filter((p) => p.status === "pending").length;
+	const pendingPayments = payments.filter(
+		(p) =>
+			!isSuccessful(p) &&
+			!p.razorpayPaymentId &&
+			!p.razorpaySignature &&
+			!p.razorpayOrderId,
+	).length;
 
 	const getStatusColor = (status: string) => {
 		switch (status) {
@@ -132,6 +112,14 @@ export function PaymentsPage() {
 		}
 	};
 
+	if (loading) {
+		return (
+			<div className="text-center py-10 text-slate-500">
+				Loading payments...
+			</div>
+		);
+	}
+
 	return (
 		<div className="space-y-8">
 			<div className="flex justify-between items-center">
@@ -150,10 +138,10 @@ export function PaymentsPage() {
 			</div>
 
 			<div className="grid gap-6 md:grid-cols-4">
-				<Card className="border-0 shadow-lg bg-white dark:bg-slate-800">
+				<Card className="shadow-lg bg-white dark:bg-slate-800">
 					<CardHeader className="pb-3">
-						<div className="flex items-center justify-between">
-							<CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
+						<div className="flex justify-between items-center">
+							<CardTitle className="text-sm text-slate-600 dark:text-slate-400">
 								Total Revenue
 							</CardTitle>
 							<div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600">
@@ -165,16 +153,16 @@ export function PaymentsPage() {
 						<div className="text-2xl font-bold text-slate-900 dark:text-white">
 							${totalRevenue.toFixed(2)}
 						</div>
-						<div className="flex items-center text-sm text-emerald-600 dark:text-emerald-400">
-							<TrendingUp className="h-3 w-3 mr-1" />
-							+12% from last month
+						<div className="text-sm text-emerald-600 dark:text-emerald-400 flex items-center">
+							<TrendingUp className="h-3 w-3 mr-1" /> +12% from last month
 						</div>
 					</CardContent>
 				</Card>
-				<Card className="border-0 shadow-lg bg-white dark:bg-slate-800">
+
+				<Card className="shadow-lg bg-white dark:bg-slate-800">
 					<CardHeader className="pb-3">
-						<div className="flex items-center justify-between">
-							<CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
+						<div className="flex justify-between items-center">
+							<CardTitle className="text-sm text-slate-600 dark:text-slate-400">
 								Successful
 							</CardTitle>
 							<div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-green-600">
@@ -191,10 +179,11 @@ export function PaymentsPage() {
 						</div>
 					</CardContent>
 				</Card>
-				<Card className="border-0 shadow-lg bg-white dark:bg-slate-800">
+
+				<Card className="shadow-lg bg-white dark:bg-slate-800">
 					<CardHeader className="pb-3">
-						<div className="flex items-center justify-between">
-							<CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
+						<div className="flex justify-between items-center">
+							<CardTitle className="text-sm text-slate-600 dark:text-slate-400">
 								Failed
 							</CardTitle>
 							<div className="p-2 rounded-lg bg-gradient-to-br from-red-500 to-red-600">
@@ -211,10 +200,11 @@ export function PaymentsPage() {
 						</div>
 					</CardContent>
 				</Card>
-				<Card className="border-0 shadow-lg bg-white dark:bg-slate-800">
+
+				<Card className="shadow-lg bg-white dark:bg-slate-800">
 					<CardHeader className="pb-3">
-						<div className="flex items-center justify-between">
-							<CardTitle className="text-sm font-medium text-slate-600 dark:text-slate-400">
+						<div className="flex justify-between items-center">
+							<CardTitle className="text-sm text-slate-600 dark:text-slate-400">
 								Pending
 							</CardTitle>
 							<div className="p-2 rounded-lg bg-gradient-to-br from-yellow-500 to-yellow-600">
@@ -233,7 +223,7 @@ export function PaymentsPage() {
 				</Card>
 			</div>
 
-			<Card className="border-0 shadow-lg bg-white dark:bg-slate-800">
+			<Card className="shadow-lg bg-white dark:bg-slate-800">
 				<CardHeader>
 					<div className="flex justify-between items-center">
 						<CardTitle className="text-xl text-slate-900 dark:text-white">
@@ -241,7 +231,7 @@ export function PaymentsPage() {
 						</CardTitle>
 						<div className="flex gap-3">
 							<div className="relative">
-								<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
 								<Input
 									placeholder="Search payments..."
 									value={searchTerm}
@@ -270,7 +260,6 @@ export function PaymentsPage() {
 							<TableRow>
 								<TableHead>Payment ID</TableHead>
 								<TableHead>User</TableHead>
-								<TableHead>Event</TableHead>
 								<TableHead>Date & Time</TableHead>
 								<TableHead>Method</TableHead>
 								<TableHead>Amount</TableHead>
@@ -278,45 +267,55 @@ export function PaymentsPage() {
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{filteredPayments.map((payment) => (
-								<TableRow
-									key={payment.id}
-									className="hover:bg-slate-50 dark:hover:bg-slate-700/50"
-								>
-									<TableCell className="font-medium">{payment.id}</TableCell>
-									<TableCell>
-										<div>
-											<div className="font-medium text-slate-900 dark:text-white">
-												{payment.username}
+							{filteredPayments.map((payment) => {
+								const { date, time } = formatDateTime(
+									new Date(payment.createdAt),
+								);
+								const paymentStatus = !payment.razorpayPaymentId
+									? "failed"
+									: "success";
+
+								return (
+									<TableRow
+										key={payment.id}
+										className="hover:bg-slate-50 dark:hover:bg-slate-700/50"
+									>
+										<TableCell className="font-medium">{payment.id}</TableCell>
+										<TableCell>
+											<div>
+												<div className="font-medium text-slate-900 dark:text-white">
+													{payment.User?.name}
+												</div>
+												<div className="text-sm text-slate-500 dark:text-slate-400">
+													{payment.User?.email}
+												</div>
 											</div>
-											<div className="text-sm text-slate-500 dark:text-slate-400">
-												{payment.email}
+										</TableCell>
+										<TableCell>
+											<div>
+												<div className="font-medium">{date}</div>
+												<div className="text-sm text-slate-500 dark:text-slate-400">
+													{time}
+												</div>
 											</div>
-										</div>
-									</TableCell>
-									<TableCell className="font-medium">{payment.event}</TableCell>
-									<TableCell>
-										<div>
-											<div className="font-medium">{payment.date}</div>
-											<div className="text-sm text-slate-500 dark:text-slate-400">
-												{payment.time}
-											</div>
-										</div>
-									</TableCell>
-									<TableCell>{payment.method}</TableCell>
-									<TableCell className="font-bold">
-										${payment.amount.toFixed(2)}
-									</TableCell>
-									<TableCell>
-										<Badge
-											className={`${getStatusColor(payment.status)} flex items-center gap-1 w-fit`}
-										>
-											{getStatusIcon(payment.status)}
-											{payment.status}
-										</Badge>
-									</TableCell>
-								</TableRow>
-							))}
+										</TableCell>
+										<TableCell>{payment.paymentType}</TableCell>
+										<TableCell className="font-bold">
+											${payment.amount.toFixed(2)}
+										</TableCell>
+										<TableCell>
+											<Badge
+												className={`${getStatusColor(
+													paymentStatus,
+												)} flex items-center gap-1 w-fit`}
+											>
+												{getStatusIcon(paymentStatus)}
+												{paymentStatus}
+											</Badge>
+										</TableCell>
+									</TableRow>
+								);
+							})}
 						</TableBody>
 					</Table>
 				</CardContent>
