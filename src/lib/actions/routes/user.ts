@@ -3,7 +3,7 @@
 
 import { db } from "~/server/db";
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "../../../../generated/prisma/client";
 
 // --- Zod Schemas ---
 const searchSchema = z.object({
@@ -47,7 +47,7 @@ export async function searchUser(input: unknown) {
 									mode: Prisma.QueryMode.insensitive,
 								},
 							},
-							!isNaN(Number(query))
+							!Number.isNaN(Number(query))
 								? {
 										id: Number(query),
 									}

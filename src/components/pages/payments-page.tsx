@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getPaymentInfo } from "~/actions/payment-info";
+import { getPaymentInfo } from "~/lib/actions/payment-info";
 import { formatDateTime } from "~/lib/formatDateTime";
 import { formatCurrency } from "~/lib/formatCurrency";
 import {
 	AlertCircle,
-	CreditCard,
 	IndianRupee,
 	Download,
 	Filter,

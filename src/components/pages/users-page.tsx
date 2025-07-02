@@ -65,7 +65,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 
 import { ComponentLoading } from "~/components/ui/component-loading2";
-import { server } from "~/action/serverAction";
+import { server } from "~/lib/actions/serverAction";
 import { api } from "~/lib/api";
 import { toast } from "sonner";
 

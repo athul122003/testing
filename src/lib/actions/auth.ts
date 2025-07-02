@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { hashPassword } from "~/lib/auth/auth-util";
-import { db } from "~/lib/db";
+import { db } from "~/server/db";
 
 const serverSignUpSchema = z
 	.object({
@@ -38,6 +38,16 @@ export async function signUpAction(values: SignUpFormInput) {
 			return { success: false, error: "Failed to hash password." };
 		}
 
+		let defaultRole = await db.role.findUnique({
+			where: { name: "USER" },
+		});
+
+		if (!defaultRole) {
+			defaultRole = await db.role.create({
+				data: { name: "USER" },
+			});
+		}
+
 		const newUser = await db.user.create({
 			data: {
 				email: validatedData.email,
@@ -47,7 +57,7 @@ export async function signUpAction(values: SignUpFormInput) {
 				branchId: validatedData.branchId,
 				year: validatedData.year,
 				password: hashedPassword,
-				role: "USER",
+				roleId: defaultRole.id,
 				// image: null,
 			},
 		});

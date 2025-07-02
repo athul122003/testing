@@ -6,7 +6,7 @@ import { addVerificationTokenToWhitelist } from "~/lib/auth/auth.service";
 import { getUserByEmail, hashPassword } from "~/lib/auth/auth-util";
 import { generateVerificationToken } from "~/lib/auth/jwt";
 import { sendVerificationEmail } from "~/lib/auth/nodemailer";
-import { db } from "~/lib/db";
+import { db } from "~/server/db";
 
 const signUpInputSchema = z
 	.object({
@@ -71,6 +71,16 @@ export async function POST(req: Request) {
 			);
 		}
 
+		let defaultRole = await db.role.findUnique({
+			where: { name: "USER" },
+		});
+
+		if (!defaultRole) {
+			defaultRole = await db.role.create({
+				data: { name: "USER" },
+			});
+		}
+
 		await db.user.create({
 			data: {
 				name,
@@ -84,7 +94,11 @@ export async function POST(req: Request) {
 						id: branchId,
 					},
 				},
-				role: "USER",
+				role: {
+					connect: {
+						id: defaultRole.id,
+					},
+				},
 			},
 		});
 

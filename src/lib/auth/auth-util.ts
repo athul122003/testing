@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import type { User } from "~/../generated/prisma";
-import { db } from "../db";
+import { db } from "~/server/db";
 
 const getUserByEmail = async (email: string): Promise<User | null> => {
 	try {

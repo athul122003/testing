@@ -7,30 +7,31 @@ const saltRounds = 10;
 
 const main = async () => {
 	try {
-    
-const BRANCHES: readonly [string, string][] = [
-	// B.Tech
-	["AIDS", "Artificial Intelligence and Data Science"],
-	["AIML", "Artificial Intelligence and Machine Learning"],
-	["BT", "Biotechnology"],
-	["CE", "Civil Engineering"],
-	["CCE", "Computer and Communication Engineering"],
-	["CSE", "Computer Science and Engineering"],
-	["CSE(Full Stack)", "Computer Science (Full Stack Development)"],
-	["CSE(Cyber Security)", "Computer Science and Engineering (Cyber Security)"],
-	["EEE", "Electrical and Electronics Engineering"],
-	["ECE", "Electronics and Communication Engineering"],
-	["ECE(VLSI)", "Electronics Engineering (VLSI Design and Technology)"],
-	["ECE(ACT)", "Electronics and Communication (ACT)"],
-	["ISE", "Information Science and Engineering"],
-	["ME", "Mechanical Engineering"],
-	["RAI", "Robotics and Artificial Intelligence"],
+		const BRANCHES: readonly [string, string][] = [
+			// B.Tech
+			["AIDS", "Artificial Intelligence and Data Science"],
+			["AIML", "Artificial Intelligence and Machine Learning"],
+			["BT", "Biotechnology"],
+			["CE", "Civil Engineering"],
+			["CCE", "Computer and Communication Engineering"],
+			["CSE", "Computer Science and Engineering"],
+			["CSE(Full Stack)", "Computer Science (Full Stack Development)"],
+			[
+				"CSE(Cyber Security)",
+				"Computer Science and Engineering (Cyber Security)",
+			],
+			["EEE", "Electrical and Electronics Engineering"],
+			["ECE", "Electronics and Communication Engineering"],
+			["ECE(VLSI)", "Electronics Engineering (VLSI Design and Technology)"],
+			["ECE(ACT)", "Electronics and Communication (ACT)"],
+			["ISE", "Information Science and Engineering"],
+			["ME", "Mechanical Engineering"],
+			["RAI", "Robotics and Artificial Intelligence"],
 
-	// MCA
-	["MCA", "Master of Computer Applications"],
-];
+			// MCA
+			["MCA", "Master of Computer Applications"],
+		];
 
-    
 		// Step 1: Create Permissions
 		const permissionNames = [
 			"CREATE_BLOG",
@@ -80,18 +81,17 @@ const BRANCHES: readonly [string, string][] = [
 				});
 			}
 		}
-    
-	await db.branch
-		.createMany({
-			data: Array.from(BRANCHES, ([nickName, name]) => ({
-				name: name,
-				nickName: nickName,
-			})),
-		})
-		.then(() => console.log("Branches seeded successfully"))
-		.catch(console.error);
-};
-  
+
+		await db.branch
+			.createMany({
+				data: Array.from(BRANCHES, ([nickName, name]) => ({
+					name: name,
+					nickName: nickName,
+				})),
+			})
+			.then(() => console.log("Branches seeded successfully"))
+			.catch(console.error);
+
 		await db.rolePermission.createMany({
 			data: rolePermissionPairs,
 			skipDuplicates: true,
