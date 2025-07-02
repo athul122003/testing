@@ -1,24 +1,31 @@
 // app/layout.tsx (Server Component)
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { ReactQueryProvider } from "~/components/providers/ReactQueryProvider";
+import { auth } from "~/lib/auth/auth";
+import { NextAuthSessionProvider } from "./providers";
+const inter = Inter({ subsets: ["latin"] });
+
 
 export const metadata: Metadata = {
-	title: "v0 App",
-	description: "Created with v0",
-	generator: "v0.dev",
+	title: "FLC Dashboard",
+	description: "A Dashboard to ease the operation of FLC",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
 	children,
 }: {
 	children: React.ReactNode;
 }) {
+	const session = await auth();
+
 	return (
 		<html lang="en">
-			<body>
-				<ReactQueryProvider>
+			<body className={inter.className}>
+				<NextAuthSessionProvider session={session}>
+          <ReactQueryProvider>
 					<Toaster
 						position="top-right"
 						richColors
@@ -34,7 +41,8 @@ export default function RootLayout({
 						}}
 					/>
 					{children}
-				</ReactQueryProvider>
+            </ReactQueryProvider>
+				</NextAuthSessionProvider>
 			</body>
 		</html>
 	);

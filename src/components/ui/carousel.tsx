@@ -133,7 +133,7 @@ const Carousel = React.forwardRef<
 					canScrollNext,
 				}}
 			>
-				{/** biome-ignore lint/a11y/useSemanticElements: <explanation> */}
+				{/** biome-ignore lint/a11y/useSemanticElements: Explaination needed or Fix this */}
 				<div
 					ref={ref}
 					onKeyDownCapture={handleKeyDown}
