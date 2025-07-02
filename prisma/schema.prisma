@@ -20,7 +20,9 @@ model User {
   phone               String
   image               String?
   year                String
-  role                Role      @default(USER)
+  roleId              String
+  role                Role   @relation(fields: [roleId], references: [id])
+
   bio                 String    @default("")
   memberSince         DateTime?
   totalActivityPoints Int       @default(0)
@@ -52,6 +54,31 @@ model User {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Role {
+  id           String           @id @default(cuid())
+  name         String           
+  users        User[]           
+  permissions  RolePermission[] 
+  @@unique([name])
+}
+
+model Permission {
+  id           String           @id @default(cuid())
+  name         String           @unique
+  roles        RolePermission[] 
+}
+
+model RolePermission {
+  id           String       @id @default(cuid())
+  roleId       String
+  permissionId String
+  
+  role         Role         @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  permission   Permission   @relation(fields: [permissionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([roleId, permissionId]) 
 }
 
 model Branch {
@@ -361,12 +388,7 @@ model Payment {
   updatedAt DateTime @updatedAt
 }
 
-//Enums
-enum Role {
-  USER
-  ORGANISER
-  ADMIN
-}
+
 
 enum EventCategory {
   WORKSHOP
