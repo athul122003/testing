@@ -85,34 +85,11 @@ type Role = {
 };
 
 export function UsersPage() {
+	// Fetch roles and permissions from the API
 	const { data: permissions = [], isLoading: permLoading } =
 		api.permission.getAll.useQuery();
-
 	const { data: roles = [], isLoading: roleLoading } =
 		api.role.getAll.useQuery();
-	useEffect(() => {
-		console.log("👀 useQuery mounted, roles length:", roles.length);
-	}, [roles]);
-
-	const createRoleMutation = api.role.create.useMutation({
-		onSuccess: (newRole) => {
-			toast.success(`Role: "${newRole.name}" created.`);
-			setNewRoleName("");
-
-			api.role.getAll.invalidate?.();
-		},
-		onError: (error) => {
-			toast.error(error.message || "Failed to create Role.");
-		},
-	});
-
-	const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
-	const [selectedPermissions, setSelectedPermissions] = useState<
-		Record<string, string[]>
-	>({});
-	const [originalPermissions, setOriginalPermissions] = useState<
-		Record<string, string[]>
-	>({});
 
 	/*
   const [roles, setRoles] = useState([]);
@@ -165,10 +142,35 @@ export function UsersPage() {
   }, []);
 
 */
-	// CRUD operations for roles and permissions
 
+	// CRUD operations for roles and permissions
+	const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
+	const [selectedPermissions, setSelectedPermissions] = useState<
+		Record<string, string[]>
+	>({});
+	const [originalPermissions, setOriginalPermissions] = useState<
+		Record<string, string[]>
+	>({});
 	const [newRoleName, setNewRoleName] = useState("");
-	//create dept,role,perm mutations
+	//create role,perm mutations & functions
+	const createRoleMutation = api.role.create.useMutation({
+		onSuccess: (newRole) => {
+			toast.success(`Role: "${newRole.name}" created.`);
+			setNewRoleName("");
+
+			api.role.getAll.invalidate?.();
+		},
+		onError: (error) => {
+			toast.error(error.message || "Failed to create Role.");
+		},
+	});
+	const addNewRole = () => {
+		if (!newRoleName) {
+			toast.error("Please provide both department name and full name.");
+			return;
+		}
+		createRoleMutation.mutate({ name: newRoleName.trim() });
+	};
 	const deleteRoleMutation = api.role.deleteRole.useMutation({
 		onSuccess: (delRole) => {
 			toast.success(`Role ${delRole.name} deleted.`);
@@ -186,52 +188,63 @@ export function UsersPage() {
 		deleteRoleMutation.mutate({ id: roleId.trim() });
 	};
 
+	const togglePermission = (roleId: string, permId: string) => {
+		setSelectedPermissions((prev) => {
+			const current = prev[roleId] || [];
+			const updated = current.includes(permId)
+				? current.filter((id) => id !== permId) // remove
+				: [...current, permId]; // add
+
+			return {
+				...prev,
+				[roleId]: updated,
+			};
+		});
+	};
+
 	const SaveRolePermMutation = api.role.updateRolePermissions.useMutation({
 		onSuccess: (data) => {
 			const { role, addedIds = [], removedIds = [] } = data;
 
-			// You must have `permissions` available in this scope
 			const added = permissions.filter((p) => addedIds.includes(p.id));
 			const removed = permissions.filter((p) => removedIds.includes(p.id));
 
 			const addedText =
 				added.length > 0
-					? `✅ Added: ${added.map((p) => `"${p.name}"`).join(", ")}`
+					? `Added: ${added.map((p) => `"${p.name}"`).join(", ")}`
 					: "";
 
 			const removedText =
 				removed.length > 0
-					? `🗑️ Removed: ${removed.map((p) => `"${p.name}"`).join(", ")}`
+					? `\nRemoved: ${removed.map((p) => `"${p.name}"`).join(", ")}`
 					: "";
 
-			const message = [addedText, removedText].filter(Boolean).join(". ");
-
-			toast.success(`Permissions updated for role "${role.name}". ${message}`);
+			const messageLines = [`Permissions updated for role "${role.name}".`];
+			if (addedText) messageLines.push(addedText);
+			if (removedText) messageLines.push(removedText);
+			toast.success(messageLines.join("\n"));
 
 			api.role.getAll.invalidate(); // Refresh role list
 		},
-
 		onError: (error) => {
-			toast.error(error.message || "❌ Failed to update permissions.");
+			toast.error(error.message || "Failed to update permissions.");
 		},
 	});
 
 	const savePermissions = (roleId: string, newPermissions: string[]) => {
+		if (!roleId || !newPermissions || newPermissions.length === 0) {
+			toast.error("Please select at least one permission.");
+			return;
+		}
+
 		SaveRolePermMutation.mutate({
 			roleId,
 			permissionIds: newPermissions,
 		});
-
 		setEditingRoleId(null);
 	};
 
-	const addNewRole = () => {
-		if (!newRoleName) {
-			toast.error("Please provide both department name and full name.");
-			return;
-		}
-		createRoleMutation.mutate({ name: newRoleName.trim() });
-	};
+	//
 
 	const searchParams = useSearchParams();
 	const tabParam = searchParams.get("tab") || "permissions"; // fallback to "permissions"
