@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { getPaymentInfo } from "~/actions/payment-info";
 import { formatDateTime } from "~/lib/formatDateTime";
+import { formatCurrency } from "~/lib/formatCurrency";
 import {
 	AlertCircle,
 	CreditCard,
-	DollarSign,
+	IndianRupee,
 	Download,
 	Filter,
 	Search,
@@ -145,13 +146,13 @@ export function PaymentsPage() {
 								Total Revenue
 							</CardTitle>
 							<div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600">
-								<DollarSign className="h-4 w-4 text-white" />
+								<IndianRupee className="h-4 w-4 text-white" />
 							</div>
 						</div>
 					</CardHeader>
 					<CardContent>
 						<div className="text-2xl font-bold text-slate-900 dark:text-white">
-							${totalRevenue.toFixed(2)}
+							{formatCurrency(totalRevenue)}
 						</div>
 						<div className="text-sm text-emerald-600 dark:text-emerald-400 flex items-center">
 							<TrendingUp className="h-3 w-3 mr-1" /> +12% from last month
@@ -271,9 +272,10 @@ export function PaymentsPage() {
 								const { date, time } = formatDateTime(
 									new Date(payment.createdAt),
 								);
-								const paymentStatus = !payment.razorpayPaymentId
-									? "failed"
-									: "success";
+								const paymentStatus =
+									!payment.razorpayPaymentId || !payment.razorpaySignature
+										? "failed"
+										: "success";
 
 								return (
 									<TableRow
@@ -301,7 +303,7 @@ export function PaymentsPage() {
 										</TableCell>
 										<TableCell>{payment.paymentType}</TableCell>
 										<TableCell className="font-bold">
-											${payment.amount.toFixed(2)}
+											{formatCurrency(payment.amount)}
 										</TableCell>
 										<TableCell>
 											<Badge
