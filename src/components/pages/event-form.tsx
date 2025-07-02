@@ -34,7 +34,9 @@ const eventStates = ["DRAFT", "PUBLISHED", "CANCELLED", "COMPLETED"];
 
 interface EventFormProps {
 	setActivePage: (page: string) => void;
+	// biome-ignore lint/suspicious/noExplicitAny: DEFINE TYPE
 	editingEvent: any;
+	// biome-ignore lint/suspicious/noExplicitAny: DEFINE TYPE AGAIN
 	setEditingEvent: (event: any) => void;
 }
 

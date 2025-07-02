@@ -11,6 +11,7 @@ import {
 	Plus,
 	Users,
 } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -69,6 +70,7 @@ const initialEvents = [
 
 interface EventsPageProps {
 	setActivePage: (page: string) => void;
+	// biome-ignore lint/suspicious/noExplicitAny: FIX THIS LATER
 	setEditingEvent: (event: any) => void;
 }
 
@@ -153,7 +155,9 @@ export function EventsPage({
 						onClick={() => handleEventClick(event)}
 					>
 						<div className="relative">
-							<img
+							<Image
+								width={400}
+								height={300}
 								src={event.imgSrc || "/placeholder.svg"}
 								alt={event.name}
 								className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
@@ -234,7 +238,9 @@ export function EventsPage({
 					{selectedEvent && (
 						<div className="space-y-6">
 							<div className="relative">
-								<img
+								<Image
+									width={400}
+									height={300}
 									src={selectedEvent.imgSrc || "/placeholder.svg"}
 									alt={selectedEvent.name}
 									className="w-full h-64 object-cover rounded-lg"

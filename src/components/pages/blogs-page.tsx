@@ -2,6 +2,7 @@
 "use client";
 
 import { Calendar, Eye, FileText, Plus, User } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -46,6 +47,7 @@ const initialBlogs = [
 
 interface BlogsPageProps {
 	setActivePage: (page: string) => void;
+	// biome-ignore lint/suspicious/noExplicitAny: DEFINE TYPE
 	setEditingBlog: (blog: any) => void;
 }
 
@@ -118,7 +120,9 @@ export function BlogsPage({ setActivePage, setEditingBlog }: BlogsPageProps) {
 						onClick={() => handleBlogClick(blog)}
 					>
 						<div className="relative">
-							<img
+							<Image
+								width={400}
+								height={300}
 								src={blog.image || "/placeholder.svg"}
 								alt={blog.title}
 								className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
@@ -214,7 +218,9 @@ export function BlogsPage({ setActivePage, setEditingBlog }: BlogsPageProps) {
 					{selectedBlog && (
 						<div className="space-y-6">
 							<div className="relative">
-								<img
+								<Image
+									width={400}
+									height={300}
 									src={selectedBlog.image || "/placeholder.svg"}
 									alt={selectedBlog.title}
 									className="w-full h-64 object-cover rounded-lg"

@@ -1,20 +1,30 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
+import { auth } from "~/lib/auth/auth";
+import { NextAuthSessionProvider } from "./providers";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-	title: "v0 App",
-	description: "Created with v0",
-	generator: "v0.dev",
+	title: "FLC Dashboard",
+	description: "A Dashboard to ease the operation of FLC",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
+	const session = await auth();
+
 	return (
 		<html lang="en">
-			<body>{children}</body>
+			<body className={inter.className}>
+				<NextAuthSessionProvider session={session}>
+					{children}
+				</NextAuthSessionProvider>
+			</body>
 		</html>
 	);
 }

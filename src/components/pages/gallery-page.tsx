@@ -1,6 +1,7 @@
 "use client";
 
 import { Edit, Filter, ImageIcon, Plus, Trash2 } from "lucide-react";
+import Image from "next/image";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
@@ -234,7 +235,9 @@ export function GalleryPage() {
 						className="border-0 shadow-lg bg-white dark:bg-slate-800 overflow-hidden hover:shadow-xl transition-all duration-300 group"
 					>
 						<div className="relative overflow-hidden">
-							<img
+							<Image
+								width={400}
+								height={300}
 								src={image.url || "/placeholder.svg"}
 								alt={image.title}
 								className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
