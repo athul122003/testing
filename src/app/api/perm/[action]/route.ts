@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { server } from "~/action/serverAction";
+import { type NextRequest, NextResponse } from "next/server";
+import { server } from "~/lib/actions/serverAction";
 
 export async function POST(
 	req: NextRequest,

@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noExplicitAny: <can be any type> */ //modified
 // biome-ignore assist/source/organizeImports: import order handled manually
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "./reactQueryClient";
@@ -96,21 +97,20 @@ export function withReactQueryHooks<
 				};
 			} else {
 				// If it’s a mutation function
-				interface UseMutationFn<TFn extends (...args: any[]) => any> {
-					(
-						options?: UseMutationOptions<
-							Awaited<ReturnType<TFn>>,
-							unknown,
-							Parameters<TFn>[0],
-							unknown
-						>,
-					): UseMutationResult<
+
+				type UseMutationFn<TFn extends (...args: any[]) => any> = (
+					options?: UseMutationOptions<
 						Awaited<ReturnType<TFn>>,
 						unknown,
 						Parameters<TFn>[0],
 						unknown
-					>;
-				}
+					>,
+				) => UseMutationResult<
+					Awaited<ReturnType<TFn>>,
+					unknown,
+					Parameters<TFn>[0],
+					unknown
+				>;
 
 				wrappedFn.useMutation = ((
 					options?: UseMutationOptions<
@@ -127,7 +127,7 @@ export function withReactQueryHooks<
 							>,
 
 						onSuccess: (data, variables, context) => {
-							const getAllFn = mod["getAll"];
+							const getAllFn = mod.getAll;
 							if (typeof getAllFn === "function") {
 								const invalidateKey = [moduleKey, "getAll"];
 								queryClient.invalidateQueries({ queryKey: invalidateKey });

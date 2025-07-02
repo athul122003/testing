@@ -1,6 +1,6 @@
 import * as cron from "node-cron";
 import { v4 as uuidv4 } from "uuid";
-import { db } from "../db";
+import { db } from "~/server/db";
 import { compareHashedPassword, getUserByEmail } from "./auth-util";
 import { hashToken } from "./hashToken";
 import { generateTokens } from "./jwt";

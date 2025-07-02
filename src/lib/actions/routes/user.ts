@@ -3,7 +3,8 @@
 
 import { db } from "~/server/db";
 import { z } from "zod";
-import { Prisma } from "../../../generated/prisma";
+
+import { Prisma } from "../../../../generated/prisma/client";
 
 // --- Zod Schemas ---
 const searchSchema = z.object({

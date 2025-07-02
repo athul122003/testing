@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { authOptions } from "~/lib/auth/auth";
-import { db } from "~/lib/db";
+import { db } from "~/server/db";
 
 const registerInputSchema = z.object({
 	reasonToJoin: z.string().optional(),

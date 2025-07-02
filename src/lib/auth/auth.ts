@@ -6,7 +6,7 @@ import type { Adapter } from "next-auth/adapters";
 import CredentialsProvider from "next-auth/providers/credentials";
 import type { Role, User } from "~/../generated/prisma";
 import { loginZ } from "~/zod/authZ";
-import { db } from "../db";
+import { db } from "~/server/db";
 import { login } from "./auth.service";
 import { getUserByEmail } from "./auth-util";
 import { getRefreshTokenExpiry, isJwtExpired, rotateTokens } from "./jwt";
@@ -127,6 +127,7 @@ export const authOptions: NextAuthOptions = {
 		strategy: "jwt",
 		maxAge: 7 * 24 * 60 * 60, // 7 days
 	},
+	secret: process.env.NEXTAUTH_SECRET,
 	adapter: PrismaAdapter(db) as Adapter,
 	providers: [
 		CredentialsProvider({
