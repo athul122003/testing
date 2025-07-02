@@ -11,11 +11,6 @@ const deleteRoleSchema = z.object({
 	id: z.string(),
 });
 
-const togglePermissionSchema = z.object({
-	roleId: z.string(),
-	permissionId: z.string(),
-});
-
 // --- INDIVIDUAL SERVER ACTIONS ---
 
 export async function getAll() {
