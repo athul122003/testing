@@ -72,13 +72,14 @@ export function PaymentsPage() {
 	}, []);
 
 	function getPaymentStatus(payment: PaymentWithUser): PaymentStatus {
-		if (payment.razorpayPaymentId && payment.razorpaySignature) {
+		if (
+			payment.razorpayPaymentId &&
+			payment.razorpaySignature &&
+			payment.amount
+		) {
 			return "success";
 		}
-		if (!payment.razorpayPaymentId || !payment.razorpaySignature) {
-			return "failed";
-		}
-		return "pending";
+		return "failed";
 	}
 
 	const successfulPayments = payments.filter(
@@ -89,9 +90,8 @@ export function PaymentsPage() {
 		(p) => getPaymentStatus(p) === "failed",
 	).length;
 
-	const pendingPayments = payments.filter(
-		(p) => getPaymentStatus(p) === "pending",
-	).length;
+	const totalUsers = payments.filter((p) => p.User).length;
+	const totalPayments = payments.length;
 
 	const totalRevenue = payments
 		.filter((p) => getPaymentStatus(p) === "success")
@@ -103,8 +103,6 @@ export function PaymentsPage() {
 				return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
 			case "failed":
 				return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
-			case "pending":
-				return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400";
 			default:
 				return "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400";
 		}
@@ -116,8 +114,6 @@ export function PaymentsPage() {
 				return <TrendingUp className="h-3 w-3" />;
 			case "failed":
 				return <AlertCircle className="h-3 w-3" />;
-			case "pending":
-				return <CreditCard className="h-3 w-3" />;
 			default:
 				return null;
 		}
@@ -164,8 +160,8 @@ export function PaymentsPage() {
 						<div className="text-2xl font-bold text-slate-900 dark:text-white">
 							{formatCurrency(totalRevenue)}
 						</div>
-						<div className="text-sm text-emerald-600 dark:text-emerald-400 flex items-center">
-							<TrendingUp className="h-3 w-3 mr-1" /> +12% from last month
+						<div className="text-sm text-slate-500 dark:text-slate-400">
+							Based on latest records
 						</div>
 					</CardContent>
 				</Card>
@@ -216,19 +212,31 @@ export function PaymentsPage() {
 					<CardHeader className="pb-3">
 						<div className="flex justify-between items-center">
 							<CardTitle className="text-sm text-slate-600 dark:text-slate-400">
-								Pending
+								Platform Summary
 							</CardTitle>
-							<div className="p-2 rounded-lg bg-gradient-to-br from-yellow-500 to-yellow-600">
-								<CreditCard className="h-4 w-4 text-white" />
+							<div className="p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600">
+								<TrendingUp className="h-4 w-4 text-white" />
 							</div>
 						</div>
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold text-yellow-600">
-							{pendingPayments}
-						</div>
-						<div className="text-sm text-slate-500 dark:text-slate-400">
-							Awaiting confirmation
+						<div className="space-y-2">
+							<div className="flex items-center justify-between">
+								<span className="text-sm text-slate-500 dark:text-slate-400">
+									Users
+								</span>
+								<span className="text-lg font-semibold text-indigo-600">
+									{totalUsers}
+								</span>
+							</div>
+							<div className="flex items-center justify-between">
+								<span className="text-sm text-slate-500 dark:text-slate-400">
+									Payments
+								</span>
+								<span className="text-lg font-semibold text-purple-600">
+									{totalPayments}
+								</span>
+							</div>
 						</div>
 					</CardContent>
 				</Card>
@@ -259,7 +267,6 @@ export function PaymentsPage() {
 									<SelectItem value="all">All Status</SelectItem>
 									<SelectItem value="success">Success</SelectItem>
 									<SelectItem value="failed">Failed</SelectItem>
-									<SelectItem value="pending">Pending</SelectItem>
 								</SelectContent>
 							</Select>
 						</div>
@@ -269,7 +276,7 @@ export function PaymentsPage() {
 					<Table>
 						<TableHeader>
 							<TableRow>
-								<TableHead>Payment ID</TableHead>
+								<TableHead>Order Id</TableHead>
 								<TableHead>User</TableHead>
 								<TableHead>Date & Time</TableHead>
 								<TableHead>Method</TableHead>
@@ -289,7 +296,9 @@ export function PaymentsPage() {
 										key={payment.id}
 										className="hover:bg-slate-50 dark:hover:bg-slate-700/50"
 									>
-										<TableCell className="font-medium">{payment.id}</TableCell>
+										<TableCell className="font-medium">
+											{payment.razorpayOrderId}
+										</TableCell>
 										<TableCell>
 											<div>
 												<div className="font-medium text-slate-900 dark:text-white">
@@ -310,7 +319,9 @@ export function PaymentsPage() {
 										</TableCell>
 										<TableCell>{payment.paymentType}</TableCell>
 										<TableCell className="font-bold">
-											{formatCurrency(payment.amount)}
+											{payment.amount > 0
+												? formatCurrency(payment.amount)
+												: "-"}
 										</TableCell>
 										<TableCell>
 											<Badge
