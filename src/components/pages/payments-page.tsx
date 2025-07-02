@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { getPaymentInfo } from "~/lib/actions/payment-info";
 import { formatDateTime } from "~/lib/formatDateTime";
 import { formatCurrency } from "~/lib/formatCurrency";
+import { convertPaymentsToCSV, downloadCSV } from "~/lib/exportPaymentData";
 import {
 	AlertCircle,
 	IndianRupee,
@@ -32,7 +33,9 @@ import {
 	TableRow,
 } from "~/components/ui/table";
 
-type PaymentWithUser = Awaited<ReturnType<typeof getPaymentInfo>>[number];
+export type PaymentWithUser = Awaited<
+	ReturnType<typeof getPaymentInfo>
+>[number];
 
 type PaymentStatus = "success" | "failed" | "pending";
 
@@ -118,6 +121,15 @@ export function PaymentsPage() {
 		}
 	};
 
+	const handleExport = () => {
+		const csvData = convertPaymentsToCSV(filteredPayments);
+		if (!csvData) {
+			console.error("No data to export");
+			return;
+		}
+		downloadCSV(csvData);
+	};
+
 	if (loading) {
 		return (
 			<div className="text-center py-10 text-slate-500">
@@ -137,7 +149,10 @@ export function PaymentsPage() {
 						Track and manage payment transactions
 					</p>
 				</div>
-				<Button className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg">
+				<Button
+					onClick={handleExport}
+					className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg"
+				>
 					<Download className="h-4 w-4 mr-2" />
 					Export Data
 				</Button>
