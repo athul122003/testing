@@ -63,7 +63,7 @@ export async function deleteRole(input: unknown) {
 	const { id } = deleteRoleSchema.parse(input);
 
 	try {
-		// Fetch role before deletion
+		// Fetch the role to be deleted
 		const role = await db.role.findUnique({
 			where: { id },
 			select: {
@@ -76,9 +76,30 @@ export async function deleteRole(input: unknown) {
 			throw new Error("Role not found");
 		}
 
+		// Prevent deletion of the default USER role itself
+		if (role.name === "USER") {
+			throw new Error("Cannot delete default USER role");
+		}
+
+		// Fetch the USER role ID
+		const userRole = await db.role.findUnique({
+			where: { name: "USER" },
+			select: { id: true },
+		});
+
+		if (!userRole) {
+			throw new Error("Default USER role not found");
+		}
+
+		// Reassign users with the role to be deleted to the USER role
+		await db.user.updateMany({
+			where: { roleId: role.id },
+			data: { roleId: userRole.id },
+		});
+
 		// Delete the role
 		await db.role.delete({
-			where: { id },
+			where: { id: role.id },
 		});
 
 		// Return role info for toast
@@ -96,6 +117,21 @@ const updateRolePermissionsSchema = z.object({
 
 export async function updateRolePermissions(input: unknown) {
 	const { roleId, permissionIds } = updateRolePermissionsSchema.parse(input);
+
+	// Fetch the role name
+	const role = await db.role.findUnique({
+		where: { id: roleId },
+		select: { id: true, name: true },
+	});
+
+	if (!role) {
+		throw new Error("Role not found");
+	}
+
+	// ❌ Disallow permission updates for USER role
+	if (role.name === "USER") {
+		throw new Error("Cannot update permissions for the USER role");
+	}
 
 	// Fetch existing permission IDs for the role
 	const existing = await db.rolePermission.findMany({
@@ -129,12 +165,7 @@ export async function updateRolePermissions(input: unknown) {
 		});
 	}
 
-	// Fetch just the role metadata
-	const role = await db.role.findUniqueOrThrow({
-		where: { id: roleId },
-		select: { id: true, name: true },
-	});
-
+	// Return metadata
 	return {
 		role,
 		addedIds,
