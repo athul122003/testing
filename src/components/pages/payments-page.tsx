@@ -297,7 +297,9 @@ export function PaymentsPage() {
 										className="hover:bg-slate-50 dark:hover:bg-slate-700/50"
 									>
 										<TableCell className="font-medium">
-											{payment.razorpayOrderId}
+											<div className="max-w-[180px] overflow-x-auto whitespace-nowrap">
+												{payment.razorpayOrderId}
+											</div>
 										</TableCell>
 										<TableCell>
 											<div>
