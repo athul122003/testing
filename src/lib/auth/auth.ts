@@ -11,8 +11,6 @@ import { login } from "./auth.service";
 import { getUserByEmail } from "./auth-util";
 import { getRefreshTokenExpiry, isJwtExpired, rotateTokens } from "./jwt";
 
-console.log(process.env.NEXTAUTH_SECRET, "NEXTAUTH_SECRET");
-
 declare module "next-auth" {
 	interface User {
 		accessToken: string;
