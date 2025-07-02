@@ -35,6 +35,8 @@ import {
 
 type PaymentWithUser = Awaited<ReturnType<typeof getPaymentInfo>>[number];
 
+type PaymentStatus = "success" | "failed" | "pending";
+
 export function PaymentsPage() {
 	const [payments, setPayments] = useState<PaymentWithUser[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -49,7 +51,8 @@ export function PaymentsPage() {
 			payment.User?.email.includes(lowerSearch) ||
 			payment.id.toLowerCase().includes(lowerSearch) ||
 			payment.paymentType?.toLowerCase().includes(lowerSearch);
-		const matchesStatus = statusFilter === "all";
+		const matchesStatus =
+			statusFilter === "all" || getPaymentStatus(payment) === statusFilter;
 		return matchesSearch && matchesStatus;
 	});
 
@@ -68,24 +71,31 @@ export function PaymentsPage() {
 		fetchPayments();
 	}, []);
 
-	function isSuccessful(payment: PaymentWithUser) {
-		return !!payment.razorpayPaymentId && !!payment.razorpaySignature;
+	function getPaymentStatus(payment: PaymentWithUser): PaymentStatus {
+		if (payment.razorpayPaymentId && payment.razorpaySignature) {
+			return "success";
+		}
+		if (!payment.razorpayPaymentId || !payment.razorpaySignature) {
+			return "failed";
+		}
+		return "pending";
 	}
 
-	const totalRevenue = payments
-		.filter(isSuccessful)
-		.reduce((sum, p) => sum + p.amount, 0);
-	const successfulPayments = payments.filter(isSuccessful).length;
+	const successfulPayments = payments.filter(
+		(p) => getPaymentStatus(p) === "success",
+	).length;
+
 	const failedPayments = payments.filter(
-		(p) => !isSuccessful(p) && p.razorpayOrderId,
+		(p) => getPaymentStatus(p) === "failed",
 	).length;
+
 	const pendingPayments = payments.filter(
-		(p) =>
-			!isSuccessful(p) &&
-			!p.razorpayPaymentId &&
-			!p.razorpaySignature &&
-			!p.razorpayOrderId,
+		(p) => getPaymentStatus(p) === "pending",
 	).length;
+
+	const totalRevenue = payments
+		.filter((p) => getPaymentStatus(p) === "success")
+		.reduce((sum, p) => sum + p.amount, 0);
 
 	const getStatusColor = (status: string) => {
 		switch (status) {
@@ -272,10 +282,7 @@ export function PaymentsPage() {
 								const { date, time } = formatDateTime(
 									new Date(payment.createdAt),
 								);
-								const paymentStatus =
-									!payment.razorpayPaymentId || !payment.razorpaySignature
-										? "failed"
-										: "success";
+								const paymentStatus = getPaymentStatus(payment);
 
 								return (
 									<TableRow
