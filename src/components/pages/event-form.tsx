@@ -18,7 +18,7 @@ import { Textarea } from "~/components/ui/textarea";
 
 const eventTypes = ["SOLO", "TEAM"];
 const eventCategories = ["WORKSHOP", "COMPETITION", "HACKATHON", "SPECIAL"];
-const eventStates = ["DRAFT", "PUBLISHED", "CANCELLED", "COMPLETED"];
+const eventStates = ["DRAFT", "PUBLISHED", "LIVE", "COMPLETED"];
 import { createEventAction } from "~/lib/actions/event";
 import { toast } from "sonner";
 import {
@@ -26,6 +26,7 @@ import {
 	EventCategory,
 	EventState,
 } from "../../../generated/prisma";
+import { editEventAction } from "~/lib/actions/event";
 
 interface EventFormProps {
 	setActivePage: (page: string) => void;
@@ -83,47 +84,26 @@ export function EventForm({
 	const handleSave = async (e: React.FormEvent) => {
 		e.preventDefault();
 
-		const result = await createEventAction({
+		const payload = {
 			...formData,
-			eventType: formData.eventType as EventType,
-			category: formData.category as EventCategory,
-			state: formData.state as EventState,
 			maxTeams: Number(formData.maxTeams),
 			minTeamSize: Number(formData.minTeamSize),
 			maxTeamSize: Number(formData.maxTeamSize),
 			flcAmount: Number(formData.flcAmount),
 			nonFlcAmount: Number(formData.nonFlcAmount),
-			fromDate: new Date(formData.fromDate).toISOString(),
-			toDate: new Date(formData.toDate).toISOString(),
-			deadline: formData.deadline
-				? new Date(formData.deadline).toISOString()
-				: undefined,
-		});
+		};
+
+		const result = editingEvent?.id
+			? await editEventAction(editingEvent.id, payload)
+			: await createEventAction(payload);
 
 		if (result.success) {
-			toast.success("✅ Event created!");
-			setFormData({
-				name: "",
-				description: "",
-				venue: "",
-				eventType: EventType.SOLO,
-				category: EventCategory.WORKSHOP,
-				fromDate: "",
-				toDate: "",
-				deadline: "",
-				maxTeams: "",
-				minTeamSize: "1",
-				maxTeamSize: "1",
-				isMembersOnly: false,
-				flcAmount: "",
-				nonFlcAmount: "",
-				state: "DRAFT",
-			});
+			toast.success(editingEvent ? "Event updated" : "Event created");
 			setEditingEvent(null);
-			setActivePage("list");
+			setActivePage("events-page");
 		} else {
-			toast.error(result.error || "Failed to create event");
-			console.error(result.issues);
+			toast.error(result.error || "Failed to save event");
+			console.log(result.issues);
 		}
 	};
 

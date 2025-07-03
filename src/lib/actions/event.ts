@@ -77,6 +77,70 @@ export async function createEventAction(values: CreateEventInput) {
 	}
 }
 
+export async function editEventAction(
+	eventId: number,
+	values: CreateEventInput,
+) {
+	try {
+		const validated = createEventSchema.parse(values);
+
+		const updated = await db.event.update({
+			where: { id: eventId },
+			data: {
+				name: validated.name,
+				slug: validated.slug ?? undefined,
+				imgSrc: validated.imgSrc,
+				description: validated.description,
+				venue: validated.venue,
+				eventType: validated.eventType,
+				category: validated.category,
+				state: validated.state ?? EventState.DRAFT,
+				fromDate: new Date(validated.fromDate),
+				toDate: new Date(validated.toDate),
+				deadline: validated.deadline ? new Date(validated.deadline) : undefined,
+				maxTeams: validated.maxTeams,
+				minTeamSize: validated.minTeamSize,
+				maxTeamSize: validated.maxTeamSize,
+				isMembersOnly: validated.isMembersOnly,
+				flcAmount: validated.flcAmount,
+				nonFlcAmount: validated.nonFlcAmount,
+			},
+		});
+
+		return { success: true, event: updated };
+	} catch (error) {
+		console.error("editEventAction Error:", error);
+		if (error instanceof z.ZodError) {
+			return {
+				success: false,
+				error: "Validation failed",
+				issues: error.issues,
+			};
+		}
+		return {
+			success: false,
+			error: "An unexpected error occurred while updating the event.",
+		};
+	}
+}
+
+export async function publishEventAction(eventId: number) {
+	try {
+		const event = await db.event.update({
+			where: { id: eventId },
+			data: { state: EventState.PUBLISHED },
+		});
+
+		return { success: true, event };
+	} catch (error) {
+		console.error("publishEventAction Error:", error);
+		return {
+			success: false,
+			error: "Failed to publish event.",
+		};
+	}
+}
+
 export async function getAllEvents() {
 	try {
 		const events = await db.event.findMany({
@@ -88,7 +152,7 @@ export async function getAllEvents() {
 			data: events,
 		};
 	} catch (error) {
-		console.error("❌ getAllEvents Error:", error);
+		console.error("getAllEvents Error:", error);
 		return {
 			success: false,
 			error: "Failed to fetch events.",

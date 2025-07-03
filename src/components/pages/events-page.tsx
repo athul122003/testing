@@ -23,7 +23,11 @@ import {
 	DialogTitle,
 } from "~/components/ui/dialog";
 import { getAllEvents } from "~/lib/actions/event";
-import { deleteEventAction } from "~/lib/actions/event";
+import {
+	deleteEventAction,
+	editEventAction,
+	publishEventAction,
+} from "~/lib/actions/event";
 import { toast } from "sonner";
 
 interface EventsPageProps {
@@ -60,14 +64,20 @@ export function EventsPage({
 		setActivePage("event-form");
 	};
 
-	const handleEditEvent = (event) => {
-		setEditingEvent(event);
+	const handleEditEvent = (event: Event) => {
+		const eventForForm = {
+			...event,
+			fromDate: event.fromDate.toISOString().slice(0, 16), // for datetime-local input
+			toDate: event.toDate.toISOString().slice(0, 16),
+			deadline: event.deadline ? event.deadline.toISOString().slice(0, 16) : "",
+		};
+
+		setEditingEvent(eventForForm);
 		setActivePage("event-form");
 		setIsDetailOpen(false);
 	};
 
 	const handleDeleteEvent = async (eventId) => {
-		setEvents(events.filter((event) => event.id !== eventId));
 		const res = await deleteEventAction(eventId);
 		if (res.success) {
 			toast.success("Event deleted successfully.");
@@ -76,16 +86,21 @@ export function EventsPage({
 		} else {
 			toast.error(res.error || "Failed to delete event");
 		}
+		setEvents(events.filter((event) => event.id !== eventId));
 		setIsDetailOpen(false);
 	};
 
-	const handlePublishEvent = (eventId) => {
-		setEvents(
-			events.map((event) =>
-				event.id === eventId ? { ...event, state: "PUBLISHED" } : event,
-			),
-		);
-		setIsDetailOpen(false);
+	const handlePublishEvent = async (eventId: number) => {
+		const res = await publishEventAction(eventId);
+		if (res.success) {
+			toast.success(`Event "${res.event.name}" published`);
+			setEvents((prev) =>
+				prev.map((e) => (e.id === eventId ? { ...e, state: "PUBLISHED" } : e)),
+			);
+			setIsDetailOpen(false);
+		} else {
+			toast.error(res.error || "Failed to publish event");
+		}
 	};
 
 	const handleEventClick = (event) => {
