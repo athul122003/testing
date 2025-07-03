@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { EventType, EventState, EventCategory } from "../../generated/prisma";
+import { EventCategory, EventState, EventType } from "../../generated/prisma";
 
 const createEventZ = z.object({
 	name: z.string().min(1, "Event name is required"),

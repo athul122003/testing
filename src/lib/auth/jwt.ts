@@ -4,8 +4,8 @@ import type {
 	RefreshToken,
 	VerificationToken,
 } from "~/../generated/prisma/client";
-import { refreshTokenZ } from "~/zod/authZ";
 import { db } from "~/server/db";
+import { refreshTokenZ } from "~/zod/authZ";
 import { addRefreshTokenToWhitelist } from "./auth.service";
 import { getUserById } from "./auth-util";
 import { hashToken } from "./hashToken";

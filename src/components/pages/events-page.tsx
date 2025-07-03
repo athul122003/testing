@@ -12,7 +12,8 @@ import {
 	Users,
 } from "lucide-react";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
@@ -22,13 +23,12 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "~/components/ui/dialog";
-import { getAllEvents } from "~/lib/actions/event";
 import {
 	deleteEventAction,
 	editEventAction,
+	getAllEvents,
 	publishEventAction,
 } from "~/lib/actions/event";
-import { toast } from "sonner";
 
 interface EventsPageProps {
 	setActivePage: (page: string) => void;

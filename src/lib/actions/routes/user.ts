@@ -1,10 +1,10 @@
 // src/action/routes/user.ts
 "use server";
 
-import { db } from "~/server/db";
 import { z } from "zod";
+import { db } from "~/server/db";
 
-import { Prisma } from "../../../../generated/prisma/client";
+import type { Prisma } from "../../../../generated/prisma/client";
 
 // --- Zod Schemas ---
 const searchSchema = z.object({
