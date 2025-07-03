@@ -350,64 +350,6 @@ export function UsersPage() {
 										/>
 									</div>
 
-<<<<<<< HEAD
-									return (
-										<Card key={role.id} className="border-0 shadow-md">
-											<CardContent className="p-6">
-												<div className="flex justify-between items-start mb-4">
-													<div>
-														<h4 className="font-bold text-lg text-slate-900 dark:text-white">
-															{role.name}
-														</h4>
-														<p className="text-sm text-slate-500 dark:text-slate-400">
-															{role.userCount} users
-														</p>
-													</div>
-													<div className="flex gap-1">
-														<Button
-															variant="ghost"
-															size="sm"
-															onClick={() => {
-																if (isEditing) {
-																	savePermissions(role.id, selected);
-																} else {
-																	const permIds = role.permissions.map(
-																		(p) => p.permission.id,
-																	);
-																	setSelectedPermissions((prev) => ({
-																		...prev,
-																		[role.id]: permIds,
-																	}));
-																	setOriginalPermissions((prev) => ({
-																		...prev,
-																		[role.id]: permIds,
-																	}));
-																	setEditingRoleId(role.id);
-																}
-															}}
-														>
-															{isEditing ? (
-																<Check className="h-4 w-4 text-green-600" />
-															) : (
-																<Edit className="h-4 w-4" />
-															)}
-														</Button>
-														{isEditing && (
-															<Button
-																variant="ghost"
-																size="sm"
-																onClick={() => {
-																	setSelectedPermissions((prev) => ({
-																		...prev,
-																		[role.id]:
-																			originalPermissions[role.id] || [],
-																	}));
-																	setEditingRoleId(null);
-																}}
-															>
-																<X className="h-4 w-4 text-gray-500" />
-															</Button>
-=======
 									{/* 🧩 Paginated Roles */}
 									<div className="grid gap-4 md:grid-cols-2">
 										{paginatedRoles.map((role) => {
@@ -525,7 +467,6 @@ export function UsersPage() {
 																	</Badge>
 																)}
 															</div>
->>>>>>> 4c966ed (Refactor role and permission management in UsersPage;)
 														)}
 													</CardContent>
 												</Card>

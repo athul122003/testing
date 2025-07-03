@@ -69,16 +69,6 @@ const main = async () => {
 			),
 		);
 
-<<<<<<< HEAD
-		const rolePermissionPairs = [];
-
-		for (let i = 0; i < roles.length; i++) {
-			for (let j = 0; j <= i && j < permissions.length; j++) {
-				rolePermissionPairs.push({
-					roleId: roles[i].id,
-					permissionId: permissions[j].id,
-				});
-=======
 		const rolePermissionPairs: { roleId: string; permissionId: string }[] = [];
 		for (let i = 0; i < roles.length; i++) {
 			const role = roles[i];
@@ -97,7 +87,6 @@ const main = async () => {
 						permissionId: permissions[j].id,
 					});
 				}
->>>>>>> 4c966ed (Refactor role and permission management in UsersPage;)
 			}
 		}
 

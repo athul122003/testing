@@ -11,18 +11,10 @@ const deleteRoleSchema = z.object({
 	id: z.string(),
 });
 
-<<<<<<< HEAD
-const togglePermissionSchema = z.object({
-	roleId: z.string(),
-	permissionId: z.string(),
-});
-
-=======
 const updateRolePermissionsSchema = z.object({
 	roleId: z.string(),
 	permissionIds: z.array(z.string()),
 });
->>>>>>> 4c966ed (Refactor role and permission management in UsersPage;)
 // --- INDIVIDUAL SERVER ACTIONS ---
 
 export async function getAll() {
@@ -75,7 +67,7 @@ export async function deleteRole(input: unknown) {
 	const { id } = deleteRoleSchema.parse(input);
 
 	try {
-		// Fetch role before deletion
+		// Fetch the role to be deleted
 		const role = await db.role.findUnique({
 			where: { id },
 			select: {
@@ -88,8 +80,6 @@ export async function deleteRole(input: unknown) {
 			throw new Error("Role not found");
 		}
 
-<<<<<<< HEAD
-=======
 		// Prevent deletion of the default USER role itself
 		if (role.name === "USER" || role.name === "ADMIN") {
 			throw new Error(`Cannot delete default ${role.name} role`);
@@ -111,10 +101,9 @@ export async function deleteRole(input: unknown) {
 			data: { roleId: userRole.id },
 		});
 
->>>>>>> 4c966ed (Refactor role and permission management in UsersPage;)
 		// Delete the role
 		await db.role.delete({
-			where: { id },
+			where: { id: role.id },
 		});
 
 		// Return role info for toast
@@ -127,8 +116,6 @@ export async function deleteRole(input: unknown) {
 export async function updateRolePermissions(input: unknown) {
 	const { roleId, permissionIds } = updateRolePermissionsSchema.parse(input);
 
-<<<<<<< HEAD
-=======
 	// Fetch the role name
 	const role = await db.role.findUnique({
 		where: { id: roleId },
@@ -144,7 +131,6 @@ export async function updateRolePermissions(input: unknown) {
 		throw new Error(`Cannot update permissions for the ${role.name} role`);
 	}
 
->>>>>>> 4c966ed (Refactor role and permission management in UsersPage;)
 	// Fetch existing permission IDs for the role
 	const existing = await db.rolePermission.findMany({
 		where: { roleId },
@@ -177,12 +163,7 @@ export async function updateRolePermissions(input: unknown) {
 		});
 	}
 
-	// Fetch just the role metadata
-	const role = await db.role.findUniqueOrThrow({
-		where: { id: roleId },
-		select: { id: true, name: true },
-	});
-
+	// Return metadata
 	return {
 		role,
 		addedIds,
