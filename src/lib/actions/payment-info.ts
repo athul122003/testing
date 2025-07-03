@@ -5,14 +5,32 @@ import prisma from "~/lib/prisma";
 const getPaymentInfo = async ({
 	page = 1,
 	pageSize = 20,
+	startDate,
+	endDate,
 }: {
 	page?: number;
 	pageSize?: number;
+	startDate?: Date;
+	endDate?: Date;
 }) => {
 	const skip = (page - 1) * pageSize;
+
+	const dateFilter: { gte?: Date; lte?: Date } = {};
+	if (startDate) {
+		dateFilter.gte = startDate;
+	}
+	if (endDate) {
+		dateFilter.lte = endDate;
+	}
+
+	const whereCondition = Object.keys(dateFilter).length
+		? { createdAt: dateFilter }
+		: {};
+
 	try {
 		const [payments, totalPayments] = await Promise.all([
 			prisma.payment.findMany({
+				where: whereCondition,
 				skip,
 				take: pageSize,
 				orderBy: { createdAt: "desc" },
@@ -26,7 +44,9 @@ const getPaymentInfo = async ({
 					},
 				},
 			}),
-			prisma.payment.count(),
+			prisma.payment.count({
+				where: whereCondition,
+			}),
 		]);
 		const totalPages = Math.ceil(totalPayments / pageSize);
 		return { page, pageSize, totalPages, payments };

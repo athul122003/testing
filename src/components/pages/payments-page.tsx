@@ -12,7 +12,9 @@ import {
 	Filter,
 	Search,
 	TrendingUp,
+	Calendar,
 } from "lucide-react";
+
 import {
 	DropdownMenu,
 	DropdownMenuTrigger,
@@ -39,6 +41,7 @@ import {
 	TableRow,
 } from "~/components/ui/table";
 
+//types
 export type PaymentWithUser = Awaited<
 	ReturnType<typeof getPaymentInfo>
 >["payments"][number];
@@ -53,6 +56,11 @@ type SummaryStats = {
 	totalFailedPayments: number;
 };
 
+type DateFilter = {
+	startDate?: Date;
+	endDate?: Date;
+};
+
 export function PaymentsPage() {
 	const [payments, setPayments] = useState<PaymentWithUser[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -60,6 +68,10 @@ export function PaymentsPage() {
 	const [statusFilter, setStatusFilter] = useState("all");
 	const [page, setPage] = useState(1);
 	const [totalPages, setTotalPages] = useState(1);
+	const [dateFilter, setDateFilter] = useState<DateFilter>({
+		startDate: undefined,
+		endDate: undefined,
+	});
 	const [summaryStats, setSummaryStats] = useState<SummaryStats>({
 		totalPayments: 0,
 		totalUsers: 0,
@@ -69,23 +81,11 @@ export function PaymentsPage() {
 	});
 	const pageSize = 20;
 
-	const filteredPayments = payments.filter((payment) => {
-		const lowerSearch = searchTerm.toLowerCase();
-		const matchesSearch =
-			payment.User?.name.toLowerCase().includes(lowerSearch) ||
-			payment.User?.id?.toString().includes(lowerSearch) ||
-			payment.User?.email.includes(lowerSearch) ||
-			payment.id.toLowerCase().includes(lowerSearch) ||
-			payment.paymentType?.toLowerCase().includes(lowerSearch);
-		const matchesStatus =
-			statusFilter === "all" || getPaymentStatus(payment) === statusFilter;
-		return matchesSearch && matchesStatus;
-	});
 	//to fetch paginated payments data
 	useEffect(() => {
 		const fetchPayments = async () => {
 			try {
-				const data = await getPaymentInfo({ page, pageSize });
+				const data = await getPaymentInfo({ page, pageSize, ...dateFilter });
 				setPayments(data.payments);
 				setTotalPages(data.totalPages);
 			} catch (err) {
@@ -96,7 +96,7 @@ export function PaymentsPage() {
 		};
 
 		fetchPayments();
-	}, [page]);
+	}, [page, dateFilter]);
 
 	//to fetch summary stats  only once on mount
 	useEffect(() => {
@@ -110,6 +110,25 @@ export function PaymentsPage() {
 		};
 		fetchSummaryStats();
 	}, []);
+
+	//filtered Payments
+	const filteredPayments = payments.filter((payment) => {
+		const lowerSearch = searchTerm.toLowerCase();
+		const matchesSearch =
+			payment.User?.name.toLowerCase().includes(lowerSearch) ||
+			payment.User?.id?.toString().includes(lowerSearch) ||
+			payment.User?.email.includes(lowerSearch) ||
+			payment.id.toLowerCase().includes(lowerSearch) ||
+			payment.paymentType?.toLowerCase().includes(lowerSearch);
+		const matchesStatus =
+			statusFilter === "all" || getPaymentStatus(payment) === statusFilter;
+
+		const createdAt = new Date(payment.createdAt);
+		const matchesDateRange =
+			(!dateFilter.startDate || createdAt >= dateFilter.startDate) &&
+			(!dateFilter.endDate || createdAt <= dateFilter.endDate);
+		return matchesSearch && matchesStatus && matchesDateRange;
+	});
 
 	function getPaymentStatus(payment: PaymentWithUser): PaymentStatus {
 		if (
@@ -342,6 +361,44 @@ export function PaymentsPage() {
 							Payment History
 						</CardTitle>
 						<div className="flex gap-3">
+							<Input
+								type="date"
+								value={
+									dateFilter.startDate
+										? dateFilter.startDate.toISOString().split("T")[0]
+										: ""
+								}
+								onChange={(e) =>
+									setDateFilter((prev) => ({
+										...prev,
+										startDate: e.target.value
+											? new Date(e.target.value)
+											: undefined,
+									}))
+								}
+								className="w-[150px] [color-scheme:dark]  text-slate-400
+             [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:brightness-0 
+             [&::-webkit-calendar-picker-indicator]:invert-[0.7]"
+							/>
+							<Input
+								type="date"
+								value={
+									dateFilter.endDate
+										? dateFilter.endDate.toISOString().split("T")[0]
+										: ""
+								}
+								onChange={(e) =>
+									setDateFilter((prev) => ({
+										...prev,
+										endDate: e.target.value
+											? new Date(e.target.value)
+											: undefined,
+									}))
+								}
+								className="w-[150px] [color-scheme:dark]  text-slate-400
+             [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:brightness-0 
+             [&::-webkit-calendar-picker-indicator]:invert-[0.7]"
+							/>
 							<div className="relative">
 								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
 								<Input
