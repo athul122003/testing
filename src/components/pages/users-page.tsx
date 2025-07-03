@@ -1,20 +1,18 @@
 // @ts-nocheck
 "use client";
+
 import { useSearchParams } from "next/navigation";
 import {
+	ArrowDownAZ,
+	ArrowUpAZ,
 	Edit,
 	Plus,
 	Check,
 	X,
 	Search,
-	Settings,
-	Shield,
 	Trash2,
-	UserCheck,
-	Users,
 } from "lucide-react";
-import { useState, useEffect } from "react";
-import { Avatar, AvatarFallback } from "~/components/ui/avatar";
+import { useState, useEffect, useMemo } from "react";
 import { Badge } from "~/components/ui/badge";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Separator } from "~/components/ui/separator";
@@ -34,10 +32,7 @@ import {
 	CardTitle,
 } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
-import { Textarea } from "~/components/ui/textarea";
 import { Button } from "~/components/ui/button";
-import { PlusCircle } from "lucide-react";
-import { MoreVertical } from "lucide-react";
 import {
 	Pagination,
 	PaginationContent,
@@ -46,14 +41,6 @@ import {
 	PaginationNext,
 	PaginationPrevious,
 } from "~/components/ui/pagination";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-} from "~/components/ui/dialog";
 import { Label } from "~/components/ui/label";
 import {
 	Select,
@@ -64,33 +51,11 @@ import {
 } from "~/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 
-import { ComponentLoading } from "~/components/ui/component-loading2";
-import { server } from "~/lib/actions/serverAction";
+import { ComponentLoading } from "~/components/ui/component-loading";
 import { api } from "~/lib/api";
 import { toast } from "sonner";
 
-type Permission = {
-	id: string;
-	name: string;
-};
-type Role = {
-	id: string;
-	name: string;
-	permissions: {
-		permission: {
-			id: string;
-			name: string;
-		};
-	}[];
-};
-
 export function UsersPage() {
-	// Fetch roles and permissions from the API
-	const { data: permissions = [], isLoading: permLoading } =
-		api.permission.getAll.useQuery();
-	const { data: roles = [], isLoading: roleLoading } =
-		api.role.getAll.useQuery();
-
 	/*
   const [roles, setRoles] = useState([]);
   
@@ -142,6 +107,27 @@ export function UsersPage() {
   }, []);
 
 */
+	// Fetch roles and permissions from the API
+	const { data: permissions = [], isLoading: permLoading } =
+		api.permission.getAll.useQuery();
+	const { data: roles = [], isLoading: roleLoading } =
+		api.role.getAll.useQuery();
+	const [roleSearchTerm, setRoleSearchTerm] = useState("");
+	const [rolePage, setRolePage] = useState(1);
+	const ROLES_PER_PAGE = 4;
+
+	const filteredRoles = useMemo(() => {
+		return roles.filter((role) =>
+			role.name.toLowerCase().includes(roleSearchTerm.toLowerCase()),
+		);
+	}, [roles, roleSearchTerm]);
+
+	const totalRolePages = Math.ceil(filteredRoles.length / ROLES_PER_PAGE);
+
+	const paginatedRoles = filteredRoles.slice(
+		(rolePage - 1) * ROLES_PER_PAGE,
+		rolePage * ROLES_PER_PAGE,
+	);
 
 	// CRUD operations for roles and permissions
 	const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
@@ -177,7 +163,7 @@ export function UsersPage() {
 			api.role.getAll.invalidate();
 		},
 		onError: (error) => {
-			toast.error(error.message || "Failed to delete Role.");
+			toast.error(error.message);
 		},
 	});
 	const deleteRole = (roleId: string) => {
@@ -244,7 +230,50 @@ export function UsersPage() {
 		setEditingRoleId(null);
 	};
 
-	//
+	//User management section
+	const [searchTerm, setSearchTerm] = useState("");
+	const [page, setPage] = useState(1);
+	const [roleSortOrder, setRoleSortOrder] = useState<"asc" | "desc">("asc");
+	const [selectedUsers, setSelectedUsers] = useState<UserType[]>([]);
+	const [editingRoles, setEditingRoles] = useState<
+		Record<string, { prev: string; current: string }>
+	>({});
+	const [selectedRole, setSelectedRole] = useState(""); // for filtering by role
+	const [sortBy, setSortBy] = useState<"role" | "name" | "id">("role");
+	const [bulkSelectedRole, setBulkSelectedRole] = useState<string | null>(null);
+
+	const { data: users, isLoading: userLoading } = api.user.searchUser.useQuery({
+		query: searchTerm,
+		page,
+		limit: 10,
+		sortBy,
+		sortOrder: roleSortOrder,
+		role: selectedRole || "all",
+	});
+
+	const singleUpdate = api.user.updateUserRole.useMutation({
+		onSuccess: (_, variables) => {
+			toast.success("Role updated.");
+			api.user.searchUser.invalidate();
+
+			// Exit editing mode for that specific user
+			setEditingRoles((prev) => {
+				const copy = { ...prev };
+				delete copy[variables.userId]; // `userId` comes from mutation input
+				return copy;
+			});
+		},
+		onError: (err) => toast.error(err.message),
+	});
+
+	const bulkUpdate = api.user.updateMultipleUserRoles.useMutation({
+		onSuccess: () => {
+			toast.success("Roles updated for selected users.");
+			setSelectedUsers([]);
+			api.user.searchUser.invalidate();
+		},
+		onError: (err) => toast.error(err.message),
+	});
 
 	const searchParams = useSearchParams();
 	const tabParam = searchParams.get("tab") || "permissions"; // fallback to "permissions"
@@ -253,70 +282,75 @@ export function UsersPage() {
 		if (tabParam) setActiveTab(tabParam);
 	}, [tabParam]);
 
-	if (roleLoading || permLoading) {
-		return <ComponentLoading message="Role & Permissions data Loading..." />;
-	}
-
 	return (
 		<div className="space-y-8">
 			<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-				<TabsList className="grid w-auto grid-cols-2 bg-gradient-to-r from-teal-100 to-purple-100 dark:from-teal-800 dark:to-purple-800">
+				<TabsList className="grid w-auto grid-cols-2 bg-gradient-to-r from-teal-100 to-purple-100 dark:from-slate-800 dark:to-black-800">
 					<TabsTrigger
 						value="permissions"
-						className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
+						className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-slate-500 data-[state=active]:to-black data-[state=active]:text-white data-[state=active]:border-2 data-[state=active]:border-gray-400 data-[state=active]:rounded-md"
 					>
 						Role&Permissions
 					</TabsTrigger>
 
 					<TabsTrigger
 						value="userManagement"
-						className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-purple-500 data-[state=active]:text-white"
+						className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-slate-500 data-[state=active]:to-black data-[state=active]:text-white data-[state=active]:border-2 data-[state=active]:border-gray-400 data-[state=active]:rounded-md"
 					>
 						User Management
 					</TabsTrigger>
 				</TabsList>
 
 				<TabsContent value="permissions">
-					<Card className="bg-gradient-to-br from-white to-teal-50 dark:from-gray-900 dark:to-teal-900 shadow-xl">
-						<CardHeader>
-							<CardTitle className="text-teal-700 dark:text-teal-300">
-								Role & Permission Management
-							</CardTitle>
-							<CardDescription>
-								Define roles and assign specific permissions.
-							</CardDescription>
-						</CardHeader>
-						<CardContent className="grid gap-6">
-							{/* Add Role */}
-							<div className="grid gap-4 p-4 border rounded-lg bg-gradient-to-r from-teal-50 to-purple-50 dark:from-teal-900 dark:to-purple-900">
-								<h3 className="text-lg font-semibold">Add New Role</h3>
-								<div className="flex flex-col md:flex-row items-center gap-2">
-									<Input
-										placeholder="New Role Name"
-										value={newRoleName}
-										onChange={(e) => setNewRoleName(e.target.value)}
-									/>
+					<Card className="bg-gradient-to-br from-white to-slate-50 dark:from-gray-800 dark:to-slate-900 shadow-xl">
+						{roleLoading || permLoading ? (
+							<ComponentLoading message="Role & Permissions data Loading..." />
+						) : (
+							<>
+								<CardHeader>
+									<CardTitle className="text-teal-700 dark:text-teal-300">
+										Role & Permission Management
+									</CardTitle>
+									<CardDescription>
+										Define roles and assign specific permissions.
+									</CardDescription>
+								</CardHeader>
+								<CardContent className="grid gap-6">
+									{/* Add Role */}
+									<div className="grid gap-4 p-4 border rounded-lg bg-gradient-to-r from-slate-50 to-slate-50 dark:from-slate-900 dark:to-slate-900">
+										<h3 className="text-lg font-semibold">Add New Role</h3>
+										<div className="flex flex-col md:flex-row items-center gap-2">
+											<Input
+												placeholder="New Role Name"
+												value={newRoleName}
+												onChange={(e) => setNewRoleName(e.target.value)}
+											/>
 
-									<Button
-										onClick={addNewRole}
-										className="bg-gradient-to-r from-teal-500 to-purple-500"
-									>
-										<Plus className="h-4 w-4 mr-2" />
-										Add Role
-									</Button>
-								</div>
-							</div>
-							<Separator />
+											<Button
+												onClick={addNewRole}
+												className="bg-gradient-to-r from-teal-500 to-purple-500"
+											>
+												<Plus className="h-4 w-4 mr-2" />
+												Add Role
+											</Button>
+										</div>
+									</div>
+									<Separator />
 
-							<div className="grid gap-4 md:grid-cols-2">
-								{roles.map((role) => {
-									const isEditing = editingRoleId === role.id;
-									const currentPermissionIds = role.permissions.map(
-										(p) => p.permission.id,
-									);
-									const selected =
-										selectedPermissions[role.id] || currentPermissionIds;
+									{/* 🔍 Search input */}
+									<div className="flex justify-end">
+										<Input
+											placeholder="Search roles..."
+											value={roleSearchTerm}
+											onChange={(e) => {
+												setRoleSearchTerm(e.target.value);
+												setRolePage(1);
+											}}
+											className="w-full md:w-1/3 mb-4"
+										/>
+									</div>
 
+<<<<<<< HEAD
 									return (
 										<Card key={role.id} className="border-0 shadow-md">
 											<CardContent className="p-6">
@@ -373,106 +407,687 @@ export function UsersPage() {
 															>
 																<X className="h-4 w-4 text-gray-500" />
 															</Button>
+=======
+									{/* 🧩 Paginated Roles */}
+									<div className="grid gap-4 md:grid-cols-2">
+										{paginatedRoles.map((role) => {
+											const isEditing = editingRoleId === role.id;
+											const currentPermissionIds = role.permissions.map(
+												(p) => p.permission.id,
+											);
+											const selected =
+												selectedPermissions[role.id] || currentPermissionIds;
+
+											return (
+												<Card
+													key={role.id}
+													className="border-0 shadow-md bg-gray-100 dark:bg-slate-950"
+												>
+													<CardContent className="p-6">
+														<div className="flex justify-between items-start mb-4">
+															<div>
+																<h4 className="font-bold text-lg text-slate-900 dark:text-white">
+																	{role.name}
+																</h4>
+															</div>
+															<div className="flex gap-1">
+																<Button
+																	variant="ghost"
+																	size="sm"
+																	onClick={() => {
+																		if (isEditing) {
+																			savePermissions(role.id, selected);
+																		} else {
+																			const permIds = role.permissions.map(
+																				(p) => p.permission.id,
+																			);
+																			setSelectedPermissions((prev) => ({
+																				...prev,
+																				[role.id]: permIds,
+																			}));
+																			setOriginalPermissions((prev) => ({
+																				...prev,
+																				[role.id]: permIds,
+																			}));
+																			setEditingRoleId(role.id);
+																		}
+																	}}
+																>
+																	{isEditing ? (
+																		<Check className="h-4 w-4 text-green-600" />
+																	) : (
+																		<Edit className="h-4 w-4" />
+																	)}
+																</Button>
+																{isEditing && (
+																	<Button
+																		variant="ghost"
+																		size="sm"
+																		onClick={() => {
+																			setSelectedPermissions((prev) => ({
+																				...prev,
+																				[role.id]:
+																					originalPermissions[role.id] || [],
+																			}));
+																			setEditingRoleId(null);
+																		}}
+																	>
+																		<X className="h-4 w-4 text-gray-500" />
+																	</Button>
+																)}
+																<Button
+																	variant="ghost"
+																	size="sm"
+																	onClick={() => deleteRole(role.id)}
+																>
+																	<Trash2 className="h-4 w-4 text-red-500" />
+																</Button>
+															</div>
+														</div>
+
+														{isEditing ? (
+															<div className="grid gap-2">
+																{permissions.map((perm) => (
+																	<div
+																		key={perm.id}
+																		className="flex items-center gap-2 text-sm"
+																	>
+																		<Checkbox
+																			id={`checkbox-${role.id}-${perm.id}`}
+																			checked={selected.includes(perm.id)}
+																			onCheckedChange={() =>
+																				togglePermission(role.id, perm.id)
+																			}
+																		/>
+																		<Label
+																			htmlFor={`checkbox-${role.id}-${perm.id}`}
+																			className="cursor-pointer"
+																		>
+																			{perm.name}
+																		</Label>
+																	</div>
+																))}
+															</div>
+														) : (
+															<div className="flex flex-wrap gap-2">
+																{role.permissions.slice(0, 4).map((p) => (
+																	<Badge
+																		key={p.permission.id}
+																		variant="secondary"
+																		className="text-xs"
+																	>
+																		{p.permission.name}
+																	</Badge>
+																))}
+																{role.permissions.length > 4 && (
+																	<Badge variant="outline" className="text-xs">
+																		+{role.permissions.length - 4} more
+																	</Badge>
+																)}
+															</div>
+>>>>>>> 4c966ed (Refactor role and permission management in UsersPage;)
 														)}
+													</CardContent>
+												</Card>
+											);
+										})}
+									</div>
 
-														<Button
-															variant="ghost"
-															size="sm"
-															onClick={() => deleteRole(role.id)}
-														>
-															<Trash2 className="h-4 w-4 text-red-500" />
-														</Button>
-													</div>
-												</div>
+									{/* 🔁 Pagination Controls */}
+									{totalRolePages > 1 && (
+										<div className="mt-6 flex justify-center">
+											<Pagination className="mt-6">
+												<PaginationContent>
+													{/* ◀ Previous */}
+													<PaginationItem>
+														<PaginationPrevious
+															onClick={() =>
+																rolePage > 1 && setRolePage(rolePage - 1)
+															}
+															className={
+																rolePage === 1
+																	? "pointer-events-none opacity-50"
+																	: ""
+															}
+														/>
+													</PaginationItem>
 
-												{isEditing ? (
-													<div className="grid gap-2">
-														{permissions.map((perm) => (
-															<div
-																key={perm.id}
-																className="flex items-center gap-2 text-sm"
-															>
-																<Checkbox
-																	id={`checkbox-${role.id}-${perm.id}`}
-																	checked={selected.includes(perm.id)}
-																	onCheckedChange={() =>
-																		togglePermission(role.id, perm.id)
-																	}
-																/>
-																<Label
-																	htmlFor={`checkbox-${role.id}-${perm.id}`}
+													{/* ⏺ Page Numbers */}
+													{(() => {
+														const pages = [];
+														const maxVisible = 3;
+														const total = totalRolePages;
+
+														// Always show first
+														pages.push(
+															<PaginationItem key={1}>
+																<PaginationLink
+																	isActive={rolePage === 1}
+																	onClick={() => setRolePage(1)}
 																	className="cursor-pointer"
 																>
-																	{perm.name}
-																</Label>
-															</div>
-														))}
-													</div>
-												) : (
-													<div className="flex flex-wrap gap-2">
-														{role.permissions.slice(0, 4).map((p) => (
-															<Badge
-																key={p.permission.id}
-																variant="secondary"
-																className="text-xs"
-															>
-																{p.permission.name}
-															</Badge>
-														))}
-														{role.permissions.length > 4 && (
-															<Badge variant="outline" className="text-xs">
-																+{role.permissions.length - 4} more
-															</Badge>
-														)}
-													</div>
-												)}
-											</CardContent>
-										</Card>
-									);
-								})}
-							</div>
-						</CardContent>
+																	1
+																</PaginationLink>
+															</PaginationItem>,
+														);
+
+														// Left Ellipsis
+														if (rolePage > maxVisible) {
+															pages.push(
+																<PaginationItem key="left-ellipsis">
+																	<span className="px-2 text-muted-foreground">
+																		...
+																	</span>
+																</PaginationItem>,
+															);
+														}
+
+														// Pages around current page
+														const start = Math.max(2, rolePage - 1);
+														const end = Math.min(total - 1, rolePage + 1);
+
+														for (let i = start; i <= end; i++) {
+															pages.push(
+																<PaginationItem key={i}>
+																	<PaginationLink
+																		isActive={rolePage === i}
+																		onClick={() => setRolePage(i)}
+																		className="cursor-pointer"
+																	>
+																		{i}
+																	</PaginationLink>
+																</PaginationItem>,
+															);
+														}
+
+														// Right Ellipsis
+														if (rolePage < total - 2) {
+															pages.push(
+																<PaginationItem key="right-ellipsis">
+																	<span className="px-2 text-muted-foreground">
+																		...
+																	</span>
+																</PaginationItem>,
+															);
+														}
+
+														// Always show last
+														if (total > 1) {
+															pages.push(
+																<PaginationItem key={total}>
+																	<PaginationLink
+																		isActive={rolePage === total}
+																		onClick={() => setRolePage(total)}
+																		className="cursor-pointer"
+																	>
+																		{total}
+																	</PaginationLink>
+																</PaginationItem>,
+															);
+														}
+
+														return pages;
+													})()}
+
+													{/* ▶ Next */}
+													<PaginationItem>
+														<PaginationNext
+															onClick={() =>
+																rolePage < totalRolePages &&
+																setRolePage(rolePage + 1)
+															}
+															className={
+																rolePage === totalRolePages
+																	? "pointer-events-none opacity-50"
+																	: ""
+															}
+														/>
+													</PaginationItem>
+												</PaginationContent>
+											</Pagination>
+										</div>
+									)}
+								</CardContent>
+							</>
+						)}
 					</Card>
 				</TabsContent>
 
 				<TabsContent value="userManagement">
-					<Card className="bg-gradient-to-br from-white to-orange-50 dark:from-gray-900 dark:to-orange-900 shadow-xl">
-						<CardHeader>
-							<CardTitle className="text-orange-700 dark:text-orange-300">
-								User Management
-							</CardTitle>
-							<CardDescription>
-								Manage database backups and integrity.
-							</CardDescription>
-						</CardHeader>
-						<CardContent className="grid gap-4">
-							<div className="grid gap-2">
-								<Label htmlFor="backup-frequency">Daily Backup Frequency</Label>
-								<Select defaultValue="daily">
-									<SelectTrigger id="backup-frequency">
-										<SelectValue placeholder="Select frequency" />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value="daily">Daily</SelectItem>
-										<SelectItem value="weekly">Weekly</SelectItem>
-										<SelectItem value="monthly">Monthly</SelectItem>
-									</SelectContent>
-								</Select>
-							</div>
-							<Button className="bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600">
-								Initiate Manual Backup Now
-							</Button>
-							<Separator />
-							<div className="grid gap-2">
-								<h3 className="font-medium">
-									Last Backup:{" "}
-									<span className="text-primary">2025-01-22 10:30 AM</span>
-								</h3>
-								<p className="text-sm text-muted-foreground">
-									Next Scheduled Backup: 2025-01-23 03:00 AM
-								</p>
-							</div>
-						</CardContent>
+					<Card className="bg-gradient-to-br from-white to-slate-50 dark:from-gray-900 dark:to-slate-900 shadow-xl">
+						{roleLoading ? (
+							<ComponentLoading message="Loading Page..." />
+						) : (
+							<>
+								<CardHeader>
+									<CardTitle className="text-orange-700 dark:text-orange-300">
+										User Management
+									</CardTitle>
+									<CardDescription>Manage user Roles.</CardDescription>
+								</CardHeader>
+								<CardContent className="grid gap-4">
+									<div className="grid gap-2">
+										<div className="flex justify-between items-center mb-4">
+											<div className="flex items-center gap-4 flex-wrap">
+												{/*Search Input */}
+												<div className="relative">
+													<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+													<Input
+														placeholder="Search by name, ID, USN, or email..."
+														value={searchTerm}
+														onChange={(e) => setSearchTerm(e.target.value)}
+														className="pl-10 w-80"
+													/>
+												</div>
+
+												{/*Role Filter Dropdown */}
+												<Select
+													value={selectedRole ?? "all"}
+													onValueChange={(val) =>
+														setSelectedRole(val === "all" ? null : val)
+													}
+												>
+													<SelectTrigger className="w-52">
+														<SelectValue placeholder="All Roles" />
+													</SelectTrigger>
+													<SelectContent>
+														<SelectItem value="all">All Roles</SelectItem>
+														{roles.map((role) => (
+															<SelectItem key={role.id} value={role.name}>
+																{role.name}
+															</SelectItem>
+														))}
+													</SelectContent>
+												</Select>
+												<Select
+													value={sortBy}
+													onValueChange={(val) =>
+														setSortBy(val as "role" | "name" | "id")
+													}
+												>
+													<SelectTrigger className="w-40">
+														<SelectValue placeholder="Sort by..." />
+													</SelectTrigger>
+													<SelectContent>
+														<SelectItem value="role">Sort by Role</SelectItem>
+														<SelectItem value="name">Sort by Name</SelectItem>
+														<SelectItem value="id">Sort by ID</SelectItem>
+													</SelectContent>
+												</Select>
+												{/* ↕️ Sorting Buttons */}
+												<div className="flex gap-2">
+													<Button
+														variant="outline"
+														onClick={() =>
+															setRoleSortOrder((prev) =>
+																prev === "asc" ? "desc" : "asc",
+															)
+														}
+														className="flex items-center gap-2"
+													>
+														{roleSortOrder === "asc" ? (
+															<>
+																<ArrowDownAZ className="h-4 w-4" />
+																{/* Display selected users at top */}
+															</>
+														) : (
+															<ArrowUpAZ className="h-4 w-4" />
+														)}
+													</Button>
+												</div>
+											</div>
+										</div>
+									</div>
+
+									<Separator />
+									<div className="grid gap-2">
+										{/* 🔸 Selected Users Summary */}
+										{userLoading ? (
+											<ComponentLoading message="Loading Selected Users..." />
+										) : (
+											<div className="space-y-4">
+												{/* 🔸 Selected Users Banner */}
+												{selectedUsers.length > 0 && (
+													<div className="rounded bg-orange-50 dark:bg-slate-800 p-4">
+														<div className="flex justify-between items-center mb-2 gap-4 flex-wrap">
+															<span className="font-medium text-orange-700 dark:text-orange-300">
+																Selected Users: {selectedUsers.length}
+															</span>
+
+															<div className="flex items-center gap-2">
+																<Select
+																	value={bulkSelectedRole || ""}
+																	onValueChange={(newRole) =>
+																		setBulkSelectedRole(newRole)
+																	}
+																>
+																	<SelectTrigger className="w-52">
+																		<SelectValue placeholder="Set Role for All" />
+																	</SelectTrigger>
+																	<SelectContent>
+																		{roles.map((r) => (
+																			<SelectItem key={r.id} value={r.name}>
+																				{r.name}
+																			</SelectItem>
+																		))}
+																	</SelectContent>
+																</Select>
+
+																{/* ✅ Save Button */}
+																<Button
+																	variant="ghost"
+																	size="icon"
+																	disabled={!bulkSelectedRole}
+																	onClick={() => {
+																		if (bulkSelectedRole) {
+																			bulkUpdate.mutate({
+																				userIds: selectedUsers.map((u) => u.id),
+																				roleName: bulkSelectedRole,
+																			});
+																			setBulkSelectedRole(null); // Reset selection
+																		}
+																	}}
+																>
+																	<Check className="h-4 w-4 text-green-600" />
+																</Button>
+
+																{/* ❌ Cancel Button */}
+																<Button
+																	variant="ghost"
+																	size="icon"
+																	onClick={() => {
+																		setSelectedUsers([]);
+																		setBulkSelectedRole(null);
+																	}}
+																>
+																	<X className="h-4 w-4 text-red-600" />
+																</Button>
+															</div>
+														</div>
+
+														<div className="grid grid-cols-2 gap-2">
+															{selectedUsers.map((user) => (
+																<div
+																	key={user.id}
+																	className="bg-white dark:bg-slate-700 px-3 py-2 rounded shadow flex justify-between items-center"
+																>
+																	<div>
+																		<p className="text-sm font-medium">
+																			{user.name}
+																		</p>
+																		<p className="text-xs text-muted-foreground">
+																			{user.email}
+																		</p>
+																	</div>
+																	<Button
+																		variant="ghost"
+																		size="icon"
+																		onClick={() =>
+																			setSelectedUsers((prev) =>
+																				prev.filter((u) => u.id !== user.id),
+																			)
+																		}
+																	>
+																		<X className="h-4 w-4" />
+																	</Button>
+																</div>
+															))}
+														</div>
+													</div>
+												)}
+
+												{/* 🔍 User Table */}
+												{users?.data.length ? (
+													<>
+														<Table>
+															<TableHeader>
+																<TableRow>
+																	<TableHead />
+																	<TableHead>ID</TableHead>
+																	<TableHead>Name</TableHead>
+																	<TableHead>Email</TableHead>
+																	<TableHead>Role</TableHead>
+																</TableRow>
+															</TableHeader>
+															<TableBody>
+																{users.data.map((user) => (
+																	<TableRow
+																		key={user.id}
+																		className="hover:bg-slate-50 dark:hover:bg-slate-700/50"
+																	>
+																		<TableCell>
+																			<Checkbox
+																				checked={selectedUsers.some(
+																					(u) => u.id === user.id,
+																				)}
+																				onCheckedChange={(checked) => {
+																					setSelectedUsers((prev) =>
+																						checked
+																							? [...prev, user]
+																							: prev.filter(
+																									(u) => u.id !== user.id,
+																								),
+																					);
+																				}}
+																			/>
+																		</TableCell>
+
+																		<TableCell className="font-mono text-sm text-white">
+																			{user.id}
+																		</TableCell>
+
+																		<TableCell>{user.name}</TableCell>
+																		<TableCell>{user.email}</TableCell>
+																		<TableCell>
+																			{editingRoles[user.id] ? (
+																				<div className="flex gap-2 items-center">
+																					<Select
+																						value={
+																							editingRoles[user.id].current
+																						}
+																						onValueChange={(val) =>
+																							setEditingRoles((prev) => ({
+																								...prev,
+																								[user.id]: {
+																									...prev[user.id],
+																									current: val,
+																								},
+																							}))
+																						}
+																					>
+																						<SelectTrigger className="w-32">
+																							<SelectValue />
+																						</SelectTrigger>
+																						<SelectContent>
+																							{roles.map((r) => (
+																								<SelectItem
+																									key={r.id}
+																									value={r.name}
+																								>
+																									{r.name}
+																								</SelectItem>
+																							))}
+																						</SelectContent>
+																					</Select>
+																					<Button
+																						size="icon"
+																						variant="ghost"
+																						onClick={() =>
+																							singleUpdate.mutate({
+																								userId: user.id,
+																								roleName:
+																									editingRoles[user.id].current,
+																							})
+																						}
+																					>
+																						<Check className="text-green-600 h-4 w-4" />
+																					</Button>
+																					<Button
+																						size="icon"
+																						variant="ghost"
+																						onClick={() =>
+																							setEditingRoles((prev) => {
+																								const copy = { ...prev };
+																								delete copy[user.id];
+																								return copy;
+																							})
+																						}
+																					>
+																						<X className="text-red-600 h-4 w-4" />
+																					</Button>
+																				</div>
+																			) : (
+																				<div className="flex justify-between items-center">
+																					<Badge>{user.role.name}</Badge>
+																					<Button
+																						variant="ghost"
+																						size="sm"
+																						onClick={() =>
+																							setEditingRoles((prev) => ({
+																								...prev,
+																								[user.id]: {
+																									prev: user.role.name,
+																									current: user.role.name,
+																								},
+																							}))
+																						}
+																					>
+																						<Edit className="h-4 w-4" />
+																					</Button>
+																				</div>
+																			)}
+																		</TableCell>
+																	</TableRow>
+																))}
+															</TableBody>
+														</Table>
+
+														{/* 📃 Pagination */}
+														{users.totalPages > 1 && (
+															<Pagination className="mt-6">
+																<PaginationContent>
+																	{/* ◀ Previous */}
+																	<PaginationItem>
+																		<PaginationPrevious
+																			onClick={() =>
+																				page > 1 && setPage(page - 1)
+																			}
+																			className={
+																				page === 1
+																					? "pointer-events-none opacity-50"
+																					: ""
+																			}
+																		/>
+																	</PaginationItem>
+
+																	{/* ⏺ Page Numbers */}
+																	{(() => {
+																		const pages = [];
+																		const total = users.totalPages;
+																		const maxVisible = 3;
+
+																		// Always show first
+																		pages.push(
+																			<PaginationItem key={1}>
+																				<PaginationLink
+																					isActive={page === 1}
+																					onClick={() => setPage(1)}
+																					className="cursor-pointer"
+																				>
+																					1
+																				</PaginationLink>
+																			</PaginationItem>,
+																		);
+
+																		// Ellipsis before current chunk
+																		if (page > maxVisible) {
+																			pages.push(
+																				<PaginationItem key="left-ellipsis">
+																					<span className="px-2 text-muted-foreground">
+																						...
+																					</span>
+																				</PaginationItem>,
+																			);
+																		}
+
+																		// Pages around current page
+																		const start = Math.max(2, page - 1);
+																		const end = Math.min(total - 1, page + 1);
+
+																		for (let i = start; i <= end; i++) {
+																			pages.push(
+																				<PaginationItem key={i}>
+																					<PaginationLink
+																						isActive={page === i}
+																						onClick={() => setPage(i)}
+																						className="cursor-pointer"
+																					>
+																						{i}
+																					</PaginationLink>
+																				</PaginationItem>,
+																			);
+																		}
+
+																		// Ellipsis after current chunk
+																		if (page < total - 2) {
+																			pages.push(
+																				<PaginationItem key="right-ellipsis">
+																					<span className="px-2 text-muted-foreground">
+																						...
+																					</span>
+																				</PaginationItem>,
+																			);
+																		}
+
+																		// Always show last
+																		if (total > 1) {
+																			pages.push(
+																				<PaginationItem key={total}>
+																					<PaginationLink
+																						isActive={page === total}
+																						onClick={() => setPage(total)}
+																						className="cursor-pointer"
+																					>
+																						{total}
+																					</PaginationLink>
+																				</PaginationItem>,
+																			);
+																		}
+
+																		return pages;
+																	})()}
+
+																	{/* ▶ Next */}
+																	<PaginationItem>
+																		<PaginationNext
+																			onClick={() =>
+																				page < users.totalPages &&
+																				setPage(page + 1)
+																			}
+																			className={
+																				page === users.totalPages
+																					? "pointer-events-none opacity-50"
+																					: ""
+																			}
+																		/>
+																	</PaginationItem>
+																</PaginationContent>
+															</Pagination>
+														)}
+													</>
+												) : (
+													!userLoading && (
+														<div className="text-center py-8 text-muted-foreground">
+															No users found.
+														</div>
+													)
+												)}
+											</div>
+										)}
+									</div>
+								</CardContent>
+							</>
+						)}
 					</Card>
 				</TabsContent>
 			</Tabs>

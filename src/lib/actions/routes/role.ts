@@ -11,11 +11,18 @@ const deleteRoleSchema = z.object({
 	id: z.string(),
 });
 
+<<<<<<< HEAD
 const togglePermissionSchema = z.object({
 	roleId: z.string(),
 	permissionId: z.string(),
 });
 
+=======
+const updateRolePermissionsSchema = z.object({
+	roleId: z.string(),
+	permissionIds: z.array(z.string()),
+});
+>>>>>>> 4c966ed (Refactor role and permission management in UsersPage;)
 // --- INDIVIDUAL SERVER ACTIONS ---
 
 export async function getAll() {
@@ -81,6 +88,30 @@ export async function deleteRole(input: unknown) {
 			throw new Error("Role not found");
 		}
 
+<<<<<<< HEAD
+=======
+		// Prevent deletion of the default USER role itself
+		if (role.name === "USER" || role.name === "ADMIN") {
+			throw new Error(`Cannot delete default ${role.name} role`);
+		}
+
+		// Fetch the USER role ID
+		const userRole = await db.role.findUnique({
+			where: { name: "USER" },
+			select: { id: true },
+		});
+
+		if (!userRole) {
+			throw new Error("Default USER role not found");
+		}
+
+		// Reassign users with the role to be deleted to the USER role
+		await db.user.updateMany({
+			where: { roleId: role.id },
+			data: { roleId: userRole.id },
+		});
+
+>>>>>>> 4c966ed (Refactor role and permission management in UsersPage;)
 		// Delete the role
 		await db.role.delete({
 			where: { id },
@@ -88,20 +119,32 @@ export async function deleteRole(input: unknown) {
 
 		// Return role info for toast
 		return role;
-	} catch (err) {
-		console.error("Error deleting role:", err);
-		throw new Error("Failed to delete role");
+	} catch (err: any) {
+		throw new Error(err?.message || "Failed to delete role");
 	}
 }
-
-const updateRolePermissionsSchema = z.object({
-	roleId: z.string(),
-	permissionIds: z.array(z.string()),
-});
 
 export async function updateRolePermissions(input: unknown) {
 	const { roleId, permissionIds } = updateRolePermissionsSchema.parse(input);
 
+<<<<<<< HEAD
+=======
+	// Fetch the role name
+	const role = await db.role.findUnique({
+		where: { id: roleId },
+		select: { id: true, name: true },
+	});
+
+	if (!role) {
+		throw new Error("Role not found");
+	}
+
+	// ❌ Disallow permission updates for USER role
+	if (role.name === "USER" || role.name === "ADMIN") {
+		throw new Error(`Cannot update permissions for the ${role.name} role`);
+	}
+
+>>>>>>> 4c966ed (Refactor role and permission management in UsersPage;)
 	// Fetch existing permission IDs for the role
 	const existing = await db.rolePermission.findMany({
 		where: { roleId },
