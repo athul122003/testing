@@ -92,20 +92,7 @@ export function PaymentsPage() {
 	const paymentsKey = `page-${page}-size-${pageSize}`;
 	const paymentsSummaryKey = `summary-stats`;
 
-	const filteredPayments = payments.filter((payment) => {
-		const lowerSearch = searchTerm.toLowerCase();
-		const matchesSearch =
-			payment.User?.name.toLowerCase().includes(lowerSearch) ||
-			payment.User?.id?.toString().includes(lowerSearch) ||
-			payment.User?.email.includes(lowerSearch) ||
-			payment.id.toLowerCase().includes(lowerSearch) ||
-			payment.paymentType?.toLowerCase().includes(lowerSearch);
-		const matchesStatus =
-			statusFilter === "all" || getPaymentStatus(payment) === statusFilter;
-		return matchesSearch && matchesStatus;
-	});
-
-  //to fetch paginated payments data
+	//to fetch paginated payments data
 	useEffect(() => {
 		const cached = paymentsCache.get(paymentsKey);
 		console.log("Cache hit for key:", paymentsKey, "Cached data:", cached);
@@ -123,7 +110,7 @@ export function PaymentsPage() {
 				const data = await getPaymentInfo({ page, pageSize, ...dateFilter });
 				paymentsCache.set(paymentsKey, data.payments);
 
-        setPayments(data.payments);
+				setPayments(data.payments);
 				setTotalPages(data.totalPages);
 			} catch (err) {
 				console.error("Failed to fetch payments:", err);
