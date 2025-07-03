@@ -1,7 +1,7 @@
 "use server";
 
 import { z } from "zod";
-import { db } from "~/server/db"; // Uncomment if you need Prisma types
+import { db } from "~/server/db";
 import {
 	EventCategory,
 	EventType,
@@ -15,7 +15,7 @@ const createEventSchema = z.object({
 	description: z.string().optional(),
 	venue: z.string().optional(),
 
-	eventType: z.nativeEnum(EventType), // ✅ Enums here
+	eventType: z.nativeEnum(EventType),
 	category: z.nativeEnum(EventCategory),
 	state: z.nativeEnum(EventState).optional().default(EventState.DRAFT),
 
@@ -45,7 +45,7 @@ export async function createEventAction(values: CreateEventInput) {
 				imgSrc: validated.imgSrc,
 				description: validated.description,
 				venue: validated.venue,
-				eventType: validated.eventType, // ✅ now type-safe
+				eventType: validated.eventType,
 				category: validated.category,
 				state: validated.state ?? EventState.DRAFT,
 				fromDate: new Date(validated.fromDate),
@@ -73,6 +73,25 @@ export async function createEventAction(values: CreateEventInput) {
 		return {
 			success: false,
 			error: "An unexpected error occurred while creating event.",
+		};
+	}
+}
+
+export async function getAllEvents() {
+	try {
+		const events = await db.event.findMany({
+			orderBy: { fromDate: "asc" },
+		});
+
+		return {
+			success: true,
+			data: events,
+		};
+	} catch (error) {
+		console.error("❌ getAllEvents Error:", error);
+		return {
+			success: false,
+			error: "Failed to fetch events.",
 		};
 	}
 }

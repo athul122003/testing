@@ -12,7 +12,7 @@ import {
 	Users,
 } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
@@ -22,51 +22,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "~/components/ui/dialog";
-
-const initialEvents = [
-	{
-		id: 1,
-		name: "Tech Conference 2024",
-		imgSrc: "/placeholder.svg?height=300&width=500",
-		description:
-			"Annual technology conference featuring latest trends in AI and Web Development. Join industry experts and innovators for a day of learning and networking.",
-		venue: "Main Auditorium",
-		eventType: "CONFERENCE",
-		category: "TECHNICAL",
-		fromDate: "2024-01-15T10:00",
-		toDate: "2024-01-15T18:00",
-		deadline: "2024-01-10T23:59",
-		maxTeams: 100,
-		minTeamSize: 1,
-		maxTeamSize: 1,
-		isMembersOnly: false,
-		flcAmount: 50,
-		nonFlcAmount: 99,
-		state: "PUBLISHED",
-		participants: 75,
-	},
-	{
-		id: 2,
-		name: "React Workshop",
-		imgSrc: "/placeholder.svg?height=300&width=500",
-		description:
-			"Hands-on workshop covering React fundamentals and advanced concepts including hooks, context, and performance optimization.",
-		venue: "Lab 101",
-		eventType: "WORKSHOP",
-		category: "TECHNICAL",
-		fromDate: "2024-01-20T14:00",
-		toDate: "2024-01-20T17:00",
-		deadline: "2024-01-18T23:59",
-		maxTeams: 30,
-		minTeamSize: 1,
-		maxTeamSize: 3,
-		isMembersOnly: true,
-		flcAmount: 0,
-		nonFlcAmount: 25,
-		state: "DRAFT",
-		participants: 18,
-	},
-];
+import { getAllEvents } from "~/lib/actions/event";
 
 interface EventsPageProps {
 	setActivePage: (page: string) => void;
@@ -78,9 +34,24 @@ export function EventsPage({
 	setActivePage,
 	setEditingEvent,
 }: EventsPageProps) {
-	const [events, setEvents] = useState(initialEvents);
+	const [events, setEvents] = useState<any[]>([]);
 	const [selectedEvent, setSelectedEvent] = useState(null);
 	const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+	useEffect(() => {
+		async function fetchEvents() {
+			// setLoading(true);
+			const res = await getAllEvents();
+			if (res.success) {
+				setEvents(res.data);
+			} else {
+				console.error("Failed to load events:", res.error);
+			}
+			// setLoading(false);
+		}
+
+		fetchEvents();
+	}, []);
 
 	const handleCreateEvent = () => {
 		setEditingEvent(null);
