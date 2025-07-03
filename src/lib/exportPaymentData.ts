@@ -1,8 +1,9 @@
+import { PaymentWithUser } from "./queries/payment-queries";
 import type { PaymentWithUser } from "~/components/pages/payments-page";
 import { formatDateTime } from "~/lib/formatDateTime";
 
 // Utility to convert payments to CSV
-export function convertPaymentsToCSV(data: PaymentWithUser[]) {
+export function convertPaymentsToCSV(data: PaymentWithUser["payments"]) {
 	const headers = [
 		"Order ID",
 		"User Name",
