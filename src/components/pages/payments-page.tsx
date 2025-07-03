@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getPaymentInfo } from "~/lib/actions/payment-info";
+import { getPaymentInfo, getSummaryStats } from "~/lib/actions/payment-info";
 import { formatDateTime } from "~/lib/formatDateTime";
 import { formatCurrency } from "~/lib/formatCurrency";
 import { convertPaymentsToCSV, downloadCSV } from "~/lib/exportPaymentData";
@@ -13,6 +13,12 @@ import {
 	Search,
 	TrendingUp,
 } from "lucide-react";
+import {
+	DropdownMenu,
+	DropdownMenuTrigger,
+	DropdownMenuContent,
+	DropdownMenuItem,
+} from "~/components/ui/dropdown-menu";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -35,15 +41,33 @@ import {
 
 export type PaymentWithUser = Awaited<
 	ReturnType<typeof getPaymentInfo>
->[number];
+>["payments"][number];
 
 type PaymentStatus = "success" | "failed" | "pending";
+
+type SummaryStats = {
+	totalPayments: number;
+	totalUsers: number;
+	totalRevenue: number;
+	totalSuccessfulPayments: number;
+	totalFailedPayments: number;
+};
 
 export function PaymentsPage() {
 	const [payments, setPayments] = useState<PaymentWithUser[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [statusFilter, setStatusFilter] = useState("all");
+	const [page, setPage] = useState(1);
+	const [totalPages, setTotalPages] = useState(1);
+	const [summaryStats, setSummaryStats] = useState<SummaryStats>({
+		totalPayments: 0,
+		totalUsers: 0,
+		totalRevenue: 0,
+		totalSuccessfulPayments: 0,
+		totalFailedPayments: 0,
+	});
+	const pageSize = 20;
 
 	const filteredPayments = payments.filter((payment) => {
 		const lowerSearch = searchTerm.toLowerCase();
@@ -57,12 +81,13 @@ export function PaymentsPage() {
 			statusFilter === "all" || getPaymentStatus(payment) === statusFilter;
 		return matchesSearch && matchesStatus;
 	});
-
+	//to fetch paginated payments data
 	useEffect(() => {
 		const fetchPayments = async () => {
 			try {
-				const data = await getPaymentInfo();
-				setPayments(data);
+				const data = await getPaymentInfo({ page, pageSize });
+				setPayments(data.payments);
+				setTotalPages(data.totalPages);
 			} catch (err) {
 				console.error("Failed to fetch payments:", err);
 			} finally {
@@ -71,6 +96,19 @@ export function PaymentsPage() {
 		};
 
 		fetchPayments();
+	}, [page]);
+
+	//to fetch summary stats  only once on mount
+	useEffect(() => {
+		const fetchSummaryStats = async () => {
+			try {
+				const data = await getSummaryStats();
+				setSummaryStats(data);
+			} catch (error) {
+				console.error("Error fetching summary stats:", error);
+			}
+		};
+		fetchSummaryStats();
 	}, []);
 
 	function getPaymentStatus(payment: PaymentWithUser): PaymentStatus {
@@ -84,18 +122,15 @@ export function PaymentsPage() {
 		return "failed";
 	}
 
-	const successfulPayments = payments.filter(
+	const currentSuccessfulPayments = filteredPayments.filter(
 		(p) => getPaymentStatus(p) === "success",
 	).length;
 
-	const failedPayments = payments.filter(
+	const currentFailedPayments = filteredPayments.filter(
 		(p) => getPaymentStatus(p) === "failed",
 	).length;
 
-	const totalUsers = payments.filter((p) => p.User).length;
-	const totalPayments = payments.length;
-
-	const totalRevenue = payments
+	const currentRevenue = filteredPayments
 		.filter((p) => getPaymentStatus(p) === "success")
 		.reduce((sum, p) => sum + p.amount, 0);
 
@@ -121,13 +156,30 @@ export function PaymentsPage() {
 		}
 	};
 
-	const handleExport = () => {
+	const handleExportFilteredPayments = () => {
 		const csvData = convertPaymentsToCSV(filteredPayments);
 		if (!csvData) {
 			console.error("No data to export");
 			return;
 		}
-		downloadCSV(csvData);
+		downloadCSV(csvData, "filtered_payments.csv");
+	};
+
+	const handleExportAllPayments = async () => {
+		try {
+			const data = await getPaymentInfo({
+				page: 1,
+				pageSize: 10000,
+			});
+			const csvData = convertPaymentsToCSV(data.payments);
+			if (!csvData) {
+				console.error("No data to export");
+				return;
+			}
+			downloadCSV(csvData, "all_payments.csv");
+		} catch (error) {
+			console.error("Error exporting all payments:", error);
+		}
 	};
 
 	if (loading) {
@@ -149,13 +201,23 @@ export function PaymentsPage() {
 						Track and manage payment transactions
 					</p>
 				</div>
-				<Button
-					onClick={handleExport}
-					className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg"
-				>
-					<Download className="h-4 w-4 mr-2" />
-					Export Data
-				</Button>
+
+				<DropdownMenu>
+					<DropdownMenuTrigger asChild>
+						<Button className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg">
+							<Download className="h-4 w-4 mr-2" />
+							Export Data
+						</Button>
+					</DropdownMenuTrigger>
+					<DropdownMenuContent align="end" className="w-48">
+						<DropdownMenuItem onClick={handleExportFilteredPayments}>
+							Export Current View
+						</DropdownMenuItem>
+						<DropdownMenuItem onClick={handleExportAllPayments}>
+							Export All Records
+						</DropdownMenuItem>
+					</DropdownMenuContent>
+				</DropdownMenu>
 			</div>
 
 			<div className="grid gap-6 md:grid-cols-4">
@@ -163,7 +225,7 @@ export function PaymentsPage() {
 					<CardHeader className="pb-3">
 						<div className="flex justify-between items-center">
 							<CardTitle className="text-sm text-slate-600 dark:text-slate-400">
-								Total Revenue
+								Revenue Summary
 							</CardTitle>
 							<div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600">
 								<IndianRupee className="h-4 w-4 text-white" />
@@ -171,11 +233,17 @@ export function PaymentsPage() {
 						</div>
 					</CardHeader>
 					<CardContent>
-						<div className="text-2xl font-bold text-slate-900 dark:text-white">
-							{formatCurrency(totalRevenue)}
+						<div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+							{formatCurrency(summaryStats.totalRevenue)}
 						</div>
 						<div className="text-sm text-slate-500 dark:text-slate-400">
-							Based on latest records
+							Across all records
+						</div>
+						<div className="mt-2 text-lg font-semibold text-emerald-700 dark:text-emerald-300">
+							{formatCurrency(currentRevenue)}
+						</div>
+						<div className="text-sm text-slate-500 dark:text-slate-400">
+							In current view
 						</div>
 					</CardContent>
 				</Card>
@@ -184,7 +252,7 @@ export function PaymentsPage() {
 					<CardHeader className="pb-3">
 						<div className="flex justify-between items-center">
 							<CardTitle className="text-sm text-slate-600 dark:text-slate-400">
-								Successful
+								Successful Transactions
 							</CardTitle>
 							<div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-green-600">
 								<TrendingUp className="h-4 w-4 text-white" />
@@ -193,10 +261,16 @@ export function PaymentsPage() {
 					</CardHeader>
 					<CardContent>
 						<div className="text-2xl font-bold text-green-600">
-							{successfulPayments}
+							{summaryStats.totalSuccessfulPayments}
 						</div>
 						<div className="text-sm text-slate-500 dark:text-slate-400">
-							Completed payments
+							Across all records
+						</div>
+						<div className="mt-2 text-lg font-semibold text-green-700 dark:text-green-400">
+							{currentSuccessfulPayments}
+						</div>
+						<div className="text-sm text-slate-500 dark:text-slate-400">
+							In current view
 						</div>
 					</CardContent>
 				</Card>
@@ -205,7 +279,7 @@ export function PaymentsPage() {
 					<CardHeader className="pb-3">
 						<div className="flex justify-between items-center">
 							<CardTitle className="text-sm text-slate-600 dark:text-slate-400">
-								Failed
+								Failed Transactions
 							</CardTitle>
 							<div className="p-2 rounded-lg bg-gradient-to-br from-red-500 to-red-600">
 								<AlertCircle className="h-4 w-4 text-white" />
@@ -214,10 +288,16 @@ export function PaymentsPage() {
 					</CardHeader>
 					<CardContent>
 						<div className="text-2xl font-bold text-red-600">
-							{failedPayments}
+							{summaryStats.totalFailedPayments}
 						</div>
 						<div className="text-sm text-slate-500 dark:text-slate-400">
-							Failed transactions
+							Across all records
+						</div>
+						<div className="mt-2 text-lg font-semibold text-red-700 dark:text-red-400">
+							{currentFailedPayments}
+						</div>
+						<div className="text-sm text-slate-500 dark:text-slate-400">
+							In current view
 						</div>
 					</CardContent>
 				</Card>
@@ -226,30 +306,29 @@ export function PaymentsPage() {
 					<CardHeader className="pb-3">
 						<div className="flex justify-between items-center">
 							<CardTitle className="text-sm text-slate-600 dark:text-slate-400">
-								Platform Summary
+								User & Payment Metrics
 							</CardTitle>
 							<div className="p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600">
 								<TrendingUp className="h-4 w-4 text-white" />
 							</div>
 						</div>
 					</CardHeader>
-					<CardContent>
-						<div className="space-y-2">
-							<div className="flex items-center justify-between">
-								<span className="text-sm text-slate-500 dark:text-slate-400">
-									Users
-								</span>
-								<span className="text-lg font-semibold text-indigo-600">
-									{totalUsers}
-								</span>
+					<CardContent className="space-y-4">
+						<div>
+							<div className="text-xl font-semibold text-indigo-600 dark:text-indigo-400">
+								{summaryStats.totalUsers}
 							</div>
-							<div className="flex items-center justify-between">
-								<span className="text-sm text-slate-500 dark:text-slate-400">
-									Payments
-								</span>
-								<span className="text-lg font-semibold text-purple-600">
-									{totalPayments}
-								</span>
+							<div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+								Total Users
+							</div>
+						</div>
+
+						<div>
+							<div className="text-lg font-semibold text-purple-600 dark:text-purple-400">
+								{summaryStats.totalPayments}
+							</div>
+							<div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+								Total Payments
 							</div>
 						</div>
 					</CardContent>
@@ -354,6 +433,24 @@ export function PaymentsPage() {
 							})}
 						</TableBody>
 					</Table>
+
+					<div className="flex justify-between items-center mt-6">
+						<Button
+							onClick={() => setPage((p) => Math.max(1, p - 1))}
+							disabled={page === 1}
+						>
+							⬅ Prev
+						</Button>
+						<span className="text-sm text-slate-600 dark:text-slate-400">
+							Page {page} of {totalPages}
+						</span>
+						<Button
+							onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+							disabled={page === totalPages}
+						>
+							Next ➡
+						</Button>
+					</div>
 				</CardContent>
 			</Card>
 		</div>
