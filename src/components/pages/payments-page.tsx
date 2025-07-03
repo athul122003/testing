@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPersistentLRUCache } from "~/lib/lru-cache";
 import { getPaymentInfo, getSummaryStats } from "~/lib/actions/payment-info";
 import { formatDateTime } from "~/lib/formatDateTime";
 import { formatCurrency } from "~/lib/formatCurrency";
@@ -61,9 +62,16 @@ type DateFilter = {
 	endDate?: Date;
 };
 
+const paymentsCache = createPersistentLRUCache<string, any>(
+	"payments",
+	30_000,
+	5,
+);
+
 export function PaymentsPage() {
 	const [payments, setPayments] = useState<PaymentWithUser[]>([]);
 	const [loading, setLoading] = useState(true);
+
 	const [searchTerm, setSearchTerm] = useState("");
 	const [statusFilter, setStatusFilter] = useState("all");
 	const [page, setPage] = useState(1);
@@ -81,12 +89,41 @@ export function PaymentsPage() {
 	});
 	const pageSize = 20;
 
-	//to fetch paginated payments data
+	const paymentsKey = `page-${page}-size-${pageSize}`;
+	const paymentsSummaryKey = `summary-stats`;
+
+	const filteredPayments = payments.filter((payment) => {
+		const lowerSearch = searchTerm.toLowerCase();
+		const matchesSearch =
+			payment.User?.name.toLowerCase().includes(lowerSearch) ||
+			payment.User?.id?.toString().includes(lowerSearch) ||
+			payment.User?.email.includes(lowerSearch) ||
+			payment.id.toLowerCase().includes(lowerSearch) ||
+			payment.paymentType?.toLowerCase().includes(lowerSearch);
+		const matchesStatus =
+			statusFilter === "all" || getPaymentStatus(payment) === statusFilter;
+		return matchesSearch && matchesStatus;
+	});
+
+  //to fetch paginated payments data
 	useEffect(() => {
+		const cached = paymentsCache.get(paymentsKey);
+		console.log("Cache hit for key:", paymentsKey, "Cached data:", cached);
+		if (cached) {
+			setPayments(cached);
+			setTotalPages(cached.totalPages);
+			setLoading(false);
+			return;
+		}
+
+		console.log("Fetching payments for page:", page, "size:", pageSize);
+
 		const fetchPayments = async () => {
 			try {
 				const data = await getPaymentInfo({ page, pageSize, ...dateFilter });
-				setPayments(data.payments);
+				paymentsCache.set(paymentsKey, data.payments);
+
+        setPayments(data.payments);
 				setTotalPages(data.totalPages);
 			} catch (err) {
 				console.error("Failed to fetch payments:", err);
@@ -96,13 +133,26 @@ export function PaymentsPage() {
 		};
 
 		fetchPayments();
-	}, [page, dateFilter]);
+	}, [page, dateFilter, paymentsKey]);
 
 	//to fetch summary stats  only once on mount
 	useEffect(() => {
+		const cached = paymentsCache.get(paymentsSummaryKey);
+		console.log(
+			"Cache hit for summary stats key:",
+			paymentsSummaryKey,
+			"Cached data:",
+			cached,
+		);
+		if (cached) {
+			setSummaryStats(cached);
+			return;
+		}
+
 		const fetchSummaryStats = async () => {
 			try {
 				const data = await getSummaryStats();
+				paymentsCache.set(paymentsSummaryKey, data);
 				setSummaryStats(data);
 			} catch (error) {
 				console.error("Error fetching summary stats:", error);

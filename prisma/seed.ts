@@ -1,9 +1,9 @@
 // prisma/seed.ts
-import { PrismaClient } from "../generated/prisma";
+import { PaymentType, PrismaClient } from "../generated/prisma";
 import bcrypt from "bcryptjs";
 
 const db = new PrismaClient();
-const saltRounds = 12;
+const saltRounds = 10; // DEFAULT BE 10, NO CHANGES TO BE MADE HERE
 
 const main = async () => {
 	try {
@@ -61,7 +61,7 @@ const main = async () => {
 
 		const rolePermissionPairs: { roleId: string; permissionId: string }[] = [];
 
-    for (let i = 0; i < roles.length; i++) {
+		for (let i = 0; i < roles.length; i++) {
 			const role = roles[i];
 			if (role.name === "USER") continue;
 			if (role.name === "ADMIN") {
@@ -85,11 +85,13 @@ const main = async () => {
 			data: Array.from(BRANCHES, ([nickName, name]) => ({ name, nickName })),
 			skipDuplicates: true,
 		});
+		console.log("Branches seeded");
 
 		await db.rolePermission.createMany({
 			data: rolePermissionPairs,
 			skipDuplicates: true,
 		});
+		console.log("Role permissions seeded");
 
 		// Step 4: Create 35 Users
 		for (let i = 1; i <= 35; i++) {
@@ -104,6 +106,7 @@ const main = async () => {
 					slug: `user-${i}`,
 					email: `user${i}@example.com`,
 					usn: `USN${1000 + i}`,
+					emailVerified: new Date(),
 					password: hashedPassword,
 					phone: `90000000${i.toString().padStart(2, "0")}`,
 					image: null,
@@ -121,9 +124,9 @@ const main = async () => {
 		}
 
 		const allUsers = await db.user.findMany();
-		const paymentTypes = ["MEMBERSHIP", "EVENT"] as const;
+		const paymentTypes = PaymentType;
 
-		for (let i = 1; i <= 35; i++) {
+		for (let i = 1; i <= 28; i++) {
 			const user = allUsers[i - 1];
 			const isSuccess = i % 6 !== 0;
 
@@ -132,7 +135,12 @@ const main = async () => {
 				data: {
 					paymentName: `Payment ${i}`,
 					amount: Math.floor(Math.random() * 90 + 10) * 10,
-					paymentType: paymentTypes[i % paymentTypes.length],
+					paymentType:
+						PaymentType[
+							Object.keys(paymentTypes)[
+								Math.floor(Math.random() * Object.keys(paymentTypes).length)
+							] as keyof typeof PaymentType
+						],
 					razorpayOrderId: `order_${Math.random().toString(36).slice(2, 12)}`,
 					razorpayPaymentId: isSuccess
 						? `pay_${Math.random().toString(36).slice(2, 12)}`
@@ -148,9 +156,9 @@ const main = async () => {
 			});
 		}
 
-		console.log("35 payments seeded");
+		console.log("28 payments seeded");
 		console.log(
-			"Seed complete: 5 roles, 5 permissions, 35 payments and 35 users created!",
+			"Seed complete: 5 roles, 5 permissions, 35 users, 28 payments, and branches seeded.",
 		);
 	} catch (err) {
 		console.error("Seed error:", err);

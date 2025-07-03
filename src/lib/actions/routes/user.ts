@@ -103,11 +103,13 @@ export async function searchUser(input: unknown) {
 	}
 }
 
-export async function updateUserRole(input: {
-	userId: number;
-	roleName: string;
-}) {
-	const { userId, roleName } = input;
+const updateRoleSchema = z.object({
+	userId: z.number(),
+	roleName: z.string(),
+});
+
+export async function updateUserRole(input: unknown) {
+	const { userId, roleName } = updateRoleSchema.parse(input);
 
 	// Disallow changing role *to* ADMIN
 	if (roleName === "ADMIN") {
