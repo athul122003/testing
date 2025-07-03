@@ -47,13 +47,7 @@ const main = async () => {
 			),
 		);
 
-		const roleNames = [
-			"ADMIN",
-			"DEVELOPER",
-			"ORGANISER",
-			"STUDENT",
-			"MODERATOR",
-		];
+		const roleNames = ["ADMIN", "DEVELOPER", "ORGANISER", "USER", "MODERATOR"];
 
 		const roles = await Promise.all(
 			roleNames.map((name) =>
@@ -65,14 +59,25 @@ const main = async () => {
 			),
 		);
 
-		const rolePermissionPairs = [];
+		const rolePermissionPairs: { roleId: string; permissionId: string }[] = [];
 
-		for (let i = 0; i < roles.length; i++) {
-			for (let j = 0; j <= i && j < permissions.length; j++) {
-				rolePermissionPairs.push({
-					roleId: roles[i].id,
-					permissionId: permissions[j].id,
-				});
+    for (let i = 0; i < roles.length; i++) {
+			const role = roles[i];
+			if (role.name === "USER") continue;
+			if (role.name === "ADMIN") {
+				for (const perm of permissions) {
+					rolePermissionPairs.push({
+						roleId: role.id,
+						permissionId: perm.id,
+					});
+				}
+			} else {
+				for (let j = 0; j <= i && j < permissions.length; j++) {
+					rolePermissionPairs.push({
+						roleId: role.id,
+						permissionId: permissions[j].id,
+					});
+				}
 			}
 		}
 
