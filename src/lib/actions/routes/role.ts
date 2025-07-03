@@ -108,8 +108,8 @@ export async function deleteRole(input: unknown) {
 
 		// Return role info for toast
 		return role;
-	} catch (err: any) {
-		throw new Error(err?.message || "Failed to delete role");
+	} catch (err) {
+		throw new Error((err as Error)?.message || "Failed to delete role");
 	}
 }
 
