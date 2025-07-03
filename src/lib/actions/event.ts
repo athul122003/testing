@@ -2,12 +2,12 @@
 
 import { z } from "zod";
 import { db } from "~/server/db";
+import { createEventZ } from "~/zod/eventZ";
 import {
 	EventCategory,
-	EventType,
 	EventState,
+	EventType,
 } from "../../../generated/prisma";
-import { createEventZ } from "~/zod/eventZ";
 
 export type CreateEventInput = z.infer<typeof createEventZ>;
 

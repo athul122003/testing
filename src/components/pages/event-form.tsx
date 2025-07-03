@@ -19,14 +19,14 @@ import { Textarea } from "~/components/ui/textarea";
 const eventTypes = ["SOLO", "TEAM"];
 const eventCategories = ["WORKSHOP", "COMPETITION", "HACKATHON", "SPECIAL"];
 const eventStates = ["DRAFT", "PUBLISHED", "LIVE", "COMPLETED"];
-import { createEventAction } from "~/lib/actions/event";
+
 import { toast } from "sonner";
-import {
-	EventType,
+import { createEventAction, editEventAction } from "~/lib/actions/event";
+import type {
 	EventCategory,
 	EventState,
+	EventType,
 } from "../../../generated/prisma";
-import { editEventAction } from "~/lib/actions/event";
 
 interface EventFormProps {
 	setActivePage: (page: string) => void;

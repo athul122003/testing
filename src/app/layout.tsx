@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 import { ReactQueryProvider } from "~/components/providers/ReactQueryProvider";
 import { auth } from "~/lib/auth/auth";
 import { NextAuthSessionProvider } from "./providers";
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {

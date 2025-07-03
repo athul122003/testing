@@ -1,6 +1,7 @@
 // prisma/seed.ts
-import { PaymentType, PrismaClient } from "../generated/prisma";
+
 import bcrypt from "bcryptjs";
+import { PaymentType, PrismaClient } from "../generated/prisma";
 
 const db = new PrismaClient();
 const saltRounds = 10; // DEFAULT BE 10, NO CHANGES TO BE MADE HERE
