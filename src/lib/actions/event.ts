@@ -95,3 +95,22 @@ export async function getAllEvents() {
 		};
 	}
 }
+
+export async function deleteEventAction(eventId: number) {
+	try {
+		const deleted = await db.event.delete({
+			where: { id: eventId },
+		});
+
+		return {
+			success: true,
+			event: deleted,
+		};
+	} catch (error) {
+		console.error("deleteEventAction Error:", error);
+		return {
+			success: false,
+			error: "Failed to delete event. It may not exist.",
+		};
+	}
+}

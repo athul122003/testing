@@ -23,6 +23,8 @@ import {
 	DialogTitle,
 } from "~/components/ui/dialog";
 import { getAllEvents } from "~/lib/actions/event";
+import { deleteEventAction } from "~/lib/actions/event";
+import { toast } from "sonner";
 
 interface EventsPageProps {
 	setActivePage: (page: string) => void;
@@ -64,8 +66,16 @@ export function EventsPage({
 		setIsDetailOpen(false);
 	};
 
-	const handleDeleteEvent = (eventId) => {
+	const handleDeleteEvent = async (eventId) => {
 		setEvents(events.filter((event) => event.id !== eventId));
+		const res = await deleteEventAction(eventId);
+		if (res.success) {
+			toast.success("Event deleted successfully.");
+			setEvents((prev) => prev.filter((e) => e.id !== eventId));
+			setIsDetailOpen(false);
+		} else {
+			toast.error(res.error || "Failed to delete event");
+		}
 		setIsDetailOpen(false);
 	};
 
