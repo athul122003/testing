@@ -128,21 +128,22 @@ export async function POST(req: Request) {
 	}
 }
 
-export const sendVerificationEmailMutation: (email: string) => Promise<void> =
-	async (email) => {
-		const existingUser = await getUserByEmail(email);
+const sendVerificationEmailMutation: (email: string) => Promise<void> = async (
+	email,
+) => {
+	const existingUser = await getUserByEmail(email);
 
-		if (!existingUser) throw new Error("USER_NOT_FOUND");
+	if (!existingUser) throw new Error("USER_NOT_FOUND");
 
-		if (existingUser.emailVerified) throw new Error("USER_ALREADY_VERIFIED");
+	if (existingUser.emailVerified) throw new Error("USER_ALREADY_VERIFIED");
 
-		const { id: token } = await addVerificationTokenToWhitelist({
-			userId: existingUser.id,
-		});
+	const { id: token } = await addVerificationTokenToWhitelist({
+		userId: existingUser.id,
+	});
 
-		const verificationToken = generateVerificationToken(existingUser, token);
+	const verificationToken = generateVerificationToken(existingUser, token);
 
-		const url = `https://www.finiteloop.co.in/auth/verify-email?token=${verificationToken}`;
+	const url = `https://www.finiteloop.co.in/auth/verify-email?token=${verificationToken}`;
 
-		await sendVerificationEmail(existingUser.email, url, existingUser.name);
-	};
+	await sendVerificationEmail(existingUser.email, url, existingUser.name);
+};
