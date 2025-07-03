@@ -22,7 +22,9 @@ import { Textarea } from "~/components/ui/textarea";
 
 interface BlogFormProps {
 	setActivePage: (page: string) => void;
+	// biome-ignore lint/suspicious/noExplicitAny: DEFINE TYPE
 	editingBlog: any;
+	// biome-ignore lint/suspicious/noExplicitAny: DEFINE TYPE AGAIN
 	setEditingBlog: (blog: any) => void;
 }
 
