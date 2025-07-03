@@ -97,7 +97,7 @@ export function PaymentsPage() {
 		const cached = paymentsCache.get(paymentsKey);
 		console.log("Cache hit for key:", paymentsKey, "Cached data:", cached);
 		if (cached) {
-			setPayments(cached);
+			setPayments(cached.payments);
 			setTotalPages(cached.totalPages);
 			setLoading(false);
 			return;
@@ -108,7 +108,7 @@ export function PaymentsPage() {
 		const fetchPayments = async () => {
 			try {
 				const data = await getPaymentInfo({ page, pageSize, ...dateFilter });
-				paymentsCache.set(paymentsKey, data.payments);
+				paymentsCache.set(paymentsKey, data);
 
 				setPayments(data.payments);
 				setTotalPages(data.totalPages);
