@@ -7,36 +7,13 @@ import {
 	EventType,
 	EventState,
 } from "../../../generated/prisma";
+import { createEventZ } from "~/zod/eventZ";
 
-const createEventSchema = z.object({
-	name: z.string().min(1, "Event name is required"),
-	slug: z.string().optional(),
-	imgSrc: z.string().optional(),
-	description: z.string().optional(),
-	venue: z.string().optional(),
-
-	eventType: z.nativeEnum(EventType),
-	category: z.nativeEnum(EventCategory),
-	state: z.nativeEnum(EventState).optional().default(EventState.DRAFT),
-
-	fromDate: z.string().min(1, "From date is required"),
-	toDate: z.string().min(1, "To date is required"),
-	deadline: z.string().optional(),
-
-	maxTeams: z.number().nonnegative(),
-	minTeamSize: z.number().min(1),
-	maxTeamSize: z.number().min(1),
-
-	isMembersOnly: z.boolean(),
-	flcAmount: z.number().nonnegative(),
-	nonFlcAmount: z.number().nonnegative(),
-});
-
-export type CreateEventInput = z.infer<typeof createEventSchema>;
+export type CreateEventInput = z.infer<typeof createEventZ>;
 
 export async function createEventAction(values: CreateEventInput) {
 	try {
-		const validated = createEventSchema.parse(values);
+		const validated = createEventZ.parse(values);
 
 		const event = await db.event.create({
 			data: {
@@ -82,7 +59,7 @@ export async function editEventAction(
 	values: CreateEventInput,
 ) {
 	try {
-		const validated = createEventSchema.parse(values);
+		const validated = createEventZ.parse(values);
 
 		const updated = await db.event.update({
 			where: { id: eventId },
