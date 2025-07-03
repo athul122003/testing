@@ -16,21 +16,17 @@ import {
 import { Switch } from "~/components/ui/switch";
 import { Textarea } from "~/components/ui/textarea";
 
-const eventTypes = [
-	"WORKSHOP",
-	"SEMINAR",
-	"CONFERENCE",
-	"COMPETITION",
-	"MEETUP",
-];
-const eventCategories = [
-	"TECHNICAL",
-	"CULTURAL",
-	"SPORTS",
-	"ACADEMIC",
-	"SOCIAL",
-];
-const eventStates = ["DRAFT", "PUBLISHED", "CANCELLED", "COMPLETED"];
+const eventTypes = ["SOLO", "TEAM"];
+const eventCategories = ["WORKSHOP", "COMPETITION", "HACKATHON", "SPECIAL"];
+const eventStates = ["DRAFT", "PUBLISHED", "LIVE", "COMPLETED"];
+import { createEventAction } from "~/lib/actions/event";
+import { toast } from "sonner";
+import {
+	EventType,
+	EventCategory,
+	EventState,
+} from "../../../generated/prisma";
+import { editEventAction } from "~/lib/actions/event";
 
 interface EventFormProps {
 	setActivePage: (page: string) => void;
@@ -49,8 +45,8 @@ export function EventForm({
 		name: "",
 		description: "",
 		venue: "",
-		eventType: "WORKSHOP",
-		category: "TECHNICAL",
+		eventType: "WORKSHOP" as EventType,
+		category: "TECHNICAL" as EventCategory,
 		fromDate: "",
 		toDate: "",
 		deadline: "",
@@ -60,7 +56,7 @@ export function EventForm({
 		isMembersOnly: false,
 		flcAmount: "",
 		nonFlcAmount: "",
-		state: "DRAFT",
+		state: "DRAFT" as EventState,
 	});
 
 	useEffect(() => {
@@ -71,9 +67,9 @@ export function EventForm({
 				venue: editingEvent.venue || "",
 				eventType: editingEvent.eventType || "WORKSHOP",
 				category: editingEvent.category || "TECHNICAL",
-				fromDate: editingEvent.fromDate || "",
-				toDate: editingEvent.toDate || "",
-				deadline: editingEvent.deadline || "",
+				fromDate: editingEvent.fromDate?.slice(0, 16) || "",
+				toDate: editingEvent.toDate?.slice(0, 16) || "",
+				deadline: editingEvent.deadline?.slice(0, 16) || "",
 				maxTeams: editingEvent.maxTeams?.toString() || "",
 				minTeamSize: editingEvent.minTeamSize?.toString() || "1",
 				maxTeamSize: editingEvent.maxTeamSize?.toString() || "1",
@@ -85,11 +81,30 @@ export function EventForm({
 		}
 	}, [editingEvent]);
 
-	const handleSave = () => {
-		// Here you would save the event data
-		console.log("Saving event:", formData);
-		setActivePage("events");
-		setEditingEvent(null);
+	const handleSave = async (e: React.FormEvent) => {
+		e.preventDefault();
+
+		const payload = {
+			...formData,
+			maxTeams: Number(formData.maxTeams),
+			minTeamSize: Number(formData.minTeamSize),
+			maxTeamSize: Number(formData.maxTeamSize),
+			flcAmount: Number(formData.flcAmount),
+			nonFlcAmount: Number(formData.nonFlcAmount),
+		};
+
+		const result = editingEvent?.id
+			? await editEventAction(editingEvent.id, payload)
+			: await createEventAction(payload);
+
+		if (result.success) {
+			toast.success(editingEvent ? "Event updated" : "Event created");
+			setEditingEvent(null);
+			setActivePage("events-page");
+		} else {
+			toast.error(result.error || "Failed to save event");
+			console.log(result.issues);
+		}
 	};
 
 	const handleCancel = () => {
@@ -166,7 +181,7 @@ export function EventForm({
 							<Select
 								value={formData.eventType}
 								onValueChange={(value) =>
-									setFormData({ ...formData, eventType: value })
+									setFormData({ ...formData, eventType: value as EventType })
 								}
 							>
 								<SelectTrigger>
@@ -186,7 +201,7 @@ export function EventForm({
 							<Select
 								value={formData.category}
 								onValueChange={(value) =>
-									setFormData({ ...formData, category: value })
+									setFormData({ ...formData, category: value as EventCategory })
 								}
 							>
 								<SelectTrigger>
@@ -206,7 +221,7 @@ export function EventForm({
 							<Select
 								value={formData.state}
 								onValueChange={(value) =>
-									setFormData({ ...formData, state: value })
+									setFormData({ ...formData, state: value as EventState })
 								}
 							>
 								<SelectTrigger>

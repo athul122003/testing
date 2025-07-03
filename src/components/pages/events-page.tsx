@@ -12,7 +12,7 @@ import {
 	Users,
 } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
@@ -22,51 +22,13 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "~/components/ui/dialog";
-
-const initialEvents = [
-	{
-		id: 1,
-		name: "Tech Conference 2024",
-		imgSrc: "/placeholder.svg?height=300&width=500",
-		description:
-			"Annual technology conference featuring latest trends in AI and Web Development. Join industry experts and innovators for a day of learning and networking.",
-		venue: "Main Auditorium",
-		eventType: "CONFERENCE",
-		category: "TECHNICAL",
-		fromDate: "2024-01-15T10:00",
-		toDate: "2024-01-15T18:00",
-		deadline: "2024-01-10T23:59",
-		maxTeams: 100,
-		minTeamSize: 1,
-		maxTeamSize: 1,
-		isMembersOnly: false,
-		flcAmount: 50,
-		nonFlcAmount: 99,
-		state: "PUBLISHED",
-		participants: 75,
-	},
-	{
-		id: 2,
-		name: "React Workshop",
-		imgSrc: "/placeholder.svg?height=300&width=500",
-		description:
-			"Hands-on workshop covering React fundamentals and advanced concepts including hooks, context, and performance optimization.",
-		venue: "Lab 101",
-		eventType: "WORKSHOP",
-		category: "TECHNICAL",
-		fromDate: "2024-01-20T14:00",
-		toDate: "2024-01-20T17:00",
-		deadline: "2024-01-18T23:59",
-		maxTeams: 30,
-		minTeamSize: 1,
-		maxTeamSize: 3,
-		isMembersOnly: true,
-		flcAmount: 0,
-		nonFlcAmount: 25,
-		state: "DRAFT",
-		participants: 18,
-	},
-];
+import { getAllEvents } from "~/lib/actions/event";
+import {
+	deleteEventAction,
+	editEventAction,
+	publishEventAction,
+} from "~/lib/actions/event";
+import { toast } from "sonner";
 
 interface EventsPageProps {
 	setActivePage: (page: string) => void;
@@ -78,33 +40,67 @@ export function EventsPage({
 	setActivePage,
 	setEditingEvent,
 }: EventsPageProps) {
-	const [events, setEvents] = useState(initialEvents);
+	const [events, setEvents] = useState<any[]>([]);
 	const [selectedEvent, setSelectedEvent] = useState(null);
 	const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+	useEffect(() => {
+		async function fetchEvents() {
+			// setLoading(true);
+			const res = await getAllEvents();
+			if (res.success) {
+				setEvents(res.data);
+			} else {
+				console.error("Failed to load events:", res.error);
+			}
+			// setLoading(false);
+		}
+
+		fetchEvents();
+	}, []);
 
 	const handleCreateEvent = () => {
 		setEditingEvent(null);
 		setActivePage("event-form");
 	};
 
-	const handleEditEvent = (event) => {
-		setEditingEvent(event);
+	const handleEditEvent = (event: Event) => {
+		const eventForForm = {
+			...event,
+			fromDate: event.fromDate.toISOString().slice(0, 16), // for datetime-local input
+			toDate: event.toDate.toISOString().slice(0, 16),
+			deadline: event.deadline ? event.deadline.toISOString().slice(0, 16) : "",
+		};
+
+		setEditingEvent(eventForForm);
 		setActivePage("event-form");
 		setIsDetailOpen(false);
 	};
 
-	const handleDeleteEvent = (eventId) => {
+	const handleDeleteEvent = async (eventId) => {
+		const res = await deleteEventAction(eventId);
+		if (res.success) {
+			toast.success("Event deleted successfully.");
+			setEvents((prev) => prev.filter((e) => e.id !== eventId));
+			setIsDetailOpen(false);
+		} else {
+			toast.error(res.error || "Failed to delete event");
+		}
 		setEvents(events.filter((event) => event.id !== eventId));
 		setIsDetailOpen(false);
 	};
 
-	const handlePublishEvent = (eventId) => {
-		setEvents(
-			events.map((event) =>
-				event.id === eventId ? { ...event, state: "PUBLISHED" } : event,
-			),
-		);
-		setIsDetailOpen(false);
+	const handlePublishEvent = async (eventId: number) => {
+		const res = await publishEventAction(eventId);
+		if (res.success) {
+			toast.success(`Event "${res.event.name}" published`);
+			setEvents((prev) =>
+				prev.map((e) => (e.id === eventId ? { ...e, state: "PUBLISHED" } : e)),
+			);
+			setIsDetailOpen(false);
+		} else {
+			toast.error(res.error || "Failed to publish event");
+		}
 	};
 
 	const handleEventClick = (event) => {
