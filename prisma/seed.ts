@@ -8,7 +8,6 @@ const saltRounds = 12;
 const main = async () => {
 	try {
 		const BRANCHES: readonly [string, string][] = [
-			// B.Tech
 			["AIDS", "Artificial Intelligence and Data Science"],
 			["AIML", "Artificial Intelligence and Machine Learning"],
 			["BT", "Biotechnology"],
@@ -27,12 +26,9 @@ const main = async () => {
 			["ISE", "Information Science and Engineering"],
 			["ME", "Mechanical Engineering"],
 			["RAI", "Robotics and Artificial Intelligence"],
-
-			// MCA
 			["MCA", "Master of Computer Applications"],
 		];
 
-		// Step 1: Create Permissions
 		const permissionNames = [
 			"CREATE_BLOG",
 			"EDIT_USER",
@@ -51,13 +47,7 @@ const main = async () => {
 			),
 		);
 
-		const roleNames = [
-			"ADMIN",
-			"DEVELOPER",
-			"ORGANISER",
-			"STUDENT",
-			"MODERATOR",
-		];
+		const roleNames = ["ADMIN", "DEVELOPER", "ORGANISER", "USER", "MODERATOR"];
 
 		const roles = await Promise.all(
 			roleNames.map((name) =>
@@ -70,7 +60,8 @@ const main = async () => {
 		);
 
 		const rolePermissionPairs: { roleId: string; permissionId: string }[] = [];
-		for (let i = 0; i < roles.length; i++) {
+
+    for (let i = 0; i < roles.length; i++) {
 			const role = roles[i];
 			if (role.name === "USER") continue;
 			if (role.name === "ADMIN") {
@@ -90,15 +81,10 @@ const main = async () => {
 			}
 		}
 
-		await db.branch
-			.createMany({
-				data: Array.from(BRANCHES, ([nickName, name]) => ({
-					name: name,
-					nickName: nickName,
-				})),
-			})
-			.then(() => console.log("Branches seeded successfully"))
-			.catch(console.error);
+		await db.branch.createMany({
+			data: Array.from(BRANCHES, ([nickName, name]) => ({ name, nickName })),
+			skipDuplicates: true,
+		});
 
 		await db.rolePermission.createMany({
 			data: rolePermissionPairs,
