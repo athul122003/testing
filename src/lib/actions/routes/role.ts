@@ -11,6 +11,10 @@ const deleteRoleSchema = z.object({
 	id: z.string(),
 });
 
+const updateRolePermissionsSchema = z.object({
+	roleId: z.string(),
+	permissionIds: z.array(z.string()),
+});
 // --- INDIVIDUAL SERVER ACTIONS ---
 
 export async function getAll() {
@@ -77,8 +81,8 @@ export async function deleteRole(input: unknown) {
 		}
 
 		// Prevent deletion of the default USER role itself
-		if (role.name === "USER") {
-			throw new Error("Cannot delete default USER role");
+		if (role.name === "USER" || role.name === "ADMIN") {
+			throw new Error(`Cannot delete default ${role.name} role`);
 		}
 
 		// Fetch the USER role ID
@@ -104,16 +108,10 @@ export async function deleteRole(input: unknown) {
 
 		// Return role info for toast
 		return role;
-	} catch (err) {
-		console.error("Error deleting role:", err);
-		throw new Error("Failed to delete role");
+	} catch (err: any) {
+		throw new Error(err?.message || "Failed to delete role");
 	}
 }
-
-const updateRolePermissionsSchema = z.object({
-	roleId: z.string(),
-	permissionIds: z.array(z.string()),
-});
 
 export async function updateRolePermissions(input: unknown) {
 	const { roleId, permissionIds } = updateRolePermissionsSchema.parse(input);
@@ -129,8 +127,8 @@ export async function updateRolePermissions(input: unknown) {
 	}
 
 	// ❌ Disallow permission updates for USER role
-	if (role.name === "USER") {
-		throw new Error("Cannot update permissions for the USER role");
+	if (role.name === "USER" || role.name === "ADMIN") {
+		throw new Error(`Cannot update permissions for the ${role.name} role`);
 	}
 
 	// Fetch existing permission IDs for the role
