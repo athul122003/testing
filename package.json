@@ -11,6 +11,7 @@
 		"start": "next start",
 		"lint": "next lint",
 		"prepare": "husky",
+		"postinstall": "prisma generate",
 		"db:push": "prisma db push"
 	},
 	"lint-staged": {

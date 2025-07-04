@@ -22,11 +22,7 @@ const eventStates = ["DRAFT", "PUBLISHED", "LIVE", "COMPLETED"];
 
 import { toast } from "sonner";
 import { createEventAction, editEventAction } from "~/lib/actions/event";
-import type {
-	EventCategory,
-	EventState,
-	EventType,
-} from "../../../generated/prisma";
+import type { EventCategory, EventState, EventType } from "@prisma/client";
 
 interface EventFormProps {
 	setActivePage: (page: string) => void;

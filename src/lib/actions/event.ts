@@ -3,11 +3,7 @@
 import { z } from "zod";
 import { db } from "~/server/db";
 import { createEventZ } from "~/zod/eventZ";
-import {
-	EventCategory,
-	EventState,
-	EventType,
-} from "../../../generated/prisma";
+import { EventCategory, EventState, EventType } from "@prisma/client";
 
 export type CreateEventInput = z.infer<typeof createEventZ>;
 
