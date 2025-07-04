@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { ComponentLoading } from "../ui/component-loading";
 import { toast } from "sonner";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -26,9 +27,10 @@ import {
 import {
 	deleteEventAction,
 	editEventAction,
-	getAllEvents,
 	publishEventAction,
 } from "~/lib/actions/event";
+
+import { useEvents } from "~/lib/tanstackHooks/events-queries";
 
 interface EventsPageProps {
 	setActivePage: (page: string) => void;
@@ -40,24 +42,12 @@ export function EventsPage({
 	setActivePage,
 	setEditingEvent,
 }: EventsPageProps) {
-	const [events, setEvents] = useState<any[]>([]);
 	const [selectedEvent, setSelectedEvent] = useState(null);
 	const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-	useEffect(() => {
-		async function fetchEvents() {
-			// setLoading(true);
-			const res = await getAllEvents();
-			if (res.success) {
-				setEvents(res.data);
-			} else {
-				console.error("Failed to load events:", res.error);
-			}
-			// setLoading(false);
-		}
+	const { data: eventsData, isLoading } = useEvents();
 
-		fetchEvents();
-	}, []);
+	const events = eventsData?.data || [];
 
 	const handleCreateEvent = () => {
 		setEditingEvent(null);
@@ -122,6 +112,12 @@ export function EventsPage({
 				return "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400";
 		}
 	};
+
+	if (isLoading) {
+		if (isLoading) {
+			return <ComponentLoading message="Loading Events" />;
+		}
+	}
 
 	return (
 		<div className="space-y-8">
