@@ -1,14 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { server } from "~/lib/actions/serverAction";
 
-export async function POST(
-	req: NextRequest,
-	{ params }: { params: { action: string } },
-) {
-	const body = await req.json();
-
+export async function POST(req: NextRequest) {
 	try {
-		switch (params.action) {
+		const url = req.nextUrl;
+		const action = url.pathname.split("/").pop(); // extracts `[action]` param
+
+		const body = await req.json();
+
+		switch (action) {
 			case "getAll":
 				return NextResponse.json(await server.permission.getAll());
 
