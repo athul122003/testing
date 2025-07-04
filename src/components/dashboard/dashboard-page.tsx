@@ -1,16 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { BlogForm } from "~/components/blog1/blog-form";
-import { BlogsPage } from "~/components/blog1/blogs-page";
-import { DashboardContent } from "~/components/dashboard1/dashboard-content";
-import { EventForm } from "~/components/event1/event-form";
-import { EventsPage } from "~/components/event1/events-page";
-import { GalleryPage } from "~/components/gallery1/gallery-page";
-import { AppSidebar } from "~/components/others1/app-sidebar";
-import { TopBar } from "~/components/others1/top-bar";
-import { PaymentsPage } from "~/components/payments1/payments-page";
-import { SettingsPage } from "~/components/settings1/settings-page";
+import { BlogForm } from "~/components/blog/blog-form";
+import { BlogsPage } from "~/components/blog/blogs-page";
+import { DashboardContent } from "~/components/dashboard/dashboard-content";
+import { EventForm } from "~/components/event/event-form";
+import { EventsPage } from "~/components/event/events-page";
+import { GalleryPage } from "~/components/gallery/gallery-page";
+import { AppSidebar } from "~/components/othercomps/app-sidebar";
+import { TopBar } from "~/components/othercomps/top-bar";
+import { PaymentsPage } from "~/components/payments/payments-page";
+import { SettingsPage } from "~/components/settings/settings-page";
 import { UsersPage } from "~/components/user1/users-page";
 import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
 
