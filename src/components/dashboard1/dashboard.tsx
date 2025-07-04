@@ -1,17 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { BlogForm } from "~/components/Blog/blog-form";
-import { BlogsPage } from "~/components/Blog/blogs-page";
-import { DashboardContent } from "~/components/Dashboard/dashboard-content";
-import { EventForm } from "~/components/Event/event-form";
-import { EventsPage } from "~/components/Event/events-page";
-import { GalleryPage } from "~/components/Gallery/gallery-page";
-import { AppSidebar } from "~/components/Others/app-sidebar";
-import { TopBar } from "~/components/Others/top-bar";
-import { PaymentsPage } from "~/components/Payments/payments-page";
-import { SettingsPage } from "~/components/settings/settings-page";
-import { UsersPage } from "~/components/User/users-page";
+import { BlogForm } from "~/components/blog1/blog-form";
+import { BlogsPage } from "~/components/blog1/blogs-page";
+import { DashboardContent } from "~/components/dashboard1/dashboard-content";
+import { EventForm } from "~/components/event1/event-form";
+import { EventsPage } from "~/components/event1/events-page";
+import { GalleryPage } from "~/components/gallery1/gallery-page";
+import { AppSidebar } from "~/components/others1/app-sidebar";
+import { TopBar } from "~/components/others1/top-bar";
+import { PaymentsPage } from "~/components/payments1/payments-page";
+import { SettingsPage } from "~/components/settings1/settings-page";
+import { UsersPage } from "~/components/user1/users-page";
 import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
 
 export function Dashboard() {
