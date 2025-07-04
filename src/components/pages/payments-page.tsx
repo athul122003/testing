@@ -2,14 +2,13 @@
 
 import {
 	AlertCircle,
-	Calendar,
 	Download,
 	Filter,
 	IndianRupee,
 	Search,
 	TrendingUp,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -35,11 +34,11 @@ import {
 	TableHeader,
 	TableRow,
 } from "~/components/ui/table";
-import { getPaymentInfo, getSummaryStats } from "~/lib/actions/payment-info";
+import { getPaymentInfo } from "~/lib/actions/payment-info";
 import { convertPaymentsToCSV, downloadCSV } from "~/lib/exportPaymentData";
 import { formatCurrency } from "~/lib/formatCurrency";
 import { formatDateTime } from "~/lib/formatDateTime";
-import { createPersistentLRUCache } from "~/lib/lru-cache";
+
 import { ComponentLoading } from "../ui/component-loading";
 //types
 import type {
@@ -58,14 +57,7 @@ type DateFilter = {
 	endDate?: Date;
 };
 
-// const paymentsCache = createPersistentLRUCache<string, any>(
-//   "payments",
-//   30_000,
-//   5
-// );
-
 export function PaymentsPage() {
-	// const [payments, setPayments] = useState<PaymentWithUser[]>([]);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [statusFilter, setStatusFilter] = useState("all");
 	const [page, setPage] = useState(1);
@@ -73,35 +65,7 @@ export function PaymentsPage() {
 		startDate: undefined,
 		endDate: undefined,
 	});
-	//to fetch paginated payments data
-	// useEffect(() => {
-	// 	const cached = paymentsCache.get(paymentsKey);
-	// 	console.log("Cache hit for key:", paymentsKey, "Cached data:", cached);
-	// 	if (cached) {
-	// 		setPayments(cached);
-	// 		setTotalPages(cached.totalPages);
-	// 		setLoading(false);
-	// 		return;
-	// 	}
 
-	// 	console.log("Fetching payments for page:", page, "size:", pageSize);
-
-	// 	const fetchPayments = async () => {
-	// 		try {
-	// 			const data = await getPaymentInfo({ page, pageSize, ...dateFilter });
-	// 			paymentsCache.set(paymentsKey, data.payments);
-
-	// 			setPayments(data.payments);
-	// 			setTotalPages(data.totalPages);
-	// 		} catch (err) {
-	// 			console.error("Failed to fetch payments:", err);
-	// 		} finally {
-	// 			setLoading(false);
-	// 		}
-	// 	};
-
-	// 	fetchPayments();
-	// }, [page, dateFilter, paymentsKey]);
 	const pageSize = 20;
 	const { data: paymentsData, isLoading } = usePayments({
 		page,
@@ -123,32 +87,6 @@ export function PaymentsPage() {
 		totalSuccessfulPayments: 0,
 		totalFailedPayments: 0,
 	};
-
-	// //to fetch summary stats  only once on mount
-	// useEffect(() => {
-	// 	const cached = paymentsCache.get(paymentsSummaryKey);
-	// 	console.log(
-	// 		"Cache hit for summary stats key:",
-	// 		paymentsSummaryKey,
-	// 		"Cached data:",
-	// 		cached,
-	// 	);
-	// 	if (cached) {
-	// 		setSummaryStats(cached);
-	// 		return;
-	// 	}
-
-	// 	const fetchSummaryStats = async () => {
-	// 		try {
-	// 			const data = await getSummaryStats();
-	// 			paymentsCache.set(paymentsSummaryKey, data);
-	// 			setSummaryStats(data);
-	// 		} catch (error) {
-	// 			console.error("Error fetching summary stats:", error);
-	// 		}
-	// 	};
-	// 	fetchSummaryStats();
-	// }, []);
 
 	//filtered Payments
 	const filteredPayments: PaymentWithUser["payments"] = payments.filter(
