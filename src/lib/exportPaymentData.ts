@@ -1,4 +1,4 @@
-import { PaymentWithUser } from "./queries/payment-queries";
+import type { PaymentWithUser } from "./queries/payment-queries";
 import { formatDateTime } from "~/lib/formatDateTime";
 
 // Utility to convert payments to CSV
