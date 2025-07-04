@@ -44,7 +44,7 @@ export async function searchUser(input: unknown) {
 					{ name: { contains: query, mode: "insensitive" } },
 					{ email: { contains: query, mode: "insensitive" } },
 					{ usn: { contains: query, mode: "insensitive" } },
-					!isNaN(Number(query)) ? { id: Number(query) } : undefined,
+					!Number.isNaN(Number(query)) ? { id: Number(query) } : undefined,
 				].filter(Boolean) as Prisma.UserWhereInput[],
 			});
 		}

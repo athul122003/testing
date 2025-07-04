@@ -4,13 +4,12 @@ import { addVerificationTokenToWhitelist } from "~/lib/auth/auth.service";
 import { getUserByEmail } from "~/lib/auth/auth-util";
 import { generateVerificationToken } from "~/lib/auth/jwt";
 import { sendVerificationEmail } from "~/lib/auth/nodemailer";
-import { withCors } from "~/lib/withCors";
 
 const sendVerifyEmailInputSchema = z.object({
 	email: z.string().email("Invalid email address").toLowerCase(),
 });
 
-export const POST = withCors(async (req: Request) => {
+export async function POST(req: Request) {
 	try {
 		const body = await req.json();
 		const input = sendVerifyEmailInputSchema.safeParse(body);
@@ -34,21 +33,21 @@ export const POST = withCors(async (req: Request) => {
 			{ status: 500 },
 		);
 	}
-});
-
-export function OPTIONS(req: Request) {
-	const origin = req.headers.get("Origin") || "*";
-
-	const headers = new Headers();
-	headers.set("Access-Control-Allow-Origin", origin);
-	headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
-	headers.set("Access-Control-Allow-Headers", "Content-Type");
-
-	return new Response(null, {
-		status: 204,
-		headers,
-	});
 }
+
+// export function OPTIONS(req: Request) {
+// 	const origin = req.headers.get("Origin") || "*";
+
+// 	const headers = new Headers();
+// 	headers.set("Access-Control-Allow-Origin", origin);
+// 	headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+// 	headers.set("Access-Control-Allow-Headers", "Content-Type");
+
+// 	return new Response(null, {
+// 		status: 204,
+// 		headers,
+// 	});
+// }
 
 const sendVerificationEmailMutation: (email: string) => Promise<void> = async (
 	email,
