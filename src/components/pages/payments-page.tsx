@@ -40,12 +40,16 @@ import { convertPaymentsToCSV, downloadCSV } from "~/lib/exportPaymentData";
 import { formatCurrency } from "~/lib/formatCurrency";
 import { formatDateTime } from "~/lib/formatDateTime";
 import { createPersistentLRUCache } from "~/lib/lru-cache";
+import { ComponentLoading } from "../ui/component-loading";
 //types
 import type {
 	PaymentWithUser,
 	SummaryStats,
-} from "~/lib/queries/payment-queries";
-import { usePayments, useSummaryStats } from "~/lib/queries/payment-queries";
+} from "~/lib/tanstackHooks/payment-queries";
+import {
+	usePayments,
+	useSummaryStats,
+} from "~/lib/tanstackHooks/payment-queries";
 
 type PaymentStatus = "success" | "failed" | "pending";
 
@@ -241,11 +245,7 @@ export function PaymentsPage() {
 	};
 
 	if (isLoading) {
-		return (
-			<div className="text-center py-10 text-slate-500">
-				Loading payments...
-			</div>
-		);
+		return <ComponentLoading message="Loading Payments" />;
 	}
 
 	return (
