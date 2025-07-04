@@ -14,6 +14,48 @@ export type CreateEventInput = z.infer<typeof createEventZ>;
 export async function createEventAction(values: CreateEventInput) {
 	try {
 		const validated = createEventZ.parse(values);
+		if (validated.fromDate > validated.toDate) {
+			return {
+				success: false,
+				error: "From date must be before To date.",
+			};
+		}
+		if (
+			validated.deadline &&
+			(validated.deadline > validated.fromDate ||
+				validated.deadline > validated.toDate)
+		) {
+			return {
+				success: false,
+				error: "Deadline must be before event start and end dates.",
+			};
+		}
+		if (validated.eventType === EventType.SOLO) {
+			if (validated.minTeamSize !== 1 || validated.maxTeamSize !== 1) {
+				return {
+					success: false,
+					error: "SOLO event must have team size = 1.",
+				};
+			}
+		}
+		if (validated.maxTeams === 0) {
+			return {
+				success: false,
+				error: "Max teams cannot be zero.",
+			};
+		}
+		if (validated.minTeamSize < 1 || validated.maxTeamSize < 1) {
+			return {
+				success: false,
+				error: "Team sizes must be at least 1.",
+			};
+		}
+		if (validated.minTeamSize > validated.maxTeamSize) {
+			return {
+				success: false,
+				error: "Minimum team size cannot be greater than maximum team size.",
+			};
+		}
 
 		const event = await db.event.create({
 			data: {
@@ -41,9 +83,10 @@ export async function createEventAction(values: CreateEventInput) {
 	} catch (error) {
 		console.error("createEventAction Error:", error);
 		if (error instanceof z.ZodError) {
+			const firstIssue = error.issues[0]?.message || "Validation failed";
 			return {
 				success: false,
-				error: "Validation failed",
+				error: firstIssue,
 				issues: error.issues,
 			};
 		}
@@ -60,6 +103,49 @@ export async function editEventAction(
 ) {
 	try {
 		const validated = createEventZ.parse(values);
+
+		if (validated.fromDate > validated.toDate) {
+			return {
+				success: false,
+				error: "From date must be before To date.",
+			};
+		}
+		if (
+			validated.deadline &&
+			(validated.deadline > validated.fromDate ||
+				validated.deadline > validated.toDate)
+		) {
+			return {
+				success: false,
+				error: "Deadline must be before event start and end dates.",
+			};
+		}
+		if (validated.eventType === EventType.SOLO) {
+			if (validated.minTeamSize !== 1 || validated.maxTeamSize !== 1) {
+				return {
+					success: false,
+					error: "SOLO event must have team size = 1.",
+				};
+			}
+		}
+		if (validated.maxTeams === 0) {
+			return {
+				success: false,
+				error: "Max teams cannot be zero.",
+			};
+		}
+		if (validated.minTeamSize < 1 || validated.maxTeamSize < 1) {
+			return {
+				success: false,
+				error: "Team sizes must be at least 1.",
+			};
+		}
+		if (validated.minTeamSize > validated.maxTeamSize) {
+			return {
+				success: false,
+				error: "Minimum team size cannot be greater than maximum team size.",
+			};
+		}
 
 		const updated = await db.event.update({
 			where: { id: eventId },

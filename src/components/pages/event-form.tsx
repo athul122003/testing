@@ -36,6 +36,23 @@ interface EventFormProps {
 	setEditingEvent: (event: any) => void;
 }
 
+function toDatetimeLocalString(dateInput: Date | string | undefined): string {
+	if (!dateInput) return "";
+	const date = new Date(dateInput);
+
+	// Offset the date into local time (reverse the UTC shift)
+	const tzOffset = date.getTimezoneOffset() * 60000;
+	const localDate = new Date(date.getTime() - tzOffset);
+
+	const year = localDate.getFullYear();
+	const month = String(localDate.getMonth() + 1).padStart(2, "0");
+	const day = String(localDate.getDate()).padStart(2, "0");
+	const hours = String(localDate.getHours()).padStart(2, "0");
+	const minutes = String(localDate.getMinutes()).padStart(2, "0");
+
+	return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
 export function EventForm({
 	setActivePage,
 	editingEvent,
@@ -67,9 +84,9 @@ export function EventForm({
 				venue: editingEvent.venue || "",
 				eventType: editingEvent.eventType || "WORKSHOP",
 				category: editingEvent.category || "TECHNICAL",
-				fromDate: editingEvent.fromDate?.slice(0, 16) || "",
-				toDate: editingEvent.toDate?.slice(0, 16) || "",
-				deadline: editingEvent.deadline?.slice(0, 16) || "",
+				fromDate: toDatetimeLocalString(editingEvent.fromDate),
+				toDate: toDatetimeLocalString(editingEvent.toDate),
+				deadline: toDatetimeLocalString(editingEvent.deadline),
 				maxTeams: editingEvent.maxTeams?.toString() || "",
 				minTeamSize: editingEvent.minTeamSize?.toString() || "1",
 				maxTeamSize: editingEvent.maxTeamSize?.toString() || "1",
@@ -83,6 +100,41 @@ export function EventForm({
 
 	const handleSave = async (e: React.FormEvent) => {
 		e.preventDefault();
+		const start = new Date(formData.fromDate);
+		const end = new Date(formData.toDate);
+		const deadline = new Date(formData.deadline);
+
+		if (start > end) {
+			toast.error("From date must be before To date.");
+			return;
+		}
+		if (deadline > start || deadline > end) {
+			toast.error("Deadline must be before event dates.");
+			return;
+		}
+		if (formData.eventType === "SOLO") {
+			if (
+				Number(formData.minTeamSize) > 1 ||
+				Number(formData.maxTeamSize) > 1
+			) {
+				toast.error("SOLO events must have team size = 1");
+				return;
+			}
+		}
+		if (Number(formData.maxTeams) === 0) {
+			toast.error("Max teams must be at least 1.");
+			return;
+		}
+		if (Number(formData.minTeamSize) < 1 || Number(formData.maxTeamSize) < 1) {
+			toast.error("Team sizes must be at least 1.");
+			return;
+		}
+		if (Number(formData.minTeamSize) > Number(formData.maxTeamSize)) {
+			toast.error(
+				"Minimum team size cannot be greater than maximum team size.",
+			);
+			return;
+		}
 
 		const payload = {
 			...formData,
