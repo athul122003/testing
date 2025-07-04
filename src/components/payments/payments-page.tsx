@@ -9,6 +9,16 @@ import {
 	TrendingUp,
 } from "lucide-react";
 import { useState } from "react";
+import { getPaymentInfo } from "~/actions/payment-info";
+//types
+import type {
+	PaymentWithUser,
+	SummaryStats,
+} from "~/actions/tanstackHooks/payment-queries";
+import {
+	usePayments,
+	useSummaryStats,
+} from "~/actions/tanstackHooks/payment-queries";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -34,21 +44,10 @@ import {
 	TableHeader,
 	TableRow,
 } from "~/components/ui/table";
-import { getPaymentInfo } from "~/lib/actions/payment-info";
 import { convertPaymentsToCSV, downloadCSV } from "~/lib/exportPaymentData";
 import { formatCurrency } from "~/lib/formatCurrency";
 import { formatDateTime } from "~/lib/formatDateTime";
-
 import { ComponentLoading } from "../ui/component-loading";
-//types
-import type {
-	PaymentWithUser,
-	SummaryStats,
-} from "~/lib/tanstackHooks/payment-queries";
-import {
-	usePayments,
-	useSummaryStats,
-} from "~/lib/tanstackHooks/payment-queries";
 
 type PaymentStatus = "success" | "failed" | "pending";
 

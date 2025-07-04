@@ -1,5 +1,5 @@
-import bcrypt from "bcryptjs";
 import type { User } from "@prisma/client";
+import bcrypt from "bcryptjs";
 import { db } from "~/server/db";
 
 const getUserByEmail = async (email: string): Promise<User | null> => {

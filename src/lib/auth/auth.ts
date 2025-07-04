@@ -1,10 +1,10 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
+import type { Role, User } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import type { GetServerSidePropsContext } from "next";
 import { getServerSession, type NextAuthOptions } from "next-auth";
 import type { Adapter } from "next-auth/adapters";
 import CredentialsProvider from "next-auth/providers/credentials";
-import type { Role, User } from "@prisma/client";
 import { db } from "~/server/db";
 import { loginZ } from "~/zod/authZ";
 import { login } from "./auth.service";

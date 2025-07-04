@@ -20,9 +20,9 @@ const eventTypes = ["SOLO", "TEAM"];
 const eventCategories = ["WORKSHOP", "COMPETITION", "HACKATHON", "SPECIAL"];
 const eventStates = ["DRAFT", "PUBLISHED", "LIVE", "COMPLETED"];
 
-import { toast } from "sonner";
-import { createEventAction, editEventAction } from "~/lib/actions/event";
 import type { EventCategory, EventState, EventType } from "@prisma/client";
+import { toast } from "sonner";
+import { createEventAction, editEventAction } from "~/actions/event";
 
 interface EventFormProps {
 	setActivePage: (page: string) => void;

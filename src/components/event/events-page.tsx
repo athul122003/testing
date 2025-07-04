@@ -12,9 +12,10 @@ import {
 	Users,
 } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useState } from "react";
-import { ComponentLoading } from "../ui/component-loading";
+import { useState } from "react";
 import { toast } from "sonner";
+import { deleteEventAction, publishEventAction } from "~/actions/event";
+import { useEvents } from "~/actions/tanstackHooks/events-queries";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
@@ -24,13 +25,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "~/components/ui/dialog";
-import {
-	deleteEventAction,
-	editEventAction,
-	publishEventAction,
-} from "~/lib/actions/event";
-
-import { useEvents } from "~/lib/tanstackHooks/events-queries";
+import { ComponentLoading } from "../ui/component-loading";
 
 interface EventsPageProps {
 	setActivePage: (page: string) => void;

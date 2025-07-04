@@ -1,10 +1,9 @@
 // src/action/routes/user.ts
 "use server";
 
+import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { db } from "~/server/db";
-
-import type { Prisma } from "@prisma/client";
 
 // --- Zod Schemas ---
 const searchSchema = z.object({
@@ -16,7 +15,7 @@ const searchSchema = z.object({
 	role: z.string().optional(),
 });
 
-const changeRoleSchema = z.object({
+const _changeRoleSchema = z.object({
 	id: z.number(),
 	newRoleId: z.string().min(1),
 });

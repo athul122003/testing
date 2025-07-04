@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getPaymentInfo, getSummaryStats } from "~/lib/actions/payment-info";
+import { getPaymentInfo, getSummaryStats } from "~/actions/payment-info";
 
 export type PaymentWithUser = Awaited<ReturnType<typeof getPaymentInfo>>;
 export type SummaryStats = Awaited<ReturnType<typeof getSummaryStats>>;
