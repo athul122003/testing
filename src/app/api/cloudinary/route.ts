@@ -2,12 +2,15 @@ import { NextResponse, NextRequest } from "next/server";
 import cloudinary from "~/lib/cloudinary";
 import { IncomingForm } from "formidable";
 import fs from "fs";
+import { uploadImageToCloudinary } from "~/lib/cloudinaryImageUploader";
 
 export const config = {
 	api: {
 		bodyParser: false,
 	},
 };
+
+// NOT DONE, DONT USE THIS AS IT MIGHT BE REMOVED IN THE FUTURE
 
 export async function POST(req: NextRequest) {
 	const form = new IncomingForm();
@@ -16,16 +19,18 @@ export async function POST(req: NextRequest) {
 	const tmpFilePath = `/tmp/upload-${Date.now()}`;
 	await fs.promises.writeFile(tmpFilePath, Buffer.from(buffer));
 
-	const result = await cloudinary.uploader.upload(tmpFilePath, {
-		folder: "events", // TODO[Rahul]: Create action folder inside cloudinary to store images in different folders and get folder name from the request
-	});
+	const fileBuffer = fs.readFileSync(tmpFilePath);
+	const fileName = `upload-${Date.now()}.jpg`;
+	const fileType = "image/jpeg";
+	const file = new File([fileBuffer], fileName, { type: fileType });
+	const result = await uploadImageToCloudinary(file, "testing");
+	// TODO[Rahul]: Create action folder inside cloudinary to store images in different folders and get folder name from the request
 
 	fs.unlinkSync(tmpFilePath);
 
 	return NextResponse.json(
 		{
-			url: result.secure_url,
-			publicId: result.public_id,
+			url: result,
 		},
 		{
 			status: 200,

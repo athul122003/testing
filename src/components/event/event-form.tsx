@@ -23,7 +23,7 @@ const eventStates = ["DRAFT", "PUBLISHED", "LIVE", "COMPLETED"];
 import type { EventCategory, EventState, EventType } from "@prisma/client";
 import { toast } from "sonner";
 import { createEventAction, editEventAction } from "~/actions/event";
-import { getCloudinarySignature } from "~/actions/cloudinarySignature";
+import { uploadImageToCloudinary } from "~/lib/cloudinaryImageUploader";
 
 interface EventFormProps {
 	setActivePage: (page: string) => void;
@@ -48,33 +48,6 @@ function toDatetimeLocalString(dateInput: Date | string | undefined): string {
 	const minutes = String(localDate.getMinutes()).padStart(2, "0");
 
 	return `${year}-${month}-${day}T${hours}:${minutes}`;
-}
-
-async function uploadImageToCloudinary(file: File) {
-	const sign = await getCloudinarySignature();
-
-	const formData = new FormData();
-	formData.append("file", file);
-	formData.append("api_key", sign.apiKey);
-	formData.append("timestamp", String(sign.timestamp));
-	formData.append("signature", sign.signature);
-	formData.append("folder", sign.folder);
-
-	const upload = await fetch(
-		`https://api.cloudinary.com/v1_1/${sign.cloudName}/image/upload`,
-		{
-			method: "POST",
-			body: formData,
-		},
-	);
-
-	const json = await upload.json();
-
-	if (!upload.ok) {
-		throw new Error(json.error?.message || "Upload failed");
-	}
-
-	return json.secure_url;
 }
 
 export function EventForm({
