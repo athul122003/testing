@@ -6,6 +6,6 @@ export const useEvents = () => {
 		queryKey: ["events"],
 		queryFn: getAllEvents,
 		refetchOnWindowFocus: false,
-		staleTime: 1000 * 60 * 5, // 5 minutes
+		staleTime: 30_000,
 	});
 };
