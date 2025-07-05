@@ -1,17 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { BlogForm } from "~/components/Blog/blog-form";
-import { BlogsPage } from "~/components/Blog/blogs-page";
-import { DashboardContent } from "~/components/Dashboard/dashboard-content";
-import { EventForm } from "~/components/Event/event-form";
-import { EventsPage } from "~/components/Event/events-page";
-import { GalleryPage } from "~/components/Gallery/gallery-page";
-import { AppSidebar } from "~/components/Others/app-sidebar";
-import { TopBar } from "~/components/Others/top-bar";
-import { PaymentsPage } from "~/components/Payments/payments-page";
+import { BlogForm } from "~/components/blog/blog-form";
+import { BlogsPage } from "~/components/blog/blogs-page";
+import { DashboardContent } from "~/components/dashboard/dashboard-content";
+import { EventForm } from "~/components/event/event-form";
+import { EventsPage } from "~/components/event/events-page";
+import { GalleryPage } from "~/components/gallery/gallery-page";
+import { AppSidebar } from "~/components/othercomps/app-sidebar";
+import { TopBar } from "~/components/othercomps/top-bar";
+import { PaymentsPage } from "~/components/payments/payments-page";
 import { SettingsPage } from "~/components/settings/settings-page";
-import { UsersPage } from "~/components/User/users-page";
+import { UsersPage } from "~/components/user1/users-page";
 import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
 
 export function Dashboard() {
