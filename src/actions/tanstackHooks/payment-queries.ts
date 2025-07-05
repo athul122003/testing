@@ -25,7 +25,7 @@ export const useSummaryStats = () => {
 	return useQuery<SummaryStats>({
 		queryKey: ["summaryStats"],
 		queryFn: () => getSummaryStats(),
-		staleTime: 5 * 60 * 1000,
+		staleTime: 30_000,
 		placeholderData: (prev) => prev,
 	});
 };

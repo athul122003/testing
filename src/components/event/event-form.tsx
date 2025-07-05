@@ -23,7 +23,7 @@ const eventStates = ["DRAFT", "PUBLISHED", "LIVE", "COMPLETED"];
 import type { EventCategory, EventState, EventType } from "@prisma/client";
 import { toast } from "sonner";
 import { createEventAction, editEventAction } from "~/actions/event";
-import { getCloudinarySignature } from "~/actions/cloudinary";
+import { getCloudinarySignature } from "~/actions/cloudinarySignature";
 
 interface EventFormProps {
 	setActivePage: (page: string) => void;

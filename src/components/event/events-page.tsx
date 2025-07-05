@@ -143,6 +143,8 @@ export function EventsPage({
 					>
 						<div className="relative">
 							<Image
+								objectFit="cover"
+								priority
 								width={400}
 								height={300}
 								src={event.imgSrc || "/placeholder.svg"}
