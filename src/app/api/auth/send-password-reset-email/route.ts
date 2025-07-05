@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { env } from "~/env";
 import { addPasswordResetTokenToWhitelist } from "~/lib/auth/auth.service";
 import { getUserByEmail } from "~/lib/auth/auth-util";
 import { generatePasswordResetToken } from "~/lib/auth/jwt";
@@ -49,7 +50,7 @@ export async function POST(req: Request) {
 		const passwordResetToken = generatePasswordResetToken(existingUser, token);
 
 		// IMPORTANT: Replace with your actual domain
-		const url = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${passwordResetToken}`;
+		const url = `${env.NEXTAUTH_URL}/auth/reset-password?token=${passwordResetToken}`;
 
 		await sendPasswordResetEmail(existingUser.email, url, existingUser.name);
 

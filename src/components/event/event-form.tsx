@@ -21,6 +21,7 @@ const eventCategories = ["WORKSHOP", "COMPETITION", "HACKATHON", "SPECIAL"];
 const eventStates = ["DRAFT", "PUBLISHED", "LIVE", "COMPLETED"];
 
 import type { EventCategory, EventState, EventType } from "@prisma/client";
+import Image from "next/image";
 import { toast } from "sonner";
 import { createEventAction, editEventAction } from "~/actions/event";
 import { uploadImageToCloudinary } from "~/lib/cloudinaryImageUploader";
@@ -424,7 +425,9 @@ export function EventForm({
 							}}
 						>
 							{formData.imgSrc ? (
-								<img
+								<Image
+									width={300}
+									height={200} // HAVE TO CHECK IF THIS IS CORRECT
 									src={formData.imgSrc}
 									alt="Uploaded preview"
 									className="mx-auto h-48 object-cover rounded-lg"

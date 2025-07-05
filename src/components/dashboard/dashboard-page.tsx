@@ -11,8 +11,8 @@ import { AppSidebar } from "~/components/othercomps/app-sidebar";
 import { TopBar } from "~/components/othercomps/top-bar";
 import { PaymentsPage } from "~/components/payments/payments-page";
 import { SettingsPage } from "~/components/settings/settings-page";
-import { UsersPage } from "~/components/user1/users-page";
 import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
+import { UsersPage } from "~/components/user1/users-page";
 
 export function Dashboard() {
 	const [activePage, setActivePage] = useState("dashboard");

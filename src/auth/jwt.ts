@@ -1,13 +1,14 @@
 import type { RefreshToken, VerificationToken } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
+import { env } from "~/env";
 import { addRefreshTokenToWhitelist } from "~/lib/auth/auth.service";
 import { getUserById } from "~/lib/auth/auth-util";
 import { hashToken } from "~/lib/auth/hashToken";
 import { db } from "~/server/db";
 import { refreshTokenZ } from "~/zod/authZ";
 
-const AUTH_SECRET = process.env.AUTH_SECRET;
+const AUTH_SECRET = env.AUTH_SECRET;
 
 const secrets = {
 	JWT_VERIFICATION_SECRET: `${AUTH_SECRET}verification`,
