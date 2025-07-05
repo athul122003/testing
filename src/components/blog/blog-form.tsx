@@ -11,52 +11,114 @@ import {
 	Save,
 	Upload,
 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Badge } from "~/components/ui/badge";
+import Image from "next/image";
+import { useSession } from "next-auth/react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Textarea } from "~/components/ui/textarea";
+import { uploadImageToCloudinary } from "~/lib/cloudinaryImageUploader";
+import { getBlogMeta } from "~/lib/getBlogMetaData";
+import { createOrUpdateBlog } from "~/actions/blog";
+import type { Blog } from "@prisma/client"; // Assuming you're using Prisma
+import { BlogPreview } from "./BlogPreview";
 
 interface BlogFormProps {
 	setActivePage: (page: string) => void;
-	// biome-ignore lint/suspicious/noExplicitAny: DEFINE TYPE
-	editingBlog: any;
-	// biome-ignore lint/suspicious/noExplicitAny: DEFINE TYPE AGAIN
-	setEditingBlog: (blog: any) => void;
+	editingBlog: Blog | null;
+	setEditingBlog: (blog: Blog | null) => void;
 }
+
+type StatusType = "DRAFT" | "PUBLISHED";
+
+export type BlogFormData = {
+	id?: string;
+	title: string;
+	content: string;
+	excerpt?: string;
+	featuredImage?: string;
+	status?: StatusType;
+	readTime?: number;
+	words?: number;
+};
 
 export function BlogForm({
 	setActivePage,
 	editingBlog,
 	setEditingBlog,
 }: BlogFormProps) {
-	const [formData, setFormData] = useState({
+	const [formData, setFormData] = useState<BlogFormData>({
 		title: "",
 		content: "",
 		excerpt: "",
-		tags: "",
-		status: "Draft",
+		featuredImage: "",
+		status: "DRAFT",
 	});
+
+	const [featuredImageFile, setFeaturedImageFile] = useState<File | null>(null);
+
+	const { data: session } = useSession();
+
+	const markdownImageInputRef = useRef<HTMLInputElement | null>(null);
+	const featuredImageInputRef = useRef<HTMLInputElement | null>(null);
 
 	useEffect(() => {
 		if (editingBlog) {
 			setFormData({
 				title: editingBlog.title || "",
 				content: editingBlog.content || "",
-				excerpt: editingBlog.excerpt || "",
-				tags: editingBlog.tags?.join(", ") || "",
-				status: editingBlog.status || "Draft",
+				excerpt: editingBlog.description || "",
+				// tags: editingBlog.tags?.join(", ") || "",
+				featuredImage: editingBlog.image || "",
+				status: editingBlog.blogState as StatusType,
 			});
 		}
 	}, [editingBlog]);
 
-	const handleSave = () => {
-		console.log("Saving blog:", formData);
-		setActivePage("blogs");
-		setEditingBlog(null);
+	const handleSubmit = async (status: StatusType) => {
+		if (!session?.user?.id) {
+			alert("You must be logged in to submit a blog.");
+			return;
+		}
+
+		const userId = session.user.id as number;
+		let imageUrl = formData.featuredImage;
+
+		if (featuredImageFile) {
+			try {
+				imageUrl = await uploadImageToCloudinary(
+					featuredImageFile,
+					"flc-blogs/featured",
+				);
+			} catch (err) {
+				console.error("Failed to upload image", err);
+				alert("Image upload failed.");
+				return;
+			}
+		}
+
+		const { readTime, words } = getBlogMeta(formData.content);
+
+		const blogData: BlogFormData = {
+			...formData,
+			status,
+			featuredImage: imageUrl || "",
+			readTime,
+			words,
+			id: editingBlog?.id || undefined,
+		};
+
+		try {
+			await createOrUpdateBlog(blogData, userId);
+			setActivePage("blogs");
+			setEditingBlog(null);
+		} catch (err) {
+			console.error("Failed to submit blog", err);
+			alert("Failed to submit blog");
+		}
 	};
 
 	const handleCancel = () => {
@@ -64,170 +126,91 @@ export function BlogForm({
 		setEditingBlog(null);
 	};
 
-	const formatText = (format: string) => {
+	const formatText = (type: string) => {
 		const textarea = document.getElementById(
 			"blog-content",
 		) as HTMLTextAreaElement;
-		if (textarea) {
+		if (!textarea) return;
+
+		const start = textarea.selectionStart;
+		const end = textarea.selectionEnd;
+		const selectedText = formData.content.substring(start, end);
+
+		let formatted = selectedText;
+		switch (type) {
+			case "bold":
+				formatted = `**${selectedText}**`;
+				break;
+			case "italic":
+				formatted = `*${selectedText}*`;
+				break;
+			case "list":
+				formatted = `\n- ${selectedText}`;
+				break;
+			case "link":
+				formatted = `[${selectedText}](url)`;
+				break;
+		}
+
+		const newContent =
+			formData.content.substring(0, start) +
+			formatted +
+			formData.content.substring(end);
+
+		setFormData({ ...formData, content: newContent });
+
+		setTimeout(() => {
+			textarea.focus();
+			textarea.setSelectionRange(
+				start + formatted.length,
+				start + formatted.length,
+			);
+		}, 0);
+	};
+
+	const handleImageUpload = async (file: File) => {
+		try {
+			const imageUrl = await uploadImageToCloudinary(file, "flc-blogs");
+			const textarea = document.getElementById(
+				"blog-content",
+			) as HTMLTextAreaElement;
+			if (!textarea) return;
+
 			const start = textarea.selectionStart;
-			const end = textarea.selectionEnd;
-			const selectedText = formData.content.substring(start, end);
+			const markdown = `\n![Image description](${imageUrl})\n`;
+			const updated =
+				formData.content.slice(0, start) +
+				markdown +
+				formData.content.slice(start);
 
-			let formattedText = "";
-			switch (format) {
-				case "bold":
-					formattedText = `**${selectedText}**`;
-					break;
-				case "italic":
-					formattedText = `*${selectedText}*`;
-					break;
-				case "list":
-					formattedText = `\n- ${selectedText}`;
-					break;
-				case "link":
-					formattedText = `[${selectedText}](url)`;
-					break;
-				default:
-					formattedText = selectedText;
-			}
-
-			const newContent =
-				formData.content.substring(0, start) +
-				formattedText +
-				formData.content.substring(end);
-			setFormData({ ...formData, content: newContent });
+			setFormData({ ...formData, content: updated });
 
 			setTimeout(() => {
 				textarea.focus();
 				textarea.setSelectionRange(
-					start + formattedText.length,
-					start + formattedText.length,
+					start + markdown.length,
+					start + markdown.length,
 				);
 			}, 0);
+		} catch (error) {
+			console.error("Image insert failed:", error);
+			alert("Failed to upload image");
 		}
 	};
 
-	const insertImage = () => {
-		const textarea = document.getElementById(
-			"blog-content",
-		) as HTMLTextAreaElement;
-		if (textarea) {
-			const start = textarea.selectionStart;
-			const imageText = "\n![Image description](image-url)\n";
-			const newContent =
-				formData.content.substring(0, start) +
-				imageText +
-				formData.content.substring(start);
-			setFormData({ ...formData, content: newContent });
-
-			setTimeout(() => {
-				textarea.focus();
-				textarea.setSelectionRange(
-					start + imageText.length,
-					start + imageText.length,
-				);
-			}, 0);
+	const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+		e.preventDefault();
+		const file = e.dataTransfer.files?.[0];
+		if (file) {
+			await handleImageUpload(file);
 		}
 	};
 
-	const renderPreview = () => {
-		return (
-			<div className="prose prose-gray dark:prose-invert max-w-none">
-				<h1 className="text-3xl font-bold mb-4">
-					{formData.title || "Blog Title"}
-				</h1>
-				{formData.excerpt && (
-					<p className="text-lg text-gray-600 dark:text-gray-400 italic mb-6">
-						{formData.excerpt}
-					</p>
-				)}
-				<div className="space-y-4">
-					{formData.content.split("\n").map((line, index) => {
-						// Generate a stable key based on line content and index for duplicates
-						const key = `${line}-${index}`;
-						if (line.startsWith("![")) {
-							const match = line.match(/!\[([^\]]*)\]$$([^)]*)$$/);
-							if (match) {
-								return (
-									<div
-										key={`image-${key}`}
-										className="my-4 p-4 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-center"
-									>
-										<ImageIcon className="h-8 w-8 mx-auto mb-2 text-blue-500" />
-										<p className="text-sm text-blue-700 dark:text-blue-300">
-											📷 {match[1] || "Image"}
-										</p>
-										<p className="text-xs text-blue-600 dark:text-blue-400">
-											{match[2]}
-										</p>
-									</div>
-								);
-							}
-						}
-						if (line.startsWith("**") && line.endsWith("**")) {
-							return (
-								<p key={`bold-${key}`} className="font-bold">
-									{line.slice(2, -2)}
-								</p>
-							);
-						}
-						if (
-							line.startsWith("*") &&
-							line.endsWith("*") &&
-							!line.startsWith("**")
-						) {
-							return (
-								<p key={`italic-${key}`} className="italic">
-									{line.slice(1, -1)}
-								</p>
-							);
-						}
-						if (line.startsWith("- ")) {
-							return (
-								<li key={`list-${key}`} className="ml-4 list-disc">
-									{line.slice(2)}
-								</li>
-							);
-						}
-						if (line.startsWith("[") && line.includes("](")) {
-							const match = line.match(/\[([^\]]*)\]$$([^)]*)$$/);
-							if (match) {
-								return (
-									<p key={`link-${key}`}>
-										<a
-											href={match[2]}
-											className="text-blue-500 hover:underline"
-										>
-											{match[1]}
-										</a>
-									</p>
-								);
-							}
-						}
-						return line ? (
-							<p key={`plain-${key}`}>{line}</p>
-						) : (
-							<br key={`br-${key}`} />
-						);
-					})}
-				</div>
-				{formData.tags && (
-					<div className="mt-6 pt-4 border-t">
-						<div className="flex gap-2">
-							{formData.tags.split(",").map((tag) => {
-								const trimmedTag = tag.trim();
-								if (!trimmedTag) return null;
-								return (
-									<Badge key={trimmedTag} variant="outline">
-										{trimmedTag}
-									</Badge>
-								);
-							})}
-						</div>
-					</div>
-				)}
-			</div>
-		);
+	const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (file) {
+			await handleImageUpload(file);
+		}
 	};
 
 	return (
@@ -287,112 +270,175 @@ export function BlogForm({
 									}
 								/>
 							</div>
-
 							<div className="space-y-2">
 								<Label>Featured Image</Label>
-								<div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center hover:border-gray-400 dark:hover:border-gray-500 transition-colors cursor-pointer">
-									<Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-									<p className="text-gray-600 dark:text-gray-400">
-										Upload featured image
-									</p>
-									<p className="text-sm text-gray-500 dark:text-gray-500">
-										PNG, JPG up to 5MB
-									</p>
-								</div>
-							</div>
 
-							<div className="space-y-2">
-								<Label>Content</Label>
-								<div className="border rounded-xl overflow-hidden">
-									<div className="flex items-center gap-2 p-3 border-b bg-gray-50 dark:bg-gray-800">
-										<Button
-											variant="ghost"
-											size="sm"
-											onClick={() => formatText("bold")}
-											title="Bold"
-										>
-											<Bold className="h-4 w-4" />
-										</Button>
-										<Button
-											variant="ghost"
-											size="sm"
-											onClick={() => formatText("italic")}
-											title="Italic"
-										>
-											<Italic className="h-4 w-4" />
-										</Button>
-										<Button
-											variant="ghost"
-											size="sm"
-											onClick={() => formatText("list")}
-											title="List"
-										>
-											<List className="h-4 w-4" />
-										</Button>
-										<Button
-											variant="ghost"
-											size="sm"
-											onClick={() => formatText("link")}
-											title="Link"
-										>
-											<Link className="h-4 w-4" />
-										</Button>
-										<Button
-											variant="ghost"
-											size="sm"
-											onClick={insertImage}
-											title="Insert Image"
-										>
-											<ImageIcon className="h-4 w-4" />
-										</Button>
-									</div>
-									<Textarea
-										id="blog-content"
-										placeholder="Write your blog content here... Use **bold**, *italic*, and ![image](url) for formatting"
-										rows={20}
-										className="border-0 resize-none font-mono"
-										value={formData.content}
-										onChange={(e) =>
-											setFormData({ ...formData, content: e.target.value })
-										}
+								<div className="space-y-2">
+									<Label htmlFor="featured-image-upload">Featured Image</Label>
+
+									<button
+										type="button"
+										onClick={() => featuredImageInputRef.current?.click()}
+										className="w-full border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 text-center hover:border-gray-400 dark:hover:border-gray-500 transition-colors cursor-pointer"
+									>
+										{formData.featuredImage ? (
+											<>
+												<Image
+													src={formData.featuredImage}
+													alt="Featured"
+													width={800}
+													height={400}
+													className="mx-auto h-48 object-contain rounded-lg shadow"
+												/>
+												<p className="mt-4 text-green-600 dark:text-green-400 text-sm font-medium">
+													Image Selected
+												</p>
+											</>
+										) : (
+											<>
+												<Upload className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+												<p className="text-gray-600 dark:text-gray-400">
+													Upload featured image
+												</p>
+												<p className="text-sm text-gray-500 dark:text-gray-500">
+													PNG, JPG up to 5MB
+												</p>
+											</>
+										)}
+									</button>
+
+									<input
+										type="file"
+										id="featured-image-upload"
+										accept="image/*"
+										ref={featuredImageInputRef}
+										className="hidden"
+										onChange={(e) => {
+											const file = e.target.files?.[0];
+											if (!file) return;
+											setFeaturedImageFile(file);
+											const previewUrl = URL.createObjectURL(file);
+											setFormData((prev) => ({
+												...prev,
+												featuredImage: previewUrl,
+											}));
+										}}
 									/>
 								</div>
+
+								<div className="space-y-2">
+									<Label id="blog-content-label" htmlFor="blog-content">
+										Content
+									</Label>
+
+									<section
+										onDrop={handleDrop}
+										onDragOver={(e) => e.preventDefault()}
+										className="border rounded-xl overflow-hidden"
+										aria-labelledby="blog-content-label"
+									>
+										<div className="flex items-center gap-2 p-3 border-b bg-gray-50 dark:bg-gray-800">
+											<Button
+												variant="ghost"
+												size="sm"
+												onClick={() => formatText("bold")}
+												title="Bold"
+											>
+												<Bold className="h-4 w-4" />
+											</Button>
+											<Button
+												variant="ghost"
+												size="sm"
+												onClick={() => formatText("italic")}
+												title="Italic"
+											>
+												<Italic className="h-4 w-4" />
+											</Button>
+											<Button
+												variant="ghost"
+												size="sm"
+												onClick={() => formatText("list")}
+												title="List"
+											>
+												<List className="h-4 w-4" />
+											</Button>
+											<Button
+												variant="ghost"
+												size="sm"
+												onClick={() => formatText("link")}
+												title="Link"
+											>
+												<Link className="h-4 w-4" />
+											</Button>
+											<Button
+												variant="ghost"
+												size="sm"
+												onClick={() => markdownImageInputRef.current?.click()}
+												title="Upload Image"
+											>
+												<ImageIcon className="h-4 w-4" />
+											</Button>
+
+											<input
+												type="file"
+												accept="image/*"
+												ref={markdownImageInputRef}
+												className="hidden"
+												onChange={handleFileChange}
+											/>
+										</div>
+
+										<Textarea
+											id="blog-content"
+											placeholder="Write your blog content here..."
+											rows={20}
+											className="border-0 resize-none font-mono"
+											value={formData.content}
+											onChange={(e) =>
+												setFormData({ ...formData, content: e.target.value })
+											}
+										/>
+									</section>
+								</div>
 								<div className="text-xs text-gray-500 dark:text-gray-400">
-									Tip: Select text and use formatting buttons, or use markdown
-									syntax directly
+									Tip: Drag and drop or use the image icon to insert images.
 								</div>
 							</div>
 
-							<div className="space-y-2">
-								<Label htmlFor="tags">Tags</Label>
-								<Input
-									id="tags"
-									placeholder="Enter tags separated by commas (e.g., React, JavaScript, Web Development)"
-									value={formData.tags}
-									onChange={(e) =>
-										setFormData({ ...formData, tags: e.target.value })
-									}
-								/>
-							</div>
+							{/* <div className="space-y-2">
+                <Label htmlFor="tags">Tags</Label>
+                <Input
+                  id="tags"
+                  placeholder="Enter tags separated by commas (e.g., React, JavaScript, Web Development)"
+                  value={formData.tags}
+                  onChange={(e) =>
+                    setFormData({ ...formData, tags: e.target.value })
+                  }
+                />
+              </div> */}
 
 							<div className="flex justify-end space-x-3 pt-6 border-t">
 								<Button variant="outline" onClick={handleCancel}>
 									Cancel
 								</Button>
 								<Button
-									onClick={handleSave}
+									onClick={() =>
+										handleSubmit(
+											editingBlog?.blogState === "PUBLISHED"
+												? "PUBLISHED"
+												: "DRAFT",
+										)
+									}
 									className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
 								>
 									<Save className="h-4 w-4 mr-2" />
-									{editingBlog ? "Update Post" : "Save as Draft"}
+									{editingBlog ? "Update" : "Save as Draft"}
 								</Button>
 								<Button
-									onClick={() =>
-										setFormData({ ...formData, status: "Published" })
-									}
+									onClick={() => handleSubmit("PUBLISHED")}
 									className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
 								>
-									Publish Post
+									Publish
 								</Button>
 							</div>
 						</CardContent>
@@ -407,7 +453,13 @@ export function BlogForm({
 								Preview
 							</CardTitle>
 						</CardHeader>
-						<CardContent className="p-8">{renderPreview()}</CardContent>
+						<CardContent className="p-8">
+							<BlogPreview
+								title={formData.title}
+								excerpt={formData.excerpt}
+								content={formData.content}
+							/>
+						</CardContent>
 					</Card>
 				</TabsContent>
 			</Tabs>

@@ -327,7 +327,7 @@ model Blog {
   content     String
   readTime    Int
   words       Int
-  images      Json[]
+  image       String? //new: image url for the blog
   blogState   BlogState @default(DRAFT)
 
   userId Int
