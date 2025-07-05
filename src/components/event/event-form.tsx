@@ -23,6 +23,7 @@ const eventStates = ["DRAFT", "PUBLISHED", "LIVE", "COMPLETED"];
 import type { EventCategory, EventState, EventType } from "@prisma/client";
 import { toast } from "sonner";
 import { createEventAction, editEventAction } from "~/actions/event";
+import { getCloudinarySignature } from "~/actions/cloudinary";
 
 interface EventFormProps {
 	setActivePage: (page: string) => void;
@@ -49,6 +50,33 @@ function toDatetimeLocalString(dateInput: Date | string | undefined): string {
 	return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
+async function uploadImageToCloudinary(file: File) {
+	const sign = await getCloudinarySignature();
+
+	const formData = new FormData();
+	formData.append("file", file);
+	formData.append("api_key", sign.apiKey);
+	formData.append("timestamp", String(sign.timestamp));
+	formData.append("signature", sign.signature);
+	formData.append("folder", sign.folder);
+
+	const upload = await fetch(
+		`https://api.cloudinary.com/v1_1/${sign.cloudName}/image/upload`,
+		{
+			method: "POST",
+			body: formData,
+		},
+	);
+
+	const json = await upload.json();
+
+	if (!upload.ok) {
+		throw new Error(json.error?.message || "Upload failed");
+	}
+
+	return json.secure_url;
+}
+
 export function EventForm({
 	setActivePage,
 	editingEvent,
@@ -56,6 +84,7 @@ export function EventForm({
 }: EventFormProps) {
 	const [formData, setFormData] = useState({
 		name: "",
+		imgSrc: "",
 		description: "",
 		venue: "",
 		eventType: "WORKSHOP" as EventType,
@@ -76,6 +105,7 @@ export function EventForm({
 		if (editingEvent) {
 			setFormData({
 				name: editingEvent.name || "",
+				imgSrc: editingEvent.imgSrc || "",
 				description: editingEvent.description || "",
 				venue: editingEvent.venue || "",
 				eventType: editingEvent.eventType || "WORKSHOP",
@@ -398,16 +428,66 @@ export function EventForm({
 					</div>
 
 					<div className="space-y-2">
-						<Label>Event Image</Label>
-						<div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-8 text-center hover:border-slate-400 dark:hover:border-slate-500 transition-colors cursor-pointer">
-							<Upload className="h-12 w-12 mx-auto mb-4 text-slate-400" />
-							<p className="text-slate-600 dark:text-slate-400">
-								Click to upload or drag and drop
-							</p>
-							<p className="text-sm text-slate-500 dark:text-slate-500">
-								PNG, JPG up to 10MB
-							</p>
-						</div>
+						<Label htmlFor="imgUpload">Event Image</Label>
+
+						<button
+							type="button"
+							className="w-full border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-8 text-center hover:border-slate-400 dark:hover:border-slate-500 transition-colors cursor-pointer"
+							onClick={() => document.getElementById("imgUpload")?.click()}
+							onDragOver={(e) => e.preventDefault()}
+							onDrop={async (e) => {
+								e.preventDefault();
+								const file = e.dataTransfer.files?.[0];
+								if (!file) return;
+
+								try {
+									const url = await uploadImageToCloudinary(file);
+									setFormData((prev) => ({ ...prev, imgSrc: url }));
+									toast.success("Image uploaded successfully!");
+								} catch (err) {
+									console.error(err);
+									toast.error("Image upload failed.");
+								}
+							}}
+						>
+							{formData.imgSrc ? (
+								<img
+									src={formData.imgSrc}
+									alt="Uploaded preview"
+									className="mx-auto h-48 object-cover rounded-lg"
+								/>
+							) : (
+								<>
+									<Upload className="h-12 w-12 mx-auto mb-4 text-slate-400" />
+									<p className="text-slate-600 dark:text-slate-400">
+										Click to upload or drag and drop
+									</p>
+									<p className="text-sm text-slate-500 dark:text-slate-500">
+										PNG, JPG up to 10MB
+									</p>
+								</>
+							)}
+						</button>
+
+						<input
+							id="imgUpload"
+							type="file"
+							accept="image/*"
+							className="hidden"
+							onChange={async (e) => {
+								const file = e.target.files?.[0];
+								if (!file) return;
+
+								try {
+									const url = await uploadImageToCloudinary(file);
+									setFormData((prev) => ({ ...prev, imgSrc: url }));
+									toast.success("Image uploaded successfully!");
+								} catch (err) {
+									console.error(err);
+									toast.error("Image upload failed.");
+								}
+							}}
+						/>
 					</div>
 
 					<div className="flex justify-end space-x-3 pt-6 border-t">
