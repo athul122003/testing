@@ -9,6 +9,8 @@ type Props = {
 	file: File | null;
 };
 
+// NOT SURE IF WILL KEEP THIS, BUT ITS A BUTTON TO UPLOAD IMAGES TO CLOUDINARY, IT WORKS WELL ENOUGH
+
 export default function ImageUploader({
 	onSuccess,
 	buttonText = "Upload Image",
