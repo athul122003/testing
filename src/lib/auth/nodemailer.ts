@@ -1,6 +1,6 @@
 import handlebars from "handlebars";
 import nodemailer from "nodemailer";
-
+import { env } from "~/env";
 import { emailVerificationTemplate } from "~/templates/emailVerification";
 import { passwordResetTemplate } from "~/templates/passwordReset";
 
@@ -9,8 +9,8 @@ const transporter = nodemailer.createTransport({
 	port: 587,
 	secure: false, // use false for STARTTLS; true for SSL on port 465
 	auth: {
-		user: process.env.SMTP_GMAIL,
-		pass: process.env.SMTP_PASSWORD,
+		user: env.SMTP_GMAIL,
+		pass: env.SMTP_PASSWORD,
 	},
 });
 

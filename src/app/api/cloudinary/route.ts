@@ -1,7 +1,6 @@
-import { NextResponse, NextRequest } from "next/server";
-import cloudinary from "~/lib/cloudinary";
 import { IncomingForm } from "formidable";
 import fs from "fs";
+import { type NextRequest, NextResponse } from "next/server";
 import { uploadImageToCloudinary } from "~/lib/cloudinaryImageUploader";
 
 export const config = {
@@ -13,7 +12,7 @@ export const config = {
 // NOT DONE, DONT USE THIS AS IT MIGHT BE REMOVED IN THE FUTURE
 
 export async function POST(req: NextRequest) {
-	const form = new IncomingForm();
+	const _form = new IncomingForm();
 
 	const buffer = await req.arrayBuffer();
 	const tmpFilePath = `/tmp/upload-${Date.now()}`;
