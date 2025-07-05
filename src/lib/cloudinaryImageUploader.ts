@@ -3,7 +3,9 @@
 import { env } from "~/env";
 import cloudinary from "~/lib/cloudinary";
 
-export async function getCloudinarySignature(folder: string = "flc-events") {
+export async function getCloudinarySignature(
+	folder: string = "default-flc-folder",
+) {
 	const timestamp = Math.round(Date.now() / 1000);
 
 	const signature = cloudinary.utils.api_sign_request(

@@ -56,6 +56,8 @@ type DateFilter = {
 	endDate?: Date;
 };
 
+type Payment = PaymentWithUser["payments"][number];
+
 export function PaymentsPage() {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [statusFilter, setStatusFilter] = useState("all");
@@ -89,7 +91,7 @@ export function PaymentsPage() {
 
 	//filtered Payments
 	const filteredPayments: PaymentWithUser["payments"] = payments.filter(
-		(payment) => {
+		(payment: Payment) => {
 			const lowerSearch = searchTerm.toLowerCase();
 			const matchesSearch =
 				payment.User?.name.toLowerCase().includes(lowerSearch) ||
@@ -122,16 +124,16 @@ export function PaymentsPage() {
 	}
 
 	const currentSuccessfulPayments = filteredPayments.filter(
-		(p) => getPaymentStatus(p) === "success",
+		(p: Payment) => getPaymentStatus(p) === "success",
 	).length;
 
 	const currentFailedPayments = filteredPayments.filter(
-		(p) => getPaymentStatus(p) === "failed",
+		(p: Payment) => getPaymentStatus(p) === "failed",
 	).length;
 
 	const currentRevenue = filteredPayments
-		.filter((p) => getPaymentStatus(p) === "success")
-		.reduce((sum, p) => sum + p.amount, 0);
+		.filter((p: Payment) => getPaymentStatus(p) === "success")
+		.reduce((sum: number, p: Payment) => sum + p.amount, 0);
 
 	const getStatusColor = (status: string) => {
 		switch (status) {
@@ -411,7 +413,7 @@ export function PaymentsPage() {
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{filteredPayments.map((payment) => {
+							{filteredPayments.map((payment: Payment) => {
 								const { date, time } = formatDateTime(
 									new Date(payment.createdAt),
 								);
