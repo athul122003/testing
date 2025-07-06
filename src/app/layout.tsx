@@ -4,9 +4,10 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { auth } from "~/lib/auth/auth";
+import { DashboardDataProvider } from "~/providers/dashboardDataContext";
 import { ReactQueryProvider } from "~/providers/ReactQueryProvider";
+import { ThemeProvider } from "~/providers/theme-provider";
 import { NextAuthSessionProvider } from "./providers";
-import { ThemeProvider } from "~/components/theme-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -27,28 +28,30 @@ export default async function RootLayout({
 			<body className={inter.className}>
 				<NextAuthSessionProvider session={session}>
 					<ReactQueryProvider>
-						<ThemeProvider
-							attribute="class"
-							defaultTheme="light"
-							enableSystem
-							disableTransitionOnChange
-						>
-							<Toaster
-								position="top-right"
-								richColors
-								closeButton
-								toastOptions={{
-									className:
-										"mt-11 sm:mt-11 md:mt-10 bg-white text-gray-800 shadow-lg dark:bg-gray-800 dark:text-gray-200",
-									style: {
-										borderRadius: "8px",
-										padding: "16px",
-										fontSize: "14px",
-									},
-								}}
-							/>
-							{children}
-						</ThemeProvider>
+						<DashboardDataProvider>
+							<ThemeProvider
+								attribute="class"
+								defaultTheme="light"
+								enableSystem
+								disableTransitionOnChange
+							>
+								<Toaster
+									position="top-right"
+									richColors
+									closeButton
+									toastOptions={{
+										className:
+											"mt-11 sm:mt-11 md:mt-10 bg-white text-gray-800 shadow-lg dark:bg-gray-800 dark:text-gray-200",
+										style: {
+											borderRadius: "8px",
+											padding: "16px",
+											fontSize: "14px",
+										},
+									}}
+								/>
+								{children}
+							</ThemeProvider>
+						</DashboardDataProvider>
 					</ReactQueryProvider>
 				</NextAuthSessionProvider>
 			</body>

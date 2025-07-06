@@ -1,7 +1,14 @@
 "use server";
 
+import type { Payment } from "@prisma/client";
 import prisma from "~/lib/prisma";
 
+export type PaymentQueryResponse = {
+	page: number;
+	pageSize: number;
+	totalPages: number;
+	payments: Payment[];
+};
 const getPaymentInfo = async ({
 	page = 1,
 	pageSize = 20,

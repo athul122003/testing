@@ -1,7 +1,7 @@
 "use server";
 
-import prisma from "~/lib/prisma";
 import type { BlogFormData } from "~/components/blog/blog-form";
+import prisma from "~/lib/prisma";
 
 const getBlogs = async () => {
 	try {

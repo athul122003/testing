@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import { Dialog, DialogContent } from "~/components/ui/dialog";
-import { DashboardBreadCrumb } from "../customcomps/dashboardBreadCrumb";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -14,6 +13,7 @@ import {
 	DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { Input } from "~/components/ui/input";
+import { DashboardBreadCrumb } from "../customcomps/dashboardBreadCrumb";
 
 const searchItems = [
 	{ title: "Dashboard", category: "Pages", id: "dashboard" },
@@ -44,12 +44,7 @@ const navigationMap: Record<string, { title: string }> = {
 export function TopBar({ activePage, setActivePage }: TopBarProps) {
 	const [searchOpen, setSearchOpen] = useState(false);
 	const [searchTerm, setSearchTerm] = useState("");
-	const [mounted, setMounted] = useState(false);
 	const { theme, setTheme } = useTheme();
-
-	useEffect(() => {
-		setMounted(true);
-	}, []);
 
 	const generateBreadcrumbItems = () => {
 		if (activePage === "dashboard") {

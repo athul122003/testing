@@ -3,11 +3,10 @@
 import { ChevronRight, Home } from "lucide-react";
 import {
 	Breadcrumb,
-	BreadcrumbItem,
-	BreadcrumbList,
 	BreadcrumbLink,
-	BreadcrumbSeparator,
+	BreadcrumbList,
 	BreadcrumbPage,
+	BreadcrumbSeparator,
 } from "~/components/ui/breadcrumb";
 import { Button } from "../ui/button";
 

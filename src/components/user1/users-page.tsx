@@ -677,9 +677,7 @@ export function UsersPage() {
 														className="flex items-center gap-2 bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
 													>
 														{roleSortOrder === "asc" ? (
-															<>
-																<ArrowDownAZ className="h-4 w-4" />
-															</>
+															<ArrowDownAZ className="h-4 w-4" />
 														) : (
 															<ArrowUpAZ className="h-4 w-4" />
 														)}

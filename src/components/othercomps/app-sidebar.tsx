@@ -12,7 +12,6 @@ import {
 import {
 	Sidebar,
 	SidebarContent,
-	SidebarHeader,
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,

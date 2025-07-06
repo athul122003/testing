@@ -3,86 +3,62 @@
 import {
 	Activity,
 	Calendar,
-	IndianRupeeIcon,
 	FileText,
 	ImageIcon,
-	Users,
+	IndianRupeeIcon,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { useDashboardData } from "~/providers/dashboardDataContext";
+import { ComponentLoading } from "../ui/loader";
 
 const stats = [
 	{
+		id: "events",
 		title: "Total Events",
-		value: "24",
+		value: "0",
 		icon: Calendar,
 		color: "from-blue-500 to-blue-600",
 	},
 	{
+		id: "blogs",
 		title: "Blog Posts",
-		value: "12",
+		value: "0",
 		icon: FileText,
 		color: "from-green-500 to-green-600",
 	},
 	{
+		id: "gallery",
 		title: "Gallery Items",
-		value: "156",
+		value: "0",
 		icon: ImageIcon,
 		color: "from-purple-500 to-purple-600",
 	},
 	{
+		id: "payments",
 		title: "Total Revenue",
-		value: "12,450rs",
+		value: "0",
 		icon: IndianRupeeIcon,
 		color: "from-yellow-500 to-yellow-600",
 	},
-	{
-		title: "Active Users",
-		value: "89",
-		icon: Users,
-		color: "from-red-500 to-red-600",
-	},
 ];
 
-const recentEvents = [
-	{
-		name: "Tech Conference 2024",
-		date: "Jan 15",
-		status: "Published",
-		attendees: 120,
-	},
-	{
-		name: "Workshop: React Basics",
-		date: "Jan 20",
-		status: "Draft",
-		attendees: 45,
-	},
-	{ name: "Design Meetup", date: "Jan 25", status: "Published", attendees: 78 },
-	{ name: "AI Summit", date: "Feb 1", status: "Draft", attendees: 0 },
-];
+const recentEvents: any[] = [];
 
-const recentActivity = [
-	{
-		action: "New user registered",
-		user: "John Doe",
-		time: "2h ago",
-		type: "user",
-	},
-	{
-		action: "Payment received",
-		user: "Jane Smith",
-		time: "4h ago",
-		type: "payment",
-	},
-	{ action: "Event created", user: "Admin", time: "6h ago", type: "event" },
-	{
-		action: "Blog post published",
-		user: "Admin",
-		time: "8h ago",
-		type: "blog",
-	},
-];
+const recentActivity: any[] = [];
 
 export function DashboardContent() {
+	const { summaryStatsQuery } = useDashboardData();
+	const { data: summaryStatsData, isLoading } = summaryStatsQuery;
+	const summaryStats = summaryStatsData ?? {
+		totalRevenue: 0,
+	};
+
+	stats.find((stat) => stat.id === "payments")!.value =
+		summaryStats.totalRevenue.toLocaleString("en-IN", {
+			style: "currency",
+			currency: "INR",
+			minimumFractionDigits: 0,
+		});
 	return (
 		<div className="space-y-8">
 			<div>
@@ -113,7 +89,7 @@ export function DashboardContent() {
 						</CardHeader>
 						<CardContent>
 							<div className="text-2xl font-bold text-gray-900 dark:text-white">
-								{stat.value}
+								{isLoading ? <ComponentLoading size="sm" /> : stat.value}
 							</div>
 						</CardContent>
 					</Card>

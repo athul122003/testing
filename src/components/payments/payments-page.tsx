@@ -8,16 +8,12 @@ import {
 	Search,
 	TrendingUp,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getPaymentInfo } from "~/actions/payment-info";
 //types
 import type {
 	PaymentWithUser,
 	SummaryStats,
-} from "~/actions/tanstackHooks/payment-queries";
-import {
-	usePayments,
-	useSummaryStats,
 } from "~/actions/tanstackHooks/payment-queries";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -47,6 +43,7 @@ import {
 import { convertPaymentsToCSV, downloadCSV } from "~/lib/exportPaymentData";
 import { formatCurrency } from "~/lib/formatCurrency";
 import { formatDateTime } from "~/lib/formatDateTime";
+import { useDashboardData } from "~/providers/dashboardDataContext";
 import { ComponentLoading } from "../ui/component-loading";
 
 type PaymentStatus = "success" | "failed" | "pending";
@@ -68,11 +65,18 @@ export function PaymentsPage() {
 	});
 
 	const pageSize = 20;
-	const { data: paymentsData, isLoading } = usePayments({
-		page,
-		pageSize,
-		dateFilter,
-	});
+	const { paymentsQuery, setPaymentParams, summaryStatsQuery } =
+		useDashboardData();
+	const {
+		data: paymentsData,
+		isLoading,
+		refetch: refetchPayments,
+	} = paymentsQuery;
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <no need of exhaustive deps here>
+	useEffect(() => {
+		setPaymentParams(page, pageSize, dateFilter);
+	}, [page, pageSize, dateFilter, setPaymentParams]);
 
 	//fetch payments data
 	const payments: PaymentWithUser["payments"] = paymentsData?.payments ?? [];
@@ -80,7 +84,7 @@ export function PaymentsPage() {
 		paymentsData?.totalPages ?? 1;
 
 	//fetch summary stats
-	const { data: summaryStatsData } = useSummaryStats();
+	const { data: summaryStatsData } = summaryStatsQuery;
 	const summaryStats: SummaryStats = summaryStatsData ?? {
 		totalPayments: 0,
 		totalUsers: 0,

@@ -1,5 +1,6 @@
 "use client";
 
+import type { Blog } from "@prisma/client"; // TODO [RAHUL]: Check functionality once again if anything breaks or not, have put this import to avoid type errors
 import { useState } from "react";
 import { BlogForm } from "~/components/blog/blog-form";
 import { BlogsPage } from "~/components/blog/blogs-page";
@@ -13,7 +14,6 @@ import { PaymentsPage } from "~/components/payments/payments-page";
 import { SettingsPage } from "~/components/settings/settings-page";
 import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
 import { UsersPage } from "~/components/user1/users-page";
-import type { Blog } from "@prisma/client"; // TODO [RAHUL]: Check functionality once again if anything breaks or not, have put this import to avoid type errors
 
 export function Dashboard() {
 	const [activePage, setActivePage] = useState("dashboard");

@@ -1,5 +1,6 @@
 "use client";
 
+import type { Blog } from "@prisma/client"; // Assuming you're using Prisma
 import {
 	ArrowLeft,
 	Bold,
@@ -14,6 +15,7 @@ import {
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
+import { createOrUpdateBlog } from "~/actions/blog";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
@@ -22,8 +24,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Textarea } from "~/components/ui/textarea";
 import { uploadImageToCloudinary } from "~/lib/cloudinaryImageUploader";
 import { getBlogMeta } from "~/lib/getBlogMetaData";
-import { createOrUpdateBlog } from "~/actions/blog";
-import type { Blog } from "@prisma/client"; // Assuming you're using Prisma
 import { BlogPreview } from "./BlogPreview";
 
 interface BlogFormProps {
