@@ -3,10 +3,9 @@
 import {
 	Activity,
 	Calendar,
-	DollarSign,
+	IndianRupeeIcon,
 	FileText,
 	ImageIcon,
-	TrendingUp,
 	Users,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -15,35 +14,30 @@ const stats = [
 	{
 		title: "Total Events",
 		value: "24",
-		change: "+12%",
 		icon: Calendar,
 		color: "from-blue-500 to-blue-600",
 	},
 	{
 		title: "Blog Posts",
 		value: "12",
-		change: "+8%",
 		icon: FileText,
 		color: "from-green-500 to-green-600",
 	},
 	{
 		title: "Gallery Items",
 		value: "156",
-		change: "+23%",
 		icon: ImageIcon,
 		color: "from-purple-500 to-purple-600",
 	},
 	{
 		title: "Total Revenue",
-		value: "$12,450",
-		change: "+15%",
-		icon: DollarSign,
+		value: "12,450rs",
+		icon: IndianRupeeIcon,
 		color: "from-yellow-500 to-yellow-600",
 	},
 	{
 		title: "Active Users",
 		value: "89",
-		change: "+5%",
 		icon: Users,
 		color: "from-red-500 to-red-600",
 	},
@@ -121,10 +115,6 @@ export function DashboardContent() {
 							<div className="text-2xl font-bold text-gray-900 dark:text-white">
 								{stat.value}
 							</div>
-							<div className="flex items-center text-sm text-green-600 dark:text-green-400">
-								<TrendingUp className="h-3 w-3 mr-1" />
-								{stat.change}
-							</div>
 						</CardContent>
 					</Card>
 				))}
@@ -172,7 +162,7 @@ export function DashboardContent() {
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
 							<Activity className="h-5 w-5" />
-							Recent Activity
+							Recent Blogs
 						</CardTitle>
 					</CardHeader>
 					<CardContent>

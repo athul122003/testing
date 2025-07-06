@@ -98,20 +98,20 @@ export function GalleryPage() {
 		<div className="space-y-8">
 			<div className="flex justify-between items-center">
 				<div>
-					<h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">
+					<h1 className="text-4xl font-bold text-gray-900 dark:text-slate-200 mb-2">
 						Gallery
 					</h1>
-					<p className="text-slate-600 dark:text-slate-400">
+					<p className="text-gray-600 dark:text-slate-400">
 						Manage your image collection
 					</p>
 				</div>
 				<div className="flex gap-3">
 					<Select value={selectedYear} onValueChange={setSelectedYear}>
-						<SelectTrigger className="w-40">
+						<SelectTrigger className="w-40 bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200">
 							<Filter className="h-4 w-4 mr-2" />
 							<SelectValue placeholder="Filter by year" />
 						</SelectTrigger>
-						<SelectContent>
+						<SelectContent className="bg-white dark:bg-black border border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
 							<SelectItem value="all">All Years</SelectItem>
 							{years.map((year) => (
 								<SelectItem key={year} value={year}>
@@ -122,18 +122,25 @@ export function GalleryPage() {
 					</Select>
 					<Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
 						<DialogTrigger asChild>
-							<Button className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white shadow-lg">
+							<Button className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg">
 								<Plus className="h-4 w-4 mr-2" />
 								Add Image
 							</Button>
 						</DialogTrigger>
-						<DialogContent className="max-w-2xl">
+						<DialogContent className="max-w-2xl bg-white dark:bg-black border border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
 							<DialogHeader>
-								<DialogTitle className="text-2xl">Add New Image</DialogTitle>
+								<DialogTitle className="text-2xl text-gray-900 dark:text-slate-200">
+									Add New Image
+								</DialogTitle>
 							</DialogHeader>
 							<div className="space-y-6">
 								<div className="space-y-2">
-									<Label htmlFor="image-title">Title</Label>
+									<Label
+										htmlFor="image-title"
+										className="text-gray-900 dark:text-slate-200"
+									>
+										Title
+									</Label>
 									<Input
 										id="image-title"
 										placeholder="Enter image title"
@@ -141,22 +148,25 @@ export function GalleryPage() {
 										onChange={(e) =>
 											setFormData({ ...formData, title: e.target.value })
 										}
+										className="bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-400"
 									/>
 								</div>
 
 								<div className="grid grid-cols-3 gap-4">
 									<div className="space-y-2">
-										<Label>Year</Label>
+										<Label className="text-gray-900 dark:text-slate-200">
+											Year
+										</Label>
 										<Select
 											value={formData.year}
 											onValueChange={(value) =>
 												setFormData({ ...formData, year: value })
 											}
 										>
-											<SelectTrigger>
+											<SelectTrigger className="bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200">
 												<SelectValue />
 											</SelectTrigger>
-											<SelectContent>
+											<SelectContent className="bg-white dark:bg-black border border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
 												{years.map((year) => (
 													<SelectItem key={year} value={year}>
 														{year}
@@ -166,7 +176,12 @@ export function GalleryPage() {
 										</Select>
 									</div>
 									<div className="space-y-2">
-										<Label htmlFor="date">Date</Label>
+										<Label
+											htmlFor="date"
+											className="text-gray-900 dark:text-slate-200"
+										>
+											Date
+										</Label>
 										<Input
 											id="date"
 											type="date"
@@ -174,20 +189,25 @@ export function GalleryPage() {
 											onChange={(e) =>
 												setFormData({ ...formData, date: e.target.value })
 											}
+											className="bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 [color-scheme:light] dark:[color-scheme:dark]
+                                             [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:brightness-0 
+                                             dark:[&::-webkit-calendar-picker-indicator]:invert-[0.7]"
 										/>
 									</div>
 									<div className="space-y-2">
-										<Label>Category</Label>
+										<Label className="text-gray-900 dark:text-slate-200">
+											Category
+										</Label>
 										<Select
 											value={formData.category}
 											onValueChange={(value) =>
 												setFormData({ ...formData, category: value })
 											}
 										>
-											<SelectTrigger>
+											<SelectTrigger className="bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200">
 												<SelectValue />
 											</SelectTrigger>
-											<SelectContent>
+											<SelectContent className="bg-white dark:bg-black border border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
 												{categories.map((category) => (
 													<SelectItem key={category} value={category}>
 														{category}
@@ -199,25 +219,31 @@ export function GalleryPage() {
 								</div>
 
 								<div className="space-y-2">
-									<Label>Upload Image</Label>
-									<div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-8 text-center hover:border-slate-400 dark:hover:border-slate-500 transition-colors cursor-pointer">
-										<ImageIcon className="h-12 w-12 mx-auto mb-4 text-slate-400" />
-										<p className="text-slate-600 dark:text-slate-400">
+									<Label className="text-gray-900 dark:text-slate-200">
+										Upload Image
+									</Label>
+									<div className="border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl p-8 text-center hover:border-gray-400 dark:hover:border-slate-600 transition-colors cursor-pointer bg-gray-50 dark:bg-slate-900/50">
+										<ImageIcon className="h-12 w-12 mx-auto mb-4 text-gray-400 dark:text-slate-400" />
+										<p className="text-gray-600 dark:text-slate-400">
 											Click to upload image
 										</p>
-										<p className="text-sm text-slate-500 dark:text-slate-500">
+										<p className="text-sm text-gray-500 dark:text-slate-500">
 											PNG, JPG up to 10MB
 										</p>
 									</div>
 								</div>
 
 								<div className="flex justify-end space-x-3">
-									<Button variant="outline" onClick={() => setIsAddOpen(false)}>
+									<Button
+										variant="outline"
+										onClick={() => setIsAddOpen(false)}
+										className="bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
+									>
 										Cancel
 									</Button>
 									<Button
 										onClick={handleAddImage}
-										className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
+										className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800"
 									>
 										Add Image
 									</Button>
@@ -232,7 +258,7 @@ export function GalleryPage() {
 				{filteredImages.map((image) => (
 					<Card
 						key={image.id}
-						className="border-0 shadow-lg bg-white dark:bg-slate-800 overflow-hidden hover:shadow-xl transition-all duration-300 group"
+						className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800 overflow-hidden hover:shadow-xl transition-all duration-300 group"
 					>
 						<div className="relative overflow-hidden">
 							<Image
@@ -247,28 +273,28 @@ export function GalleryPage() {
 								<Button
 									variant="secondary"
 									size="sm"
-									className="bg-white/90 hover:bg-white shadow-lg"
+									className="bg-white/90 dark:bg-slate-900/90 hover:bg-gray-100/90 dark:hover:bg-slate-800/90 text-gray-900 dark:text-slate-200 border border-gray-200 dark:border-slate-800 shadow-lg"
 								>
 									<Edit className="h-4 w-4" />
 								</Button>
 								<Button
 									variant="secondary"
 									size="sm"
-									className="bg-white/90 hover:bg-white shadow-lg"
+									className="bg-white/90 dark:bg-slate-900/90 hover:bg-gray-100/90 dark:hover:bg-slate-800/90 text-gray-900 dark:text-slate-200 border border-gray-200 dark:border-slate-800 shadow-lg"
 									onClick={() => handleDeleteImage(image.id)}
 								>
 									<Trash2 className="h-4 w-4" />
 								</Button>
 							</div>
-							<div className="absolute bottom-3 left-3 px-3 py-1 bg-white/90 dark:bg-slate-800/90 rounded-full text-xs font-medium">
+							<div className="absolute bottom-3 left-3 px-3 py-1 bg-white/90 dark:bg-slate-900/90 border border-gray-200 dark:border-slate-800 rounded-full text-xs font-medium text-gray-900 dark:text-slate-200">
 								{image.category}
 							</div>
 						</div>
 						<CardContent className="p-4">
-							<h3 className="font-bold text-slate-900 dark:text-white mb-2 line-clamp-2">
+							<h3 className="font-bold text-gray-900 dark:text-slate-200 mb-2 line-clamp-2">
 								{image.title}
 							</h3>
-							<p className="text-sm text-slate-500 dark:text-slate-400">
+							<p className="text-sm text-gray-600 dark:text-slate-400">
 								{new Date(image.date).toLocaleDateString()} • {image.year}
 							</p>
 						</CardContent>
@@ -277,15 +303,15 @@ export function GalleryPage() {
 			</div>
 
 			{filteredImages.length === 0 && (
-				<Card className="border-0 shadow-lg bg-white dark:bg-slate-800">
+				<Card className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
 					<CardContent className="text-center py-12">
-						<ImageIcon className="h-12 w-12 mx-auto mb-4 text-slate-400" />
-						<p className="text-slate-600 dark:text-slate-400 text-lg">
+						<ImageIcon className="h-12 w-12 mx-auto mb-4 text-gray-400 dark:text-slate-400" />
+						<p className="text-gray-600 dark:text-slate-400 text-lg">
 							{selectedYear === "all"
 								? "No images in gallery yet"
 								: `No images found for ${selectedYear}`}
 						</p>
-						<p className="text-slate-500 dark:text-slate-500">
+						<p className="text-gray-500 dark:text-slate-500">
 							{selectedYear === "all"
 								? "Add your first image to get started!"
 								: "Try selecting a different year."}

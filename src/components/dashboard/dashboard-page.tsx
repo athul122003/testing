@@ -67,7 +67,7 @@ export function Dashboard() {
 	};
 
 	return (
-		<div className="dark min-h-screen bg-gray-50 dark:bg-black">
+		<div className="min-h-screen bg-gray-50 dark:bg-black">
 			<SidebarProvider defaultOpen={true}>
 				<AppSidebar activePage={activePage} setActivePage={setActivePage} />
 				<SidebarInset>

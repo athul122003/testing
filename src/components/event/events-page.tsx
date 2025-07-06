@@ -109,25 +109,23 @@ export function EventsPage({
 	};
 
 	if (isLoading) {
-		if (isLoading) {
-			return <ComponentLoading message="Loading Events" />;
-		}
+		return <ComponentLoading message="Loading Events" />;
 	}
 
 	return (
 		<div className="space-y-8">
 			<div className="flex justify-between items-center">
 				<div>
-					<h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">
+					<h1 className="text-4xl font-bold text-gray-900 dark:text-slate-200 mb-2">
 						Events
 					</h1>
-					<p className="text-slate-600 dark:text-slate-400">
+					<p className="text-gray-600 dark:text-slate-400">
 						Manage and organize your events
 					</p>
 				</div>
 				<Button
 					onClick={handleCreateEvent}
-					className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg"
+					className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg"
 				>
 					<Plus className="h-4 w-4 mr-2" />
 					Create Event
@@ -138,7 +136,7 @@ export function EventsPage({
 				{events.map((event) => (
 					<Card
 						key={event.id}
-						className="border-0 shadow-lg bg-white dark:bg-slate-800 overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group"
+						className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800 overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group"
 						onClick={() => handleEventClick(event)}
 					>
 						<div className="relative">
@@ -158,28 +156,28 @@ export function EventsPage({
 								{event.state}
 							</div>
 							<div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-								<div className="bg-white/90 dark:bg-slate-800/90 rounded-full p-2">
-									<Eye className="h-4 w-4" />
+								<div className="bg-white/90 dark:bg-slate-900/90 border border-gray-200 dark:border-slate-800 rounded-full p-2">
+									<Eye className="h-4 w-4 text-gray-700 dark:text-slate-200" />
 								</div>
 							</div>
 						</div>
 						<CardContent className="p-6">
 							<div className="space-y-4">
 								<div>
-									<h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+									<h3 className="text-xl font-bold text-gray-900 dark:text-slate-200 mb-2">
 										{event.name}
 									</h3>
-									<p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
+									<p className="text-sm text-gray-600 dark:text-slate-400 line-clamp-2">
 										{event.description}
 									</p>
 								</div>
 
 								<div className="space-y-2">
-									<div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+									<div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-400">
 										<MapPin className="h-4 w-4" />
 										{event.venue}
 									</div>
-									<div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+									<div className="flex items-center gap-2 text-sm text-gray-600 dark:text-slate-400">
 										<Clock className="h-4 w-4" />
 										{new Date(event.fromDate).toLocaleDateString()} -{" "}
 										{new Date(event.toDate).toLocaleDateString()}
@@ -187,14 +185,14 @@ export function EventsPage({
 								</div>
 
 								<div className="flex items-center justify-between">
-									<div className="flex items-center gap-4 text-sm">
+									<div className="flex items-center gap-4 text-sm text-gray-600 dark:text-slate-400">
 										<span className="flex items-center gap-1">
 											<Users className="h-4 w-4" />
 											{event.participants}/{event.maxTeams}
 										</span>
 										{(event.flcAmount > 0 || event.nonFlcAmount > 0) && (
 											<span className="flex items-center gap-1">
-												<DollarSign className="h-4 w-4" />${event.flcAmount}/$
+												<DollarSign className="h-4 w-4" />₹{event.flcAmount}/₹
 												{event.nonFlcAmount}
 											</span>
 										)}
@@ -202,10 +200,14 @@ export function EventsPage({
 								</div>
 
 								<div className="flex gap-2">
-									<Badge variant="secondary">{event.eventType}</Badge>
-									<Badge variant="outline">{event.category}</Badge>
+									<Badge className="bg-gray-100 dark:bg-slate-900 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-800">
+										{event.eventType}
+									</Badge>
+									<Badge className="bg-gray-100 dark:bg-slate-900 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-800">
+										{event.category}
+									</Badge>
 									{event.isMembersOnly && (
-										<Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+										<Badge className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">
 											Members Only
 										</Badge>
 									)}
@@ -218,9 +220,9 @@ export function EventsPage({
 
 			{/* Event Detail Modal */}
 			<Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-				<DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-900 text-white dark:bg-slate-900 dark:text-white">
+				<DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-black border border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
 					<DialogHeader>
-						<DialogTitle className="text-2xl text-white">
+						<DialogTitle className="text-2xl text-gray-900 dark:text-slate-200">
 							{selectedEvent?.name}
 						</DialogTitle>
 					</DialogHeader>
@@ -244,31 +246,31 @@ export function EventsPage({
 							<div className="grid grid-cols-2 gap-6">
 								<div className="space-y-4">
 									<div>
-										<h3 className="text-lg font-semibold text-white mb-2">
+										<h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200 mb-2">
 											Event Details
 										</h3>
-										<p className="text-slate-300">
+										<p className="text-gray-600 dark:text-slate-400">
 											{selectedEvent.description}
 										</p>
 									</div>
 
 									<div className="space-y-3">
 										<div className="flex items-center gap-2">
-											<MapPin className="h-4 w-4 text-slate-400" />
-											<span className="text-sm text-slate-200">
+											<MapPin className="h-4 w-4 text-gray-500 dark:text-slate-400" />
+											<span className="text-sm text-gray-900 dark:text-slate-200">
 												{selectedEvent.venue}
 											</span>
 										</div>
 										<div className="flex items-center gap-2">
-											<Calendar className="h-4 w-4 text-slate-400" />
-											<span className="text-sm text-slate-200">
+											<Calendar className="h-4 w-4 text-gray-500 dark:text-slate-400" />
+											<span className="text-sm text-gray-900 dark:text-slate-200">
 												{new Date(selectedEvent.fromDate).toLocaleString()} -{" "}
 												{new Date(selectedEvent.toDate).toLocaleString()}
 											</span>
 										</div>
 										<div className="flex items-center gap-2">
-											<Clock className="h-4 w-4 text-slate-400" />
-											<span className="text-sm text-slate-200">
+											<Clock className="h-4 w-4 text-gray-500 dark:text-slate-400" />
+											<span className="text-sm text-gray-900 dark:text-slate-200">
 												Registration Deadline:{" "}
 												{new Date(selectedEvent.deadline).toLocaleString()}
 											</span>
@@ -278,40 +280,40 @@ export function EventsPage({
 
 								<div className="space-y-4">
 									<div>
-										<h3 className="text-lg font-semibold text-white mb-3">
+										<h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200 mb-3">
 											Registration Info
 										</h3>
 										<div className="space-y-2">
 											<div className="flex justify-between">
-												<span className="text-sm text-slate-300">
+												<span className="text-sm text-gray-600 dark:text-slate-400">
 													Max Teams:
 												</span>
-												<span className="text-sm font-medium text-white">
+												<span className="text-sm font-medium text-gray-900 dark:text-slate-200">
 													{selectedEvent.maxTeams}
 												</span>
 											</div>
 											<div className="flex justify-between">
-												<span className="text-sm text-slate-300">
+												<span className="text-sm text-gray-600 dark:text-slate-400">
 													Team Size:
 												</span>
-												<span className="text-sm font-medium text-white">
+												<span className="text-sm font-medium text-gray-900 dark:text-slate-200">
 													{selectedEvent.minTeamSize} -{" "}
 													{selectedEvent.maxTeamSize}
 												</span>
 											</div>
 											<div className="flex justify-between">
-												<span className="text-sm text-slate-300">
+												<span className="text-sm text-gray-600 dark:text-slate-400">
 													Current Participants:
 												</span>
-												<span className="text-sm font-medium text-white">
+												<span className="text-sm font-medium text-gray-900 dark:text-slate-200">
 													{selectedEvent.participants}
 												</span>
 											</div>
 											<div className="flex justify-between">
-												<span className="text-sm text-slate-300">
+												<span className="text-sm text-gray-600 dark:text-slate-400">
 													Members Only:
 												</span>
-												<span className="text-sm font-medium text-white">
+												<span className="text-sm font-medium text-gray-900 dark:text-slate-200">
 													{selectedEvent.isMembersOnly ? "Yes" : "No"}
 												</span>
 											</div>
@@ -319,52 +321,58 @@ export function EventsPage({
 									</div>
 
 									<div>
-										<h3 className="text-lg font-semibold text-white mb-3">
+										<h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200 mb-3">
 											Pricing
 										</h3>
 										<div className="space-y-2">
 											<div className="flex justify-between">
-												<span className="text-sm text-slate-300">
+												<span className="text-sm text-gray-600 dark:text-slate-400">
 													FLC Members:
 												</span>
-												<span className="text-sm font-medium text-white">
-													${selectedEvent.flcAmount}
+												<span className="text-sm font-medium text-gray-900 dark:text-slate-200">
+													₹{selectedEvent.flcAmount}
 												</span>
 											</div>
 											<div className="flex justify-between">
-												<span className="text-sm text-slate-300">Non-FLC:</span>
-												<span className="text-sm font-medium text-white">
-													${selectedEvent.nonFlcAmount}
+												<span className="text-sm text-gray-600 dark:text-slate-400">
+													Non-FLC:
+												</span>
+												<span className="text-sm font-medium text-gray-900 dark:text-slate-200">
+													₹{selectedEvent.nonFlcAmount}
 												</span>
 											</div>
 										</div>
 									</div>
 
 									<div className="flex gap-2">
-										<Badge variant="secondary">{selectedEvent.eventType}</Badge>
-										<Badge variant="primary">{selectedEvent.category}</Badge>
+										<Badge className="bg-gray-100 dark:bg-slate-900 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-800">
+											{selectedEvent.eventType}
+										</Badge>
+										<Badge className="bg-gray-100 dark:bg-slate-900 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-800">
+											{selectedEvent.category}
+										</Badge>
 									</div>
 								</div>
 							</div>
 
-							<div className="flex justify-end space-x-3 pt-4 border-t border-slate-700">
+							<div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-slate-800">
 								{selectedEvent.state === "DRAFT" && (
 									<Button
 										onClick={() => handlePublishEvent(selectedEvent.id)}
-										className="bg-green-600 hover:bg-green-700 text-white"
+										className="bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800 text-green-700 dark:text-green-200 border border-green-300 dark:border-green-800"
 									>
 										Publish Event
 									</Button>
 								)}
 								<Button
-									variant="secondary"
 									onClick={() => handleEditEvent(selectedEvent)}
+									className="bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-200 border border-gray-300 dark:border-slate-800"
 								>
 									Edit Event
 								</Button>
 								<Button
-									variant="destructive"
 									onClick={() => handleDeleteEvent(selectedEvent.id)}
+									className="bg-red-100 dark:bg-red-900 hover:bg-red-200 dark:hover:bg-red-800 text-red-700 dark:text-red-200 border border-red-300 dark:border-red-800"
 								>
 									Delete Event
 								</Button>

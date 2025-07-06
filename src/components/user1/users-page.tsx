@@ -284,57 +284,60 @@ export function UsersPage() {
 	return (
 		<div className="space-y-8">
 			<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-				<TabsList className="grid w-auto grid-cols-2 bg-gradient-to-r from-teal-100 to-purple-100 dark:from-slate-800 dark:to-black-800">
+				<TabsList className="grid w-auto grid-cols-2 bg-white dark:bg-black border border-gray-300 dark:border-slate-800">
 					<TabsTrigger
 						value="permissions"
-						className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-slate-500 data-[state=active]:to-black data-[state=active]:text-white data-[state=active]:border-2 data-[state=active]:border-gray-400 data-[state=active]:rounded-md"
+						className="data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-900 data-[state=active]:text-gray-900 dark:data-[state=active]:text-slate-200 data-[state=active]:border-2 data-[state=active]:border-gray-300 dark:data-[state=active]:border-slate-700 data-[state=active]:rounded-md text-gray-700 dark:text-slate-200"
 					>
 						Role&Permissions
 					</TabsTrigger>
 
 					<TabsTrigger
 						value="userManagement"
-						className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-slate-500 data-[state=active]:to-black data-[state=active]:text-white data-[state=active]:border-2 data-[state=active]:border-gray-400 data-[state=active]:rounded-md"
+						className="data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-900 data-[state=active]:text-gray-900 dark:data-[state=active]:text-slate-200 data-[state=active]:border-2 data-[state=active]:border-gray-300 dark:data-[state=active]:border-slate-700 data-[state=active]:rounded-md text-gray-700 dark:text-slate-200"
 					>
 						User Management
 					</TabsTrigger>
 				</TabsList>
 
 				<TabsContent value="permissions">
-					<Card className="bg-gradient-to-br from-white to-slate-50 dark:from-gray-800 dark:to-slate-900 shadow-xl">
+					<Card className="bg-white dark:bg-black border border-gray-200 dark:border-slate-800 shadow-xl">
 						{roleLoading || permLoading ? (
 							<ComponentLoading message="Role & Permissions data Loading..." />
 						) : (
 							<>
 								<CardHeader>
-									<CardTitle className="text-teal-700 dark:text-teal-300">
+									<CardTitle className="text-gray-900 dark:text-slate-200">
 										Role & Permission Management
 									</CardTitle>
-									<CardDescription>
+									<CardDescription className="text-gray-600 dark:text-slate-400">
 										Define roles and assign specific permissions.
 									</CardDescription>
 								</CardHeader>
 								<CardContent className="grid gap-6">
 									{/* Add Role */}
-									<div className="grid gap-4 p-4 border rounded-lg bg-gradient-to-r from-slate-50 to-slate-50 dark:from-slate-900 dark:to-slate-900">
-										<h3 className="text-lg font-semibold">Add New Role</h3>
+									<div className="grid gap-4 p-4 border border-gray-200 dark:border-slate-800 rounded-lg bg-gray-50 dark:bg-black">
+										<h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200">
+											Add New Role
+										</h3>
 										<div className="flex flex-col md:flex-row items-center gap-2">
 											<Input
 												placeholder="New Role Name"
 												value={newRoleName}
 												onChange={(e) => setNewRoleName(e.target.value)}
+												className="bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-400"
 											/>
 
 											<Button
 												onClick={addNewRole}
-												className="bg-gradient-to-r from-teal-500 to-purple-500"
+												className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
 											>
 												<Plus className="h-4 w-4 mr-2" />
 												Add Role
 											</Button>
 										</div>
 									</div>
-									<Separator />
+									<Separator className="bg-gray-200 dark:bg-slate-800" />
 
 									{/* 🔍 Search input */}
 									<div className="flex justify-end">
@@ -345,7 +348,7 @@ export function UsersPage() {
 												setRoleSearchTerm(e.target.value);
 												setRolePage(1);
 											}}
-											className="w-full md:w-1/3 mb-4"
+											className="w-full md:w-1/3 mb-4 bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-400"
 										/>
 									</div>
 
@@ -362,12 +365,12 @@ export function UsersPage() {
 											return (
 												<Card
 													key={role.id}
-													className="border-0 shadow-md bg-gray-100 dark:bg-slate-950"
+													className="border border-gray-200 dark:border-slate-800 shadow-md bg-white dark:bg-black"
 												>
 													<CardContent className="p-6">
 														<div className="flex justify-between items-start mb-4">
 															<div>
-																<h4 className="font-bold text-lg text-slate-900 dark:text-white">
+																<h4 className="font-bold text-lg text-gray-900 dark:text-slate-200">
 																	{role.name}
 																</h4>
 															</div>
@@ -393,9 +396,10 @@ export function UsersPage() {
 																			setEditingRoleId(role.id);
 																		}
 																	}}
+																	className="text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-900"
 																>
 																	{isEditing ? (
-																		<Check className="h-4 w-4 text-green-600" />
+																		<Check className="h-4 w-4 text-green-500 dark:text-green-400" />
 																	) : (
 																		<Edit className="h-4 w-4" />
 																	)}
@@ -412,16 +416,18 @@ export function UsersPage() {
 																			}));
 																			setEditingRoleId(null);
 																		}}
+																		className="text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-900"
 																	>
-																		<X className="h-4 w-4 text-gray-500" />
+																		<X className="h-4 w-4 text-gray-500 dark:text-slate-400" />
 																	</Button>
 																)}
 																<Button
 																	variant="ghost"
 																	size="sm"
 																	onClick={() => deleteRole(role.id)}
+																	className="text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-900"
 																>
-																	<Trash2 className="h-4 w-4 text-red-500" />
+																	<Trash2 className="h-4 w-4 text-red-500 dark:text-red-400" />
 																</Button>
 															</div>
 														</div>
@@ -431,7 +437,7 @@ export function UsersPage() {
 																{permissions.map((perm) => (
 																	<div
 																		key={perm.id}
-																		className="flex items-center gap-2 text-sm"
+																		className="flex items-center gap-2 text-sm text-gray-900 dark:text-slate-200"
 																	>
 																		<Checkbox
 																			id={`checkbox-${role.id}-${perm.id}`}
@@ -442,7 +448,7 @@ export function UsersPage() {
 																		/>
 																		<Label
 																			htmlFor={`checkbox-${role.id}-${perm.id}`}
-																			className="cursor-pointer"
+																			className="cursor-pointer text-gray-900 dark:text-slate-200"
 																		>
 																			{perm.name}
 																		</Label>
@@ -455,13 +461,16 @@ export function UsersPage() {
 																	<Badge
 																		key={p.permission.id}
 																		variant="secondary"
-																		className="text-xs"
+																		className="text-xs bg-gray-100 dark:bg-slate-900 text-gray-700 dark:text-slate-200"
 																	>
 																		{p.permission.name}
 																	</Badge>
 																))}
 																{role.permissions.length > 4 && (
-																	<Badge variant="outline" className="text-xs">
+																	<Badge
+																		variant="outline"
+																		className="text-xs border-gray-300 dark:border-slate-700 text-gray-500 dark:text-slate-400"
+																	>
 																		+{role.permissions.length - 4} more
 																	</Badge>
 																)}
@@ -487,7 +496,7 @@ export function UsersPage() {
 															className={
 																rolePage === 1
 																	? "pointer-events-none opacity-50"
-																	: ""
+																	: "bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
 															}
 														/>
 													</PaginationItem>
@@ -504,7 +513,7 @@ export function UsersPage() {
 																<PaginationLink
 																	isActive={rolePage === 1}
 																	onClick={() => setRolePage(1)}
-																	className="cursor-pointer"
+																	className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${rolePage === 1 ? "bg-gray-100 dark:bg-slate-800" : ""}`}
 																>
 																	1
 																</PaginationLink>
@@ -515,7 +524,7 @@ export function UsersPage() {
 														if (rolePage > maxVisible) {
 															pages.push(
 																<PaginationItem key="left-ellipsis">
-																	<span className="px-2 text-muted-foreground">
+																	<span className="px-2 text-gray-500 dark:text-slate-400">
 																		...
 																	</span>
 																</PaginationItem>,
@@ -532,7 +541,7 @@ export function UsersPage() {
 																	<PaginationLink
 																		isActive={rolePage === i}
 																		onClick={() => setRolePage(i)}
-																		className="cursor-pointer"
+																		className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${rolePage === i ? "bg-gray-100 dark:bg-slate-800" : ""}`}
 																	>
 																		{i}
 																	</PaginationLink>
@@ -544,7 +553,7 @@ export function UsersPage() {
 														if (rolePage < total - 2) {
 															pages.push(
 																<PaginationItem key="right-ellipsis">
-																	<span className="px-2 text-muted-foreground">
+																	<span className="px-2 text-gray-500 dark:text-slate-400">
 																		...
 																	</span>
 																</PaginationItem>,
@@ -558,7 +567,7 @@ export function UsersPage() {
 																	<PaginationLink
 																		isActive={rolePage === total}
 																		onClick={() => setRolePage(total)}
-																		className="cursor-pointer"
+																		className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${rolePage === total ? "bg-gray-100 dark:bg-slate-800" : ""}`}
 																	>
 																		{total}
 																	</PaginationLink>
@@ -579,7 +588,7 @@ export function UsersPage() {
 															className={
 																rolePage === totalRolePages
 																	? "pointer-events-none opacity-50"
-																	: ""
+																	: "bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
 															}
 														/>
 													</PaginationItem>
@@ -594,16 +603,18 @@ export function UsersPage() {
 				</TabsContent>
 
 				<TabsContent value="userManagement">
-					<Card className="bg-gradient-to-br from-white to-slate-50 dark:from-gray-900 dark:to-slate-900 shadow-xl">
+					<Card className="bg-white dark:bg-black border border-gray-200 dark:border-slate-800 shadow-xl">
 						{roleLoading ? (
 							<ComponentLoading message="Loading Page..." />
 						) : (
 							<>
 								<CardHeader>
-									<CardTitle className="text-orange-700 dark:text-orange-300">
+									<CardTitle className="text-gray-900 dark:text-slate-200">
 										User Management
 									</CardTitle>
-									<CardDescription>Manage user Roles.</CardDescription>
+									<CardDescription className="text-gray-600 dark:text-slate-400">
+										Manage user Roles.
+									</CardDescription>
 								</CardHeader>
 								<CardContent className="grid gap-4">
 									<div className="grid gap-2">
@@ -611,12 +622,12 @@ export function UsersPage() {
 											<div className="flex items-center gap-4 flex-wrap">
 												{/*Search Input */}
 												<div className="relative">
-													<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+													<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-slate-400" />
 													<Input
 														placeholder="Search by name, ID, USN, or email..."
 														value={searchTerm}
 														onChange={(e) => setSearchTerm(e.target.value)}
-														className="pl-10 w-80"
+														className="pl-10 w-80 bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-400"
 													/>
 												</div>
 
@@ -627,10 +638,10 @@ export function UsersPage() {
 														setSelectedRole(val === "all" ? null : val)
 													}
 												>
-													<SelectTrigger className="w-52">
+													<SelectTrigger className="w-52 bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200">
 														<SelectValue placeholder="All Roles" />
 													</SelectTrigger>
-													<SelectContent>
+													<SelectContent className="bg-white dark:bg-black border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
 														<SelectItem value="all">All Roles</SelectItem>
 														{roles.map((role) => (
 															<SelectItem key={role.id} value={role.name}>
@@ -645,10 +656,10 @@ export function UsersPage() {
 														setSortBy(val as "role" | "name" | "id")
 													}
 												>
-													<SelectTrigger className="w-40">
+													<SelectTrigger className="w-40 bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200">
 														<SelectValue placeholder="Sort by..." />
 													</SelectTrigger>
-													<SelectContent>
+													<SelectContent className="bg-white dark:bg-black border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
 														<SelectItem value="role">Sort by Role</SelectItem>
 														<SelectItem value="name">Sort by Name</SelectItem>
 														<SelectItem value="id">Sort by ID</SelectItem>
@@ -663,12 +674,11 @@ export function UsersPage() {
 																prev === "asc" ? "desc" : "asc",
 															)
 														}
-														className="flex items-center gap-2"
+														className="flex items-center gap-2 bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
 													>
 														{roleSortOrder === "asc" ? (
 															<>
 																<ArrowDownAZ className="h-4 w-4" />
-																{/* Display selected users at top */}
 															</>
 														) : (
 															<ArrowUpAZ className="h-4 w-4" />
@@ -679,7 +689,7 @@ export function UsersPage() {
 										</div>
 									</div>
 
-									<Separator />
+									<Separator className="bg-gray-200 dark:bg-slate-800" />
 									<div className="grid gap-2">
 										{/* 🔸 Selected Users Summary */}
 										{userLoading ? (
@@ -688,9 +698,9 @@ export function UsersPage() {
 											<div className="space-y-4">
 												{/* 🔸 Selected Users Banner */}
 												{selectedUsers.length > 0 && (
-													<div className="rounded bg-orange-50 dark:bg-slate-800 p-4">
+													<div className="rounded bg-gray-100 dark:bg-slate-900 p-4">
 														<div className="flex justify-between items-center mb-2 gap-4 flex-wrap">
-															<span className="font-medium text-orange-700 dark:text-orange-300">
+															<span className="font-medium text-orange-600 dark:text-orange-300">
 																Selected Users: {selectedUsers.length}
 															</span>
 
@@ -701,10 +711,10 @@ export function UsersPage() {
 																		setBulkSelectedRole(newRole)
 																	}
 																>
-																	<SelectTrigger className="w-52">
+																	<SelectTrigger className="w-52 bg-white dark:bg-black border-gray-300 dark:border-slate-800 text-gray-900 dark:text-slate-200">
 																		<SelectValue placeholder="Set Role for All" />
 																	</SelectTrigger>
-																	<SelectContent>
+																	<SelectContent className="bg-white dark:bg-black border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
 																		{roles.map((r) => (
 																			<SelectItem key={r.id} value={r.name}>
 																				{r.name}
@@ -727,8 +737,9 @@ export function UsersPage() {
 																			setBulkSelectedRole(null); // Reset selection
 																		}
 																	}}
+																	className="hover:bg-gray-200 dark:hover:bg-slate-800"
 																>
-																	<Check className="h-4 w-4 text-green-600" />
+																	<Check className="h-4 w-4 text-green-500 dark:text-green-400" />
 																</Button>
 
 																{/* ❌ Cancel Button */}
@@ -739,8 +750,9 @@ export function UsersPage() {
 																		setSelectedUsers([]);
 																		setBulkSelectedRole(null);
 																	}}
+																	className="hover:bg-gray-200 dark:hover:bg-slate-800"
 																>
-																	<X className="h-4 w-4 text-red-600" />
+																	<X className="h-4 w-4 text-red-500 dark:text-red-400" />
 																</Button>
 															</div>
 														</div>
@@ -749,13 +761,13 @@ export function UsersPage() {
 															{selectedUsers.map((user) => (
 																<div
 																	key={user.id}
-																	className="bg-white dark:bg-slate-700 px-3 py-2 rounded shadow flex justify-between items-center"
+																	className="bg-white dark:bg-black px-3 py-2 rounded shadow flex justify-between items-center border border-gray-200 dark:border-slate-800"
 																>
 																	<div>
-																		<p className="text-sm font-medium">
+																		<p className="text-sm font-medium text-gray-900 dark:text-slate-200">
 																			{user.name}
 																		</p>
-																		<p className="text-xs text-muted-foreground">
+																		<p className="text-xs text-gray-500 dark:text-slate-400">
 																			{user.email}
 																		</p>
 																	</div>
@@ -767,8 +779,9 @@ export function UsersPage() {
 																				prev.filter((u) => u.id !== user.id),
 																			)
 																		}
+																		className="hover:bg-gray-100 dark:hover:bg-slate-900"
 																	>
-																		<X className="h-4 w-4" />
+																		<X className="h-4 w-4 text-gray-500 dark:text-slate-400" />
 																	</Button>
 																</div>
 															))}
@@ -779,21 +792,29 @@ export function UsersPage() {
 												{/* 🔍 User Table */}
 												{users?.data.length ? (
 													<>
-														<Table>
+														<Table className="bg-white dark:bg-black text-gray-900 dark:text-slate-200">
 															<TableHeader>
-																<TableRow>
-																	<TableHead />
-																	<TableHead>ID</TableHead>
-																	<TableHead>Name</TableHead>
-																	<TableHead>Email</TableHead>
-																	<TableHead>Role</TableHead>
+																<TableRow className="bg-gray-50 dark:bg-slate-900">
+																	<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800" />
+																	<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+																		ID
+																	</TableHead>
+																	<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+																		Name
+																	</TableHead>
+																	<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+																		Email
+																	</TableHead>
+																	<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+																		Role
+																	</TableHead>
 																</TableRow>
 															</TableHeader>
 															<TableBody>
 																{users.data.map((user) => (
 																	<TableRow
 																		key={user.id}
-																		className="hover:bg-slate-50 dark:hover:bg-slate-700/50"
+																		className="hover:bg-gray-50 dark:hover:bg-slate-900"
 																	>
 																		<TableCell>
 																			<Checkbox
@@ -812,12 +833,16 @@ export function UsersPage() {
 																			/>
 																		</TableCell>
 
-																		<TableCell className="font-mono text-sm text-white">
+																		<TableCell className="font-mono text-sm text-gray-500 dark:text-slate-400">
 																			{user.id}
 																		</TableCell>
 
-																		<TableCell>{user.name}</TableCell>
-																		<TableCell>{user.email}</TableCell>
+																		<TableCell className="text-gray-900 dark:text-slate-200">
+																			{user.name}
+																		</TableCell>
+																		<TableCell className="text-gray-500 dark:text-slate-400">
+																			{user.email}
+																		</TableCell>
 																		<TableCell>
 																			{editingRoles[user.id] ? (
 																				<div className="flex gap-2 items-center">
@@ -835,10 +860,10 @@ export function UsersPage() {
 																							}))
 																						}
 																					>
-																						<SelectTrigger className="w-32">
+																						<SelectTrigger className="w-32 bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200">
 																							<SelectValue />
 																						</SelectTrigger>
-																						<SelectContent>
+																						<SelectContent className="bg-white dark:bg-black border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
 																							{roles.map((r) => (
 																								<SelectItem
 																									key={r.id}
@@ -859,8 +884,9 @@ export function UsersPage() {
 																									editingRoles[user.id].current,
 																							})
 																						}
+																						className="hover:bg-gray-100 dark:hover:bg-slate-900"
 																					>
-																						<Check className="text-green-600 h-4 w-4" />
+																						<Check className="text-green-500 dark:text-green-400 h-4 w-4" />
 																					</Button>
 																					<Button
 																						size="icon"
@@ -872,13 +898,16 @@ export function UsersPage() {
 																								return copy;
 																							})
 																						}
+																						className="hover:bg-gray-100 dark:hover:bg-slate-900"
 																					>
-																						<X className="text-red-600 h-4 w-4" />
+																						<X className="text-red-500 dark:text-red-400 h-4 w-4" />
 																					</Button>
 																				</div>
 																			) : (
 																				<div className="flex justify-between items-center">
-																					<Badge>{user.role.name}</Badge>
+																					<Badge className="bg-gray-100 dark:bg-slate-900 text-gray-700 dark:text-slate-200 hover:bg-gray-200 dark:hover:bg-slate-800">
+																						{user.role.name}
+																					</Badge>
 																					<Button
 																						variant="ghost"
 																						size="sm"
@@ -891,6 +920,7 @@ export function UsersPage() {
 																								},
 																							}))
 																						}
+																						className="hover:bg-gray-100 dark:hover:bg-slate-900"
 																					>
 																						<Edit className="h-4 w-4" />
 																					</Button>
@@ -915,7 +945,7 @@ export function UsersPage() {
 																			className={
 																				page === 1
 																					? "pointer-events-none opacity-50"
-																					: ""
+																					: "bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
 																			}
 																		/>
 																	</PaginationItem>
@@ -932,7 +962,7 @@ export function UsersPage() {
 																				<PaginationLink
 																					isActive={page === 1}
 																					onClick={() => setPage(1)}
-																					className="cursor-pointer"
+																					className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${page === 1 ? "bg-gray-100 dark:bg-slate-800" : ""}`}
 																				>
 																					1
 																				</PaginationLink>
@@ -943,7 +973,7 @@ export function UsersPage() {
 																		if (page > maxVisible) {
 																			pages.push(
 																				<PaginationItem key="left-ellipsis">
-																					<span className="px-2 text-muted-foreground">
+																					<span className="px-2 text-gray-500 dark:text-slate-400">
 																						...
 																					</span>
 																				</PaginationItem>,
@@ -960,7 +990,7 @@ export function UsersPage() {
 																					<PaginationLink
 																						isActive={page === i}
 																						onClick={() => setPage(i)}
-																						className="cursor-pointer"
+																						className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${page === i ? "bg-gray-100 dark:bg-slate-800" : ""}`}
 																					>
 																						{i}
 																					</PaginationLink>
@@ -972,7 +1002,7 @@ export function UsersPage() {
 																		if (page < total - 2) {
 																			pages.push(
 																				<PaginationItem key="right-ellipsis">
-																					<span className="px-2 text-muted-foreground">
+																					<span className="px-2 text-gray-500 dark:text-slate-400">
 																						...
 																					</span>
 																				</PaginationItem>,
@@ -986,7 +1016,7 @@ export function UsersPage() {
 																					<PaginationLink
 																						isActive={page === total}
 																						onClick={() => setPage(total)}
-																						className="cursor-pointer"
+																						className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${page === total ? "bg-gray-100 dark:bg-slate-800" : ""}`}
 																					>
 																						{total}
 																					</PaginationLink>
@@ -1007,7 +1037,7 @@ export function UsersPage() {
 																			className={
 																				page === users.totalPages
 																					? "pointer-events-none opacity-50"
-																					: ""
+																					: "bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
 																			}
 																		/>
 																	</PaginationItem>
@@ -1017,7 +1047,7 @@ export function UsersPage() {
 													</>
 												) : (
 													!userLoading && (
-														<div className="text-center py-8 text-muted-foreground">
+														<div className="text-center py-8 text-gray-500 dark:text-slate-400">
 															No users found.
 														</div>
 													)
