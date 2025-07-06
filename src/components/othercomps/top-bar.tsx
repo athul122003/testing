@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import { Dialog, DialogContent } from "~/components/ui/dialog";
+import { DashboardBreadCrumb } from "../customcomps/dashboardBreadCrumb";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -25,10 +26,22 @@ const searchItems = [
 ];
 
 interface TopBarProps {
+	activePage: string;
 	setActivePage: (page: string) => void;
 }
 
-export function TopBar({ setActivePage }: TopBarProps) {
+const navigationMap: Record<string, { title: string }> = {
+	dashboard: { title: "Dashboard" },
+	events: { title: "Events" },
+	blogs: { title: "Blogs" },
+	gallery: { title: "Gallery" },
+	payments: { title: "Payments" },
+	users: { title: "Users" },
+	"blog-form": { title: "Blog Form" },
+	"event-form": { title: "Event Form" },
+};
+
+export function TopBar({ activePage, setActivePage }: TopBarProps) {
 	const [searchOpen, setSearchOpen] = useState(false);
 	const [searchTerm, setSearchTerm] = useState("");
 	const [mounted, setMounted] = useState(false);
@@ -37,6 +50,24 @@ export function TopBar({ setActivePage }: TopBarProps) {
 	useEffect(() => {
 		setMounted(true);
 	}, []);
+
+	const generateBreadcrumbItems = () => {
+		if (activePage === "dashboard") {
+			return [];
+		}
+		const current = navigationMap[activePage];
+		if (!current) {
+			return [];
+		}
+		const items = [{ title: current.title }];
+		if (activePage === "event-form") {
+			items.unshift({ title: "Events" });
+		}
+		if (activePage === "blog-form") {
+			items.unshift({ title: "Blogs" });
+		}
+		return items;
+	};
 
 	const filteredItems = searchItems.filter((item) =>
 		item.title.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -56,7 +87,12 @@ export function TopBar({ setActivePage }: TopBarProps) {
 		<>
 			<header className="h-16 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-black/80 backdrop-blur-sm">
 				<div className="relative flex items-center h-full px-6">
-					<div className="flex items-center gap-4 min-w-[120px]"></div>
+					<div className="flex items-center gap-4 min-w-[120px]">
+						<DashboardBreadCrumb
+							items={generateBreadcrumbItems()}
+							setActivePage={setActivePage}
+						/>
+					</div>
 					<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
 						<div className="relative">
 							<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />

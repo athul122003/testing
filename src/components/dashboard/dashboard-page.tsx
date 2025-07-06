@@ -13,11 +13,12 @@ import { PaymentsPage } from "~/components/payments/payments-page";
 import { SettingsPage } from "~/components/settings/settings-page";
 import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
 import { UsersPage } from "~/components/user1/users-page";
+import type { Blog } from "@prisma/client"; // TODO [RAHUL]: Check functionality once again if anything breaks or not, have put this import to avoid type errors
 
 export function Dashboard() {
 	const [activePage, setActivePage] = useState("dashboard");
 	const [editingEvent, setEditingEvent] = useState(null);
-	const [editingBlog, setEditingBlog] = useState(null);
+	const [editingBlog, setEditingBlog] = useState<Blog | null>(null);
 
 	const renderPage = () => {
 		switch (activePage) {
@@ -71,7 +72,7 @@ export function Dashboard() {
 			<SidebarProvider defaultOpen={true}>
 				<AppSidebar activePage={activePage} setActivePage={setActivePage} />
 				<SidebarInset>
-					<TopBar setActivePage={setActivePage} />
+					<TopBar activePage={activePage} setActivePage={setActivePage} />
 					<main className="flex-1 p-8 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-black dark:to-gray-950 min-h-[calc(100vh-4rem)]">
 						<div className="max-w-7xl mx-auto">{renderPage()}</div>
 					</main>
