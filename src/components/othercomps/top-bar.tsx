@@ -34,7 +34,6 @@ export function TopBar({ setActivePage }: TopBarProps) {
 	const [mounted, setMounted] = useState(false);
 	const { theme, setTheme } = useTheme();
 
-	// Prevent hydration mismatch
 	useEffect(() => {
 		setMounted(true);
 	}, []);
@@ -53,81 +52,23 @@ export function TopBar({ setActivePage }: TopBarProps) {
 		setTheme(theme === "dark" ? "light" : "dark");
 	};
 
-	// Don't render theme toggle until mounted
-	if (!mounted) {
-		return (
-			<header className="h-16 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-black/80 backdrop-blur-sm">
-				<div className="flex items-center justify-between h-full px-6">
-					<div className="flex items-center gap-4">
-						<div className="relative">
-							<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-							<Input
-								placeholder="Search everything..."
-								className="pl-10 w-80 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
-								onClick={() => setSearchOpen(true)}
-							/>
-						</div>
-					</div>
-					<div className="flex items-center gap-4">
-						<div className="h-9 w-9" /> {/* Placeholder for theme toggle */}
-						<DropdownMenu>
-							<DropdownMenuTrigger asChild>
-								<div className="flex items-center gap-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-900 rounded-lg p-2 transition-colors">
-									<Avatar className="h-8 w-8">
-										<AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-											<User className="h-4 w-4" />
-										</AvatarFallback>
-									</Avatar>
-									<div className="text-left">
-										<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-											Admin User
-										</p>
-										<p className="text-xs text-gray-500 dark:text-gray-400">
-											admin@example.com
-										</p>
-									</div>
-								</div>
-							</DropdownMenuTrigger>
-							<DropdownMenuContent
-								align="end"
-								className="w-56 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800"
-							>
-								<DropdownMenuItem className="text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800">
-									Profile Settings
-								</DropdownMenuItem>
-								<DropdownMenuItem className="text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800">
-									Account
-								</DropdownMenuItem>
-								<DropdownMenuItem className="text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800">
-									Preferences
-								</DropdownMenuItem>
-								<DropdownMenuItem className="text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800">
-									Sign Out
-								</DropdownMenuItem>
-							</DropdownMenuContent>
-						</DropdownMenu>
-					</div>
-				</div>
-			</header>
-		);
-	}
-
 	return (
 		<>
 			<header className="h-16 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-black/80 backdrop-blur-sm">
-				<div className="flex items-center justify-between h-full px-6">
-					<div className="flex items-center gap-4">
+				<div className="relative flex items-center h-full px-6">
+					<div className="flex items-center gap-4 min-w-[120px]"></div>
+					<div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
 						<div className="relative">
 							<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
 							<Input
 								placeholder="Search everything..."
 								className="pl-10 w-80 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700"
 								onClick={() => setSearchOpen(true)}
+								readOnly
 							/>
 						</div>
 					</div>
-
-					<div className="flex items-center gap-4">
+					<div className="flex items-center gap-4 ml-auto">
 						<Button
 							variant="ghost"
 							size="icon"
