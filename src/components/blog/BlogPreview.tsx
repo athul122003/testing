@@ -1,12 +1,16 @@
 "use client";
 
-import Image from "next/image";
+import React from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import "highlight.js/styles/github-dark.css";
 
-interface BlogPreviewProps {
+type BlogPreviewProps = {
 	title?: string;
 	excerpt?: string;
 	content: string;
-}
+};
 
 export function BlogPreview({ title, excerpt, content }: BlogPreviewProps) {
 	return (
@@ -19,108 +23,50 @@ export function BlogPreview({ title, excerpt, content }: BlogPreviewProps) {
 				</p>
 			)}
 
-			<div className="space-y-4">
-				{(() => {
-					const lines = content.split("\n");
-					const elements: React.ReactNode[] = [];
+			<ReactMarkdown
+				remarkPlugins={[remarkGfm]}
+				rehypePlugins={[rehypeHighlight]}
+				components={{
+					img: ({ node, ...props }) => (
+						<img
+							{...props}
+							className="mx-auto my-4 rounded-lg shadow-md max-w-full"
+							alt={props.alt || "Blog image"}
+						/>
+					),
+					a: ({ node, ...props }) => (
+						<a
+							{...props}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-blue-600 hover:underline"
+						/>
+					),
+					ul: ({ node, ...props }) => (
+						<ul {...props} className="list-disc ml-6" />
+					),
+					li: ({ node, ...props }) => <li {...props} className="my-1" />,
+					code({ node, className, children, ...props }) {
+						const isInline =
+							node?.position?.start.line === node?.position?.end.line;
 
-					let currentList: string[] = [];
-
-					lines.forEach((line, index) => {
-						const key = `${line}-${index}`;
-
-						const imageMatch = line.match(/!\[([^\]]*)\]\(([^)]+)\)/);
-						if (imageMatch) {
-							elements.push(
-								<Image
-									key={`img-${key}`}
-									src={imageMatch[2]}
-									alt={imageMatch[1]}
-									width={800}
-									height={400}
-									className="mx-auto my-4 rounded-lg shadow-md max-w-full"
-								/>,
-							);
-							return;
-						}
-
-						if (line.startsWith("- ")) {
-							currentList.push(line.slice(2));
-							return;
-						} else if (currentList.length > 0) {
-							elements.push(
-								<ul key={`list-${currentList.join("-")}`}>
-									{currentList.map((item) => (
-										<li key={item}>{item}</li>
-									))}
-								</ul>,
-							);
-							currentList = [];
-						}
-
-						if (line.startsWith("**") && line.endsWith("**")) {
-							elements.push(
-								<p key={`bold-${key}`} className="font-bold">
-									{line.slice(2, -2)}
-								</p>,
-							);
-							return;
-						}
-
-						if (
-							line.startsWith("*") &&
-							line.endsWith("*") &&
-							!line.startsWith("**")
-						) {
-							elements.push(
-								<p key={`italic-${key}`} className="italic">
-									{line.slice(1, -1)}
-								</p>,
-							);
-							return;
-						}
-
-						if (line.startsWith("[") && line.includes("](")) {
-							const match = line.match(/\[([^\]]+)\]\(([^)]+)\)/);
-							if (match) {
-								elements.push(
-									<p key={`link-${key}`}>
-										<a
-											href={match[2]}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="text-blue-500 hover:underline"
-										>
-											{match[1]}
-										</a>
-									</p>,
-								);
-								return;
-							}
-						}
-
-						elements.push(
-							line ? (
-								<p key={`plain-${key}`}>{line}</p>
-							) : (
-								<br key={`br-${key}`} />
-							),
+						return isInline ? (
+							<code
+								{...props}
+								className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded text-sm"
+							>
+								{children}
+							</code>
+						) : (
+							<pre className={className}>
+								<code {...props}>{children}</code>
+							</pre>
 						);
-					});
-
-					if (currentList.length > 0) {
-						elements.push(
-							<ul key={currentList.join("-")} className="ml-4 list-disc">
-								{currentList.map((item) => (
-									<li key={item}>{item}</li>
-								))}
-							</ul>,
-						);
-					}
-
-					return elements;
-				})()}
-			</div>
+					},
+				}}
+			>
+				{content}
+			</ReactMarkdown>
 		</div>
 	);
 }
