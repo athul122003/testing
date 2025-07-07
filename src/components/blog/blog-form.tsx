@@ -27,6 +27,7 @@ import { getBlogMeta } from "~/lib/getBlogMetaData";
 import { BlogPreview } from "./BlogPreview";
 import { formatMarkdownText } from "~/lib/formatMarkdownText";
 import type { FormatType } from "~/lib/formatMarkdownText";
+import { useBlogMutation } from "~/actions/tanstackHooks/blog-queries";
 
 interface BlogFormProps {
 	setActivePage: (page: string) => void;
@@ -58,6 +59,13 @@ export function BlogForm({
 		excerpt: "",
 		featuredImage: "",
 		status: "DRAFT",
+	});
+
+	const { mutate, isPending } = useBlogMutation({
+		onSuccessCallback: () => {
+			setActivePage("blogs");
+			setEditingBlog(null);
+		},
 	});
 
 	const [featuredImageFile, setFeaturedImageFile] = useState<File | null>(null);
@@ -114,14 +122,10 @@ export function BlogForm({
 			id: editingBlog?.id || undefined,
 		};
 
-		try {
-			await createOrUpdateBlog(blogData, userId);
-			setActivePage("blogs");
-			setEditingBlog(null);
-		} catch (err) {
-			console.error("Failed to submit blog", err);
-			alert("Failed to submit blog");
-		}
+		mutate({
+			blogData,
+			userId,
+		});
 	};
 
 	const handleCancel = () => {
@@ -407,6 +411,7 @@ export function BlogForm({
 									Cancel
 								</Button>
 								<Button
+									disabled={isPending}
 									onClick={() =>
 										handleSubmit(
 											editingBlog?.blogState === "PUBLISHED"
@@ -417,13 +422,32 @@ export function BlogForm({
 									className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
 								>
 									<Save className="h-4 w-4 mr-2" />
-									{editingBlog ? "Update" : "Save as Draft"}
+									{isPending
+										? editingBlog
+											? "Updating..."
+											: "Saving..."
+										: editingBlog
+											? "Update"
+											: "Save as Draft"}
 								</Button>
+
+								{editingBlog?.blogState === "PUBLISHED" && (
+									<Button
+										variant="secondary"
+										disabled={isPending}
+										onClick={() => handleSubmit("DRAFT")}
+										className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:hover:bg-yellow-800"
+									>
+										{isPending ? "Reverting..." : "Revert to Draft"}
+									</Button>
+								)}
+
 								<Button
+									disabled={isPending}
 									onClick={() => handleSubmit("PUBLISHED")}
 									className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
 								>
-									Publish
+									{`${isPending ? "Publishing..." : "Publish"}`}
 								</Button>
 							</div>
 						</CardContent>

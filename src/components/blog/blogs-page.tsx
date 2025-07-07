@@ -3,8 +3,7 @@
 import { Calendar, Eye, FileText, Plus, User } from "lucide-react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
-import { deleteBlog, getBlogs } from "~/actions/blog";
+import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
 import {
@@ -14,9 +13,13 @@ import {
 	DialogTitle,
 } from "~/components/ui/dialog";
 import { BlogPreview } from "./BlogPreview";
-
-export type BlogWithUser = Awaited<ReturnType<typeof getBlogs>>;
-export type Blog = BlogWithUser[number];
+import {
+	useBlogs,
+	useDeleteBlogMutation,
+	useDraftBlogMutation,
+	usePublishBlogMutation,
+} from "~/actions/tanstackHooks/blog-queries";
+import type { Blog } from "~/actions/tanstackHooks/blog-queries";
 
 interface BlogsPageProps {
 	setActivePage: (page: string) => void;
@@ -27,24 +30,33 @@ export function BlogsPage({ setActivePage, setEditingBlog }: BlogsPageProps) {
 	const { data: session } = useSession();
 	const currentUserId = session?.user?.id;
 
-	const [blogs, setBlogs] = useState<Blog[]>([]);
 	const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null);
 	const [isDetailOpen, setIsDetailOpen] = useState(false);
-	const [isLoading, setIsLoading] = useState(true);
 
-	useEffect(() => {
-		const fetchBlogs = async () => {
-			try {
-				const blogs = await getBlogs();
-				setBlogs(blogs);
-				setIsLoading(false);
-			} catch (error) {
-				console.error("Error fetching blogs:", error);
-			}
-		};
+	//fetch blogs
+	const { data: blogs, isLoading } = useBlogs();
 
-		fetchBlogs();
-	}, []);
+	//mutate delete blog
+	const { mutate: deleteBlog, isPending: isDeleting } = useDeleteBlogMutation({
+		onSuccessCallback: () => {
+			setIsDetailOpen(false);
+		},
+	});
+
+	//mutate publish blog
+	const { mutate: publishBlog, isPending: isPublishing } =
+		usePublishBlogMutation({
+			onSuccessCallback: () => {
+				setIsDetailOpen(false);
+			},
+		});
+
+	// mutate draft blog
+	const { mutate: draftBlog, isPending: isDrafting } = useDraftBlogMutation({
+		onSuccessCallback: () => {
+			setIsDetailOpen(false);
+		},
+	});
 
 	const handleCreateBlog = () => {
 		setEditingBlog(null);
@@ -57,24 +69,16 @@ export function BlogsPage({ setActivePage, setEditingBlog }: BlogsPageProps) {
 		setIsDetailOpen(false);
 	};
 
-	const handleDeleteBlog = async (blogId: string) => {
-		try {
-			await deleteBlog(blogId);
-			setBlogs((prev) => prev.filter((blog) => blog.id !== blogId));
-			setIsDetailOpen(false);
-		} catch (error) {
-			console.error("Failed to delete blog:", error);
-			alert("Something went wrong while deleting the blog.");
-		}
+	const handleDeleteBlog = (blogId: string) => {
+		deleteBlog(blogId);
 	};
 
 	const handlePublishBlog = (blogId: string) => {
-		setBlogs((prev) =>
-			prev.map((blog) =>
-				blog.id === blogId ? { ...blog, blogState: "PUBLISHED" } : blog,
-			),
-		);
-		setIsDetailOpen(false);
+		publishBlog(blogId);
+	};
+
+	const handleDraftBlog = (blogId: string) => {
+		draftBlog(blogId);
 	};
 
 	const getStatusColor = (status: string) => {
@@ -112,7 +116,7 @@ export function BlogsPage({ setActivePage, setEditingBlog }: BlogsPageProps) {
 			</div>
 
 			<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-				{blogs.map((blog) => (
+				{blogs?.map((blog) => (
 					<Card
 						key={blog.id}
 						className="border-0 shadow-lg bg-white dark:bg-gray-900 overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group"
@@ -172,7 +176,7 @@ export function BlogsPage({ setActivePage, setEditingBlog }: BlogsPageProps) {
 				))}
 			</div>
 
-			{blogs.length === 0 && (
+			{blogs?.length === 0 && (
 				<Card className="border-0 shadow-lg bg-white dark:bg-gray-900">
 					<CardContent className="text-center py-12">
 						<FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
@@ -243,10 +247,20 @@ export function BlogsPage({ setActivePage, setEditingBlog }: BlogsPageProps) {
 									<div className="flex justify-end gap-2 pt-4 border-t">
 										{selectedBlog.blogState === "DRAFT" && (
 											<Button
+												disabled={isPublishing}
 												onClick={() => handlePublishBlog(selectedBlog.id)}
 												className="bg-green-600 hover:bg-green-700 text-white"
 											>
-												Publish
+												{isPublishing ? "Publishing..." : "Publish"}
+											</Button>
+										)}
+										{selectedBlog.blogState === "PUBLISHED" && (
+											<Button
+												disabled={isDrafting}
+												onClick={() => handleDraftBlog(selectedBlog.id)}
+												className="bg-yellow-600 hover:bg-yellow-700 text-white"
+											>
+												{isDrafting ? "Drafting..." : "Draft"}
 											</Button>
 										)}
 
@@ -261,9 +275,10 @@ export function BlogsPage({ setActivePage, setEditingBlog }: BlogsPageProps) {
 
 										<Button
 											variant="destructive"
+											disabled={isDeleting}
 											onClick={() => handleDeleteBlog(selectedBlog.id)}
 										>
-											Delete
+											{isDeleting ? "Deleting..." : "Delete"}
 										</Button>
 									</div>
 								</div>
