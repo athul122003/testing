@@ -53,6 +53,7 @@ import {
 } from "~/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { api } from "~/lib/api";
+import { useDashboardData } from "~/providers/dashboardDataContext";
 
 export function UsersPage() {
 	/*
@@ -107,10 +108,16 @@ export function UsersPage() {
 
 */
 	// Fetch roles and permissions from the API
-	const { data: permissions = [], isLoading: permLoading } =
-		api.permission.getAll.useQuery();
-	const { data: roles = [], isLoading: roleLoading } =
-		api.role.getAll.useQuery();
+	const {
+		rolesQuery,
+		permissionsQuery,
+		setUserParams,
+		usersQuery,
+		refetchUsers,
+	} = useDashboardData();
+	const { data: permissions = [], isLoading: permLoading } = permissionsQuery;
+	const { data: roles = [], isLoading: roleLoading } = rolesQuery;
+	console.log("Roles from API route:", roles);
 	const [roleSearchTerm, setRoleSearchTerm] = useState("");
 	const [rolePage, setRolePage] = useState(1);
 	const ROLES_PER_PAGE = 4;
@@ -241,19 +248,25 @@ export function UsersPage() {
 	const [sortBy, setSortBy] = useState<"role" | "name" | "id">("role");
 	const [bulkSelectedRole, setBulkSelectedRole] = useState<string | null>(null);
 
-	const { data: users, isLoading: userLoading } = api.user.searchUser.useQuery({
-		query: searchTerm,
-		page,
-		limit: 10,
-		sortBy,
-		sortOrder: roleSortOrder,
-		role: selectedRole || "all",
-	});
+	const { data: users, isLoading: userLoading } = usersQuery;
+
+	useEffect(() => {
+		console.log("Users from API route");
+		setUserParams(
+			searchTerm,
+			page,
+			10,
+			sortBy,
+			roleSortOrder,
+			selectedRole || "all",
+		);
+	}, [searchTerm, page, sortBy, roleSortOrder, selectedRole, setUserParams]);
 
 	const singleUpdate = api.user.updateUserRole.useMutation({
-		onSuccess: (_, variables) => {
+		onSuccess: async (_, variables) => {
+			await refetchUsers();
+			toast.dismiss();
 			toast.success("Role updated.");
-			api.user.searchUser.invalidate();
 
 			// Exit editing mode for that specific user
 			setEditingRoles((prev) => {
@@ -266,10 +279,11 @@ export function UsersPage() {
 	});
 
 	const bulkUpdate = api.user.updateMultipleUserRoles.useMutation({
-		onSuccess: () => {
+		onSuccess: async () => {
+			await refetchUsers();
+			toast.dismiss();
 			toast.success("Roles updated for selected users.");
 			setSelectedUsers([]);
-			api.user.searchUser.invalidate();
 		},
 		onError: (err) => toast.error(err.message),
 	});
@@ -728,6 +742,7 @@ export function UsersPage() {
 																	disabled={!bulkSelectedRole}
 																	onClick={() => {
 																		if (bulkSelectedRole) {
+																			toast.loading("Updating roles...");
 																			bulkUpdate.mutate({
 																				userIds: selectedUsers.map((u) => u.id),
 																				roleName: bulkSelectedRole,
@@ -875,13 +890,14 @@ export function UsersPage() {
 																					<Button
 																						size="icon"
 																						variant="ghost"
-																						onClick={() =>
+																						onClick={() => {
+																							toast.loading("Updating role...");
 																							singleUpdate.mutate({
 																								userId: user.id,
 																								roleName:
 																									editingRoles[user.id].current,
-																							})
-																						}
+																							});
+																						}}
 																						className="hover:bg-gray-100 dark:hover:bg-slate-900"
 																					>
 																						<Check className="text-green-500 dark:text-green-400 h-4 w-4" />

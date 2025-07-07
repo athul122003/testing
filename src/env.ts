@@ -1,6 +1,5 @@
 // lib/env.ts
 
-import chalk from "chalk";
 import { z } from "zod";
 
 const envSchema = z.object({
@@ -28,27 +27,19 @@ let env: z.infer<typeof envSchema>;
 try {
 	env = envSchema.parse(process.env);
 } catch (error) {
-	console.error(chalk.red.bold("\n⛔ ENVIRONMENT VALIDATION ERROR"));
-	console.log(
-		chalk.gray("------------------------------------------------------"),
-	);
+	console.error("\n⛔ ENVIRONMENT VALIDATION ERROR");
+	console.log("------------------------------------------------------");
 
 	if (error instanceof z.ZodError) {
 		for (const issue of error.errors) {
 			console.log(
-				`${chalk.yellow("🚨 Missing or invalid:")} ${chalk.red.bold(issue.path.join("."))} → ${chalk.white(issue.message)}`,
+				`🚨 Missing or invalid: ${issue.path.join(".")} → ${issue.message}`,
 			);
 		}
 
-		console.log(
-			chalk.gray("------------------------------------------------------"),
-		);
-		console.log(
-			chalk.cyan("💡 Fix the above variables in your ") +
-				chalk.bold(".env.local") +
-				chalk.cyan(" file"),
-		);
-		console.log(chalk.magenta("🔄 Restart the server after fixing them\n"));
+		console.log("------------------------------------------------------");
+		console.log("💡 Fix the above variables in your .env file");
+		console.log("🔄 Restart the server after fixing them\n");
 	}
 
 	process.exit(1); // Stop the server if env is invalid

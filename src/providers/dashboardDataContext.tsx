@@ -1,5 +1,6 @@
 "use client";
 
+import type { Permission, Role } from "@prisma/client";
 import { type UseQueryResult, useQuery } from "@tanstack/react-query";
 import {
 	createContext,
@@ -13,21 +14,33 @@ import type {
 	PaymentWithUser,
 	SummaryStats,
 } from "~/actions/tanstackHooks/payment-queries";
+import { api } from "~/lib/api";
 
 type DashboardDataContextType = {
-	// Data results
 	paymentsQuery: UseQueryResult<PaymentWithUser>;
 	summaryStatsQuery: UseQueryResult<SummaryStats>;
+	rolesQuery: UseQueryResult<Role[]>;
+	permissionsQuery: UseQueryResult<Permission[]>;
 
-	// Refetchers
 	refetchPayments: () => void;
 	refetchStats: () => void;
+	refetchUsers: () => void;
 
-	// Params setters
 	setPaymentParams: (
 		page: number,
 		pageSize: number,
 		dateFilter?: { startDate?: Date; endDate?: Date },
+	) => void;
+
+	usersQuery: UseQueryResult<any>;
+
+	setUserParams: (
+		query: string,
+		page: number,
+		limit: number,
+		sortBy: string,
+		sortOrder: "asc" | "desc",
+		role?: string,
 	) => void;
 };
 
@@ -40,7 +53,6 @@ export const DashboardDataProvider = ({
 }: {
 	children: ReactNode;
 }) => {
-	// Store args in state
 	const [paymentArgs, setPaymentArgs] = useState<{
 		page: number;
 		pageSize: number;
@@ -50,6 +62,35 @@ export const DashboardDataProvider = ({
 		page: 1,
 		pageSize: 20,
 	});
+
+	const [userArgs, setUserArgs] = useState<{
+		query: string;
+		page: number;
+		limit: number;
+		sortBy: string;
+		sortOrder: "asc" | "desc";
+		role?: string;
+	}>({
+		query: "",
+		page: 1,
+		limit: 10,
+		sortBy: "role",
+		sortOrder: "asc",
+	});
+
+	const setUserParams = useCallback(
+		(
+			query: string,
+			page: number,
+			limit: number,
+			sortBy: string,
+			sortOrder: "asc" | "desc",
+			role?: string,
+		) => {
+			setUserArgs({ query, page, limit, sortBy, sortOrder, role });
+		},
+		[],
+	);
 
 	const setPaymentParams = useCallback(
 		(
@@ -62,7 +103,6 @@ export const DashboardDataProvider = ({
 		[],
 	);
 
-	// Query for Payments
 	const paymentsQuery = useQuery<PaymentWithUser>({
 		queryKey: [
 			"payments",
@@ -82,7 +122,6 @@ export const DashboardDataProvider = ({
 		placeholderData: (prev) => prev,
 	});
 
-	// Query for Summary Stats
 	const summaryStatsQuery = useQuery<SummaryStats>({
 		queryKey: ["summaryStats"],
 		queryFn: getSummaryStats,
@@ -90,12 +129,54 @@ export const DashboardDataProvider = ({
 		placeholderData: (prev) => prev,
 	});
 
+	const rolesQuery = useQuery({
+		queryKey: ["getRoles"],
+		queryFn: api.role.getAll,
+		staleTime: 30_000,
+		placeholderData: (prev) => prev,
+	});
+
+	const permissionsQuery = useQuery({
+		queryKey: ["getPermissions"],
+		queryFn: api.permission.getAll,
+		staleTime: 30_000,
+		placeholderData: (prev) => prev,
+	});
+
+	const usersQuery = useQuery({
+		queryKey: [
+			"users",
+			userArgs.query,
+			userArgs.page,
+			userArgs.limit,
+			userArgs.sortBy,
+			userArgs.sortOrder,
+			userArgs.role,
+		],
+		queryFn: () =>
+			api.user.searchUser({
+				query: userArgs.query,
+				page: userArgs.page,
+				limit: userArgs.limit,
+				sortBy: userArgs.sortBy,
+				sortOrder: userArgs.sortOrder,
+				role: userArgs.role,
+			}),
+		staleTime: 30_000,
+		placeholderData: (prev) => prev,
+	});
+
 	const value: DashboardDataContextType = {
 		paymentsQuery,
 		summaryStatsQuery,
+		rolesQuery,
+		permissionsQuery,
+		usersQuery,
+		refetchUsers: usersQuery.refetch,
 		refetchPayments: paymentsQuery.refetch,
 		refetchStats: summaryStatsQuery.refetch,
 		setPaymentParams,
+		setUserParams,
 	};
 
 	return (
