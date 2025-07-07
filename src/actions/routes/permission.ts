@@ -17,7 +17,7 @@ export async function getAll() {
 		return await db.permission.findMany();
 	} catch (err) {
 		console.error("Error fetching permissions:", err);
-		throw new Error("Failed to fetch permissions");
+		throw new Error(`Failed to fetch permissions: ${err}`);
 	}
 }
 

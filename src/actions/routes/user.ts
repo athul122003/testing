@@ -98,7 +98,7 @@ export async function searchUser(input: unknown) {
 		};
 	} catch (err) {
 		console.error("❌ Error in searchUser:", err);
-		throw new Error("Failed to fetch users");
+		throw new Error(`Failed to fetch users: ${err}`);
 	}
 }
 
