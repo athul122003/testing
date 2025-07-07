@@ -25,6 +25,8 @@ import { Textarea } from "~/components/ui/textarea";
 import { uploadImageToCloudinary } from "~/lib/cloudinaryImageUploader";
 import { getBlogMeta } from "~/lib/getBlogMetaData";
 import { BlogPreview } from "./BlogPreview";
+import { formatMarkdownText } from "~/lib/formatMarkdownText";
+import type { FormatType } from "~/lib/formatMarkdownText";
 
 interface BlogFormProps {
 	setActivePage: (page: string) => void;
@@ -64,6 +66,7 @@ export function BlogForm({
 
 	const markdownImageInputRef = useRef<HTMLInputElement | null>(null);
 	const featuredImageInputRef = useRef<HTMLInputElement | null>(null);
+	const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
 
 	useEffect(() => {
 		if (editingBlog) {
@@ -126,44 +129,25 @@ export function BlogForm({
 		setEditingBlog(null);
 	};
 
-	const formatText = (type: string) => {
-		const textarea = document.getElementById(
-			"blog-content",
-		) as HTMLTextAreaElement;
+	const formatText = (type: FormatType) => {
+		const textarea = textAreaRef.current;
 		if (!textarea) return;
 
 		const start = textarea.selectionStart;
 		const end = textarea.selectionEnd;
-		const selectedText = formData.content.substring(start, end);
-
-		let formatted = selectedText;
-		switch (type) {
-			case "bold":
-				formatted = `**${selectedText}**`;
-				break;
-			case "italic":
-				formatted = `*${selectedText}*`;
-				break;
-			case "list":
-				formatted = `\n- ${selectedText}`;
-				break;
-			case "link":
-				formatted = `[${selectedText}](url)`;
-				break;
-		}
-
-		const newContent =
-			formData.content.substring(0, start) +
-			formatted +
-			formData.content.substring(end);
-
+		const newContent = formatMarkdownText({
+			content: formData.content,
+			type,
+			start,
+			end,
+		});
 		setFormData({ ...formData, content: newContent });
 
 		setTimeout(() => {
 			textarea.focus();
 			textarea.setSelectionRange(
-				start + formatted.length,
-				start + formatted.length,
+				start + (newContent.length - formData.content.length),
+				start + (newContent.length - formData.content.length),
 			);
 		}, 0);
 	};
@@ -390,6 +374,7 @@ export function BlogForm({
 
 										<Textarea
 											id="blog-content"
+											ref={textAreaRef}
 											placeholder="Write your blog content here..."
 											rows={20}
 											className="border-0 resize-none font-mono"
