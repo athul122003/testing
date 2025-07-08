@@ -21,33 +21,33 @@ export async function getAll() {
 	}
 }
 
-export async function create(input: unknown) {
-	const { name } = createPermissionSchema.parse(input);
+// export async function create(input: unknown) {
+// 	const { name } = createPermissionSchema.parse(input);
 
-	const existing = await db.permission.findUnique({
-		where: { name },
-	});
+// 	const existing = await db.permission.findUnique({
+// 		where: { name },
+// 	});
 
-	if (existing) {
-		throw new Error("Permission with this name already exists.");
-	}
+// 	if (existing) {
+// 		throw new Error("Permission with this name already exists.");
+// 	}
 
-	const newPermission = await db.permission.create({
-		data: { name },
-	});
+// 	const newPermission = await db.permission.create({
+// 		data: { name },
+// 	});
 
-	return newPermission;
-}
+// 	return newPermission;
+// }
 
-export async function deletePerm(input: unknown) {
-	const { id } = deletePermissionSchema.parse(input);
+// export async function deletePerm(input: unknown) {
+// 	const { id } = deletePermissionSchema.parse(input);
 
-	try {
-		return await db.permission.delete({
-			where: { id },
-		});
-	} catch (err) {
-		console.error("Error deleting permission:", err);
-		throw new Error("Failed to delete permission");
-	}
-}
+// 	try {
+// 		return await db.permission.delete({
+// 			where: { id },
+// 		});
+// 	} catch (err) {
+// 		console.error("Error deleting permission:", err);
+// 		throw new Error("Failed to delete permission");
+// 	}
+// }

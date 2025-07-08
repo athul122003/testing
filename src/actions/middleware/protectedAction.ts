@@ -45,7 +45,7 @@ export function protectedAction<Args extends unknown[], Result>(
 		| ((session: Session, ...args: Args) => Promise<Result>)
 		| ((...args: Args) => Promise<Result>),
 	options?: ProtectedOptions,
-): (...args: Args) => Promise<Result> {
+): (...args: Args) => Promise<Result | null> {
 	return async (...args: Args) => {
 		const session = await auth();
 		console.log("Session in protectedAction:", session);
@@ -56,11 +56,16 @@ export function protectedAction<Args extends unknown[], Result>(
 		// ✅ Check permissions if actionName is defined
 		const actionName = options?.actionName;
 		if (actionName) {
-			const requiredPermissions = routePermissionMap[actionName] ?? [];
-			if (!hasPermission(session, requiredPermissions)) {
-				throw new Error(
-					`Forbidden: Missing permission(s): ${requiredPermissions.join(", ")}`,
-				);
+			try {
+				const requiredPermissions = routePermissionMap[actionName] ?? [];
+				if (!hasPermission(session, requiredPermissions)) {
+					throw new Error(
+						`Forbidden: Missing permission(s): ${requiredPermissions.join(", ")}`,
+					);
+				}
+			} catch (err) {
+				console.error("Error checking permissions:", err);
+				return null;
 			}
 		}
 
