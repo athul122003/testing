@@ -1,172 +1,127 @@
 "use server";
+import type { Session } from "next-auth";
 import { z } from "zod";
 import { db } from "~/server/db";
+import { protectedAction } from "~/actions/middleware/protectedAction";
 
 // --- SCHEMAS ---
-const createRoleSchema = z.object({
-	name: z.string().min(1),
-});
-
-const deleteRoleSchema = z.object({
-	id: z.string(),
-});
-
+const createRoleSchema = z.object({ name: z.string().min(1) });
+const deleteRoleSchema = z.object({ id: z.string() });
 const updateRolePermissionsSchema = z.object({
 	roleId: z.string(),
 	permissionIds: z.array(z.string()),
 });
-// --- INDIVIDUAL SERVER ACTIONS ---
 
-export async function getAll() {
-	try {
+// --- WRAPPED PROTECTED SERVER ACTIONS ---
+
+export const getAll = protectedAction(
+	async () => {
 		const roles = await db.role.findMany({
 			include: {
 				permissions: {
 					select: {
-						permission: {
-							select: {
-								id: true,
-								name: true,
-							},
-						},
+						permission: { select: { id: true, name: true } },
 					},
 				},
 			},
 		});
-
 		return roles;
-	} catch (err) {
-		console.error("Error in getAll roles:", err);
-		throw new Error(`Failed to fetch roles: ${err}`);
-	}
-}
+	},
+	{ actionName: "role.getAll" },
+);
 
-export async function create(input: unknown) {
-	const { name } = createRoleSchema.parse(input);
+export const create = protectedAction(
+	async (input: unknown) => {
+		const { name } = createRoleSchema.parse(input);
+		const existing = await db.role.findUnique({ where: { name } });
 
-	const existing = await db.role.findUnique({
-		where: { name },
-	});
+		if (existing) throw new Error("Role with this name already exists.");
 
-	if (existing) {
-		throw new Error("Role with this name already exists.");
-	}
-
-	const newRole = await db.role.create({
-		data: { name },
-		select: {
-			id: true,
-			name: true,
-		},
-	});
-
-	return newRole;
-}
-
-export async function deleteRole(input: unknown) {
-	const { id } = deleteRoleSchema.parse(input);
-
-	try {
-		// Fetch the role to be deleted
-		const role = await db.role.findUnique({
-			where: { id },
-			select: {
-				id: true,
-				name: true,
-			},
+		const newRole = await db.role.create({
+			data: { name },
+			select: { id: true, name: true },
 		});
 
-		if (!role) {
-			throw new Error("Role not found");
-		}
+		return newRole;
+	},
+	{ actionName: "role.create" },
+);
 
-		// Prevent deletion of the default USER role itself
-		if (role.name === "USER" || role.name === "ADMIN") {
+export const deleteRole = protectedAction(
+	async (input: unknown) => {
+		const { id } = deleteRoleSchema.parse(input);
+
+		const role = await db.role.findUnique({
+			where: { id },
+			select: { id: true, name: true },
+		});
+
+		if (!role) throw new Error("Role not found");
+		if (["USER", "ADMIN"].includes(role.name))
 			throw new Error(`Cannot delete default ${role.name} role`);
-		}
 
-		// Fetch the USER role ID
 		const userRole = await db.role.findUnique({
 			where: { name: "USER" },
 			select: { id: true },
 		});
 
-		if (!userRole) {
-			throw new Error("Default USER role not found");
-		}
+		if (!userRole) throw new Error("Default USER role not found");
 
-		// Reassign users with the role to be deleted to the USER role
 		await db.user.updateMany({
 			where: { roleId: role.id },
 			data: { roleId: userRole.id },
 		});
 
-		// Delete the role
-		await db.role.delete({
-			where: { id: role.id },
-		});
+		await db.role.delete({ where: { id: role.id } });
 
-		// Return role info for toast
 		return role;
-	} catch (err) {
-		throw new Error((err as Error)?.message || "Failed to delete role");
-	}
-}
+	},
+	{ actionName: "role.delete" },
+);
 
-export async function updateRolePermissions(input: unknown) {
-	const { roleId, permissionIds } = updateRolePermissionsSchema.parse(input);
+export const updateRolePermissions = protectedAction(
+	async (session: Session, input: unknown) => {
+		const { roleId, permissionIds } = updateRolePermissionsSchema.parse(input);
 
-	// Fetch the role name
-	const role = await db.role.findUnique({
-		where: { id: roleId },
-		select: { id: true, name: true },
-	});
-
-	if (!role) {
-		throw new Error("Role not found");
-	}
-
-	// ❌ Disallow permission updates for USER role
-	if (role.name === "USER" || role.name === "ADMIN") {
-		throw new Error(`Cannot update permissions for the ${role.name} role`);
-	}
-
-	// Fetch existing permission IDs for the role
-	const existing = await db.rolePermission.findMany({
-		where: { roleId },
-		select: { permissionId: true },
-	});
-
-	const existingIds = existing.map((rp) => rp.permissionId);
-
-	// Compute changes
-	const addedIds = permissionIds.filter((id) => !existingIds.includes(id));
-	const removedIds = existingIds.filter((id) => !permissionIds.includes(id));
-
-	// Delete removed permissions
-	if (removedIds.length > 0) {
-		await db.rolePermission.deleteMany({
-			where: {
-				roleId,
-				permissionId: { in: removedIds },
-			},
+		const role = await db.role.findUnique({
+			where: { id: roleId },
+			select: { id: true, name: true },
 		});
-	}
 
-	// Add new permissions
-	if (addedIds.length > 0) {
-		await db.rolePermission.createMany({
-			data: addedIds.map((permissionId) => ({
-				roleId,
-				permissionId,
-			})),
+		if (!role) throw new Error("Role not found");
+
+		// ❌ Prevent user from updating their own role
+		if (role.name === session.user.role.name) {
+			throw new Error("You cannot update permissions for your own role.");
+		}
+
+		// ❌ Prevent updates to default protected roles
+		if (["USER", "ADMIN"].includes(role.name)) {
+			throw new Error(`Cannot update permissions for the ${role.name} role`);
+		}
+
+		const existing = await db.rolePermission.findMany({
+			where: { roleId },
+			select: { permissionId: true },
 		});
-	}
 
-	// Return metadata
-	return {
-		role,
-		addedIds,
-		removedIds,
-	};
-}
+		const existingIds = existing.map((rp) => rp.permissionId);
+		const addedIds = permissionIds.filter((id) => !existingIds.includes(id));
+		const removedIds = existingIds.filter((id) => !permissionIds.includes(id));
+
+		if (removedIds.length > 0) {
+			await db.rolePermission.deleteMany({
+				where: { roleId, permissionId: { in: removedIds } },
+			});
+		}
+
+		if (addedIds.length > 0) {
+			await db.rolePermission.createMany({
+				data: addedIds.map((permissionId) => ({ roleId, permissionId })),
+			});
+		}
+
+		return { role, addedIds, removedIds };
+	},
+	{ actionName: "role.updateRolePermissions" },
+);

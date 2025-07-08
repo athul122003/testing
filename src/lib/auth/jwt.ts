@@ -8,7 +8,7 @@ import { addRefreshTokenToWhitelist } from "./auth.service";
 import { getUserById } from "./auth-util";
 import { hashToken } from "./hashToken";
 
-const AUTH_SECRET = env.AUTH_SECRET;
+const AUTH_SECRET = process.env.AUTH_SECRET;
 
 const secrets = {
 	JWT_VERIFICATION_SECRET: `${AUTH_SECRET}verification`,

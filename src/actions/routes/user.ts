@@ -1,9 +1,10 @@
-// src/action/routes/user.ts
 "use server";
 
+import type { Session } from "next-auth";
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { db } from "~/server/db";
+import { protectedAction } from "~/actions/middleware/protectedAction";
 
 // --- Zod Schemas ---
 const searchSchema = z.object({
@@ -15,28 +16,22 @@ const searchSchema = z.object({
 	role: z.string().optional(),
 });
 
-const _changeRoleSchema = z.object({
-	id: z.number(),
-	newRoleId: z.string().min(1),
+const updateRoleSchema = z.object({
+	userId: z.number(),
+	roleName: z.string(),
 });
 
-export async function searchUser(input: unknown) {
-	try {
-		const {
-			query,
-			page,
-			limit,
-			sortBy,
-			sortOrder,
-			role, // string (Role.name)
-		} = searchSchema.parse(input);
+// --- Protected Actions ---
+
+export const searchUser = protectedAction(
+	async (input: unknown) => {
+		const { query, page, limit, sortBy, sortOrder, role } =
+			searchSchema.parse(input);
 
 		const skip = (page - 1) * limit;
 
-		// 🌐 Build where conditions
 		const baseConditions: Prisma.UserWhereInput[] = [];
 
-		// 🔍 Add search filter
 		if (query?.trim()) {
 			baseConditions.push({
 				OR: [
@@ -48,7 +43,6 @@ export async function searchUser(input: unknown) {
 			});
 		}
 
-		// 🎯 Filter by role
 		if (role && role !== "all") {
 			baseConditions.push({
 				role: {
@@ -60,13 +54,11 @@ export async function searchUser(input: unknown) {
 		const where: Prisma.UserWhereInput =
 			baseConditions.length > 0 ? { AND: baseConditions } : {};
 
-		// 🧠 Handle orderBy for relation `role.name`
 		const orderByClause: Prisma.UserOrderByWithRelationInput =
 			sortBy === "role"
 				? { role: { name: sortOrder } }
 				: { [sortBy]: sortOrder };
 
-		// ⚡ Query users & count
 		const [results, total] = await Promise.all([
 			db.user.findMany({
 				where,
@@ -96,86 +88,86 @@ export async function searchUser(input: unknown) {
 			page,
 			totalPages: Math.ceil(total / limit),
 		};
-	} catch (err) {
-		console.error("❌ Error in searchUser:", err);
-		throw new Error(`Failed to fetch users: ${err}`);
-	}
-}
+	},
+	{ actionName: "user.search" },
+);
 
-const updateRoleSchema = z.object({
-	userId: z.number(),
-	roleName: z.string(),
-});
+export const updateUserRole = protectedAction(
+	async (session: Session, input: unknown) => {
+		const { userId, roleName } = updateRoleSchema.parse(input);
 
-export async function updateUserRole(input: unknown) {
-	const { userId, roleName } = updateRoleSchema.parse(input);
+		if (session.user.id === userId) {
+			throw new Error("You cannot update your own role.");
+		}
 
-	// Disallow changing role *to* ADMIN
-	if (roleName === "ADMIN") {
-		throw new Error("Cannot assign ADMIN role.");
-	}
-	// Fetch current user with role
-	const existingUser = await db.user.findUnique({
-		where: { id: userId },
-		include: { role: true },
-	});
+		if (roleName === "ADMIN" && session.user.role.name !== "ADMIN") {
+			throw new Error("Only admins can assign the ADMIN role.");
+		}
 
-	if (!existingUser) throw new Error("User not found");
-	if (existingUser.role.name === "ADMIN")
-		throw new Error("Cannot change ADMIN role");
+		const targetUser = await db.user.findUnique({
+			where: { id: userId },
+			include: { role: true },
+		});
 
-	// Get new role to apply
-	const role = await db.role.findUnique({
-		where: { name: roleName },
-	});
+		if (!targetUser) throw new Error("User not found");
 
-	if (!role) throw new Error("Invalid role");
+		if (
+			targetUser.role.name === "ADMIN" &&
+			session.user.role.name !== "ADMIN"
+		) {
+			throw new Error("Only admins can update roles of ADMIN users.");
+		}
 
-	const updated = await db.user.update({
-		where: { id: userId },
-		data: { roleId: role.id },
-		select: {
-			id: true,
-			role: { select: { name: true, id: true } },
-		},
-	});
+		const role = await db.role.findUnique({ where: { name: roleName } });
+		if (!role) throw new Error("Invalid role");
 
-	return updated;
-}
-export async function updateMultipleUserRoles(input: {
-	userIds: number[];
-	roleName: string;
-}) {
-	const { userIds, roleName } = input;
+		const updated = await db.user.update({
+			where: { id: userId },
+			data: { roleId: role.id },
+			select: {
+				id: true,
+				role: { select: { name: true, id: true } },
+			},
+		});
 
-	// Disallow changing role *to* ADMIN
-	if (roleName === "ADMIN") {
-		throw new Error("Cannot assign ADMIN role.");
-	}
+		return updated;
+	},
+	{ actionName: "user.updateOneRole" },
+);
 
-	const role = await db.role.findUnique({
-		where: { name: roleName },
-	});
+export const updateMultipleUserRoles = protectedAction(
+	async (session: Session, input: { userIds: number[]; roleName: string }) => {
+		const { userIds, roleName } = input;
 
-	if (!role) throw new Error("Invalid role");
+		if (userIds.includes(session.user.id)) {
+			throw new Error("You cannot update your own role.");
+		}
 
-	// Fetch users with their roles
-	const usersToUpdate = await db.user.findMany({
-		where: { id: { in: userIds } },
-		include: { role: true },
-	});
+		if (roleName === "ADMIN" && session.user.role.name !== "ADMIN") {
+			throw new Error("Only admins can assign the ADMIN role.");
+		}
 
-	// Disallow changing role *of* any ADMIN user
-	const hasAdmin = usersToUpdate.some((u) => u.role.name === "ADMIN");
-	if (hasAdmin) {
-		throw new Error("Cannot update role of ADMIN users.");
-	}
+		const role = await db.role.findUnique({
+			where: { name: roleName },
+		});
+		if (!role) throw new Error("Invalid role");
 
-	// Proceed with update
-	const updated = await db.user.updateMany({
-		where: { id: { in: userIds } },
-		data: { roleId: role.id },
-	});
+		const usersToUpdate = await db.user.findMany({
+			where: { id: { in: userIds } },
+			include: { role: true },
+		});
 
-	return updated;
-}
+		const hasAdmin = usersToUpdate.some((u) => u.role.name === "ADMIN");
+		if (hasAdmin && session.user.role.name !== "ADMIN") {
+			throw new Error("Only admins can change roles of ADMIN users.");
+		}
+
+		const updated = await db.user.updateMany({
+			where: { id: { in: userIds } },
+			data: { roleId: role.id },
+		});
+
+		return updated;
+	},
+	{ actionName: "user.updateMultipleRoles" },
+);

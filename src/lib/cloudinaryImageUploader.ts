@@ -10,14 +10,14 @@ export async function getCloudinarySignature(
 
 	const signature = cloudinary.utils.api_sign_request(
 		{ timestamp, folder },
-		env.CLOUDINARY_API_SECRET,
+		process.env.CLOUDINARY_API_SECRET,
 	);
 
 	return {
 		timestamp,
 		signature,
-		apiKey: env.CLOUDINARY_API_KEY,
-		cloudName: env.CLOUDINARY_CLOUD_NAME,
+		apiKey: process.env.CLOUDINARY_API_KEY,
+		cloudName: process.env.CLOUDINARY_CLOUD_NAME,
 		folder,
 	};
 }

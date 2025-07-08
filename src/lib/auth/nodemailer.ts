@@ -9,8 +9,8 @@ const transporter = nodemailer.createTransport({
 	port: 587,
 	secure: false, // use false for STARTTLS; true for SSL on port 465
 	auth: {
-		user: env.SMTP_GMAIL,
-		pass: env.SMTP_PASSWORD,
+		user: process.env.SMTP_GMAIL,
+		pass: process.env.SMTP_PASSWORD,
 	},
 });
 
