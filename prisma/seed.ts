@@ -31,9 +31,10 @@ const main = async () => {
 		];
 
 		const permissionNames = [
-			"CREATE_BLOG",
-			"EDIT_USER",
-			"VIEW_REPORTS",
+			"MANAGE_USER_ROLES",
+			"MANAGE_ROLE_PERMISSIONS",
+			"MANAGE_EVENTS",
+			"MANAGE_PAYMENTS",
 			"MANAGE_TEAMS",
 			"ISSUE_CERTIFICATE",
 		];

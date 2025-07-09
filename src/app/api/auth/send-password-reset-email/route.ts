@@ -50,7 +50,7 @@ export async function POST(req: Request) {
 		const passwordResetToken = generatePasswordResetToken(existingUser, token);
 
 		// IMPORTANT: Replace with your actual domain
-		const url = `${env.NEXTAUTH_URL}/auth/reset-password?token=${passwordResetToken}`;
+		const url = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${passwordResetToken}`;
 
 		await sendPasswordResetEmail(existingUser.email, url, existingUser.name);
 

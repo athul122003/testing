@@ -117,7 +117,6 @@ export function UsersPage() {
 	} = useDashboardData();
 	const { data: permissions = [], isLoading: permLoading } = permissionsQuery;
 	const { data: roles = [], isLoading: roleLoading } = rolesQuery;
-	console.log("Roles from API route:", roles);
 	const [roleSearchTerm, setRoleSearchTerm] = useState("");
 	const [rolePage, setRolePage] = useState(1);
 	const ROLES_PER_PAGE = 4;

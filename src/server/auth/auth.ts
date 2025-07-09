@@ -5,10 +5,10 @@ import type { GetServerSidePropsContext } from "next";
 import { getServerSession, type NextAuthOptions } from "next-auth";
 import type { Adapter } from "next-auth/adapters";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { login } from "~/lib/auth/auth.service";
-import { getUserByEmail } from "~/lib/auth/auth-util";
 import { db } from "~/server/db";
 import { loginZ } from "~/zod/authZ";
+import { login } from "./auth.service";
+import { getUserByEmail } from "./auth-util";
 import { getRefreshTokenExpiry, isJwtExpired, rotateTokens } from "./jwt";
 
 declare module "next-auth" {
@@ -21,7 +21,6 @@ declare module "next-auth" {
 		image?: string | null;
 		phone: string;
 		role: Role;
-		permissions?: string[]; // 🔐 Added for role/permissions
 	}
 
 	interface AdapterUser {
@@ -33,7 +32,6 @@ declare module "next-auth" {
 		image?: string | null;
 		phone: string;
 		role: Role;
-		permissions?: string[]; // 🔐 Added for role/permissions
 	}
 
 	interface Session {
@@ -46,7 +44,6 @@ declare module "next-auth" {
 			phone: string;
 			accessToken: string;
 			refreshToken: string;
-			permissions?: string[]; // 🔐 Added for role/permissions
 		};
 		accessToken: string;
 	}
@@ -64,7 +61,6 @@ declare module "next-auth/jwt" {
 		exp: number;
 		accessToken: string;
 		refreshToken: string;
-		permissions?: string[]; // 🔐 Added for role/permissions
 	}
 }
 
@@ -73,26 +69,16 @@ export const authOptions: NextAuthOptions = {
 		// biome-ignore lint/suspicious/noExplicitAny: explain this????
 		async jwt({ token, user, trigger, session }): Promise<any> {
 			if (!token.sub) return token;
-
-			// 🔧 Ensure permissions are extracted from user if present at signIn
 			if (user && trigger === "signIn") {
-				const permissions =
-					(
-						user.role as Role & {
-							permissions?: { permission: { name: string } }[];
-						}
-					)?.permissions?.map((rp) => rp.permission.name) ?? [];
-
 				token = {
 					...token,
-					sub: user.id.toString(),
+					sub: user.id as unknown as string,
 					name: user.name,
 					email: user.email,
 					role: user.role,
 					phone: user.phone,
 					accessToken: user.accessToken,
 					refreshToken: user.refreshToken,
-					permissions,
 					iat: Math.floor(Date.now() / 1000),
 					exp: getRefreshTokenExpiry(user.refreshToken),
 				};
@@ -120,13 +106,11 @@ export const authOptions: NextAuthOptions = {
 					};
 					if (token.accessToken === newAccessToken) return token;
 				}
-				// Do not return null — we handle invalidation elsewhere
 				return null;
 			}
 
 			return token;
 		},
-
 		async session({ session, token }) {
 			if (token.sub && session.user) {
 				session.user.id = parseInt(token.sub);
@@ -135,19 +119,15 @@ export const authOptions: NextAuthOptions = {
 				session.user.role = token.role;
 				session.user.phone = token.phone;
 				session.accessToken = token.accessToken;
-				session.user.permissions = token.permissions ?? []; // 🔐 Added for role/permissions
 			}
 			return session;
 		},
 	},
-
 	session: {
 		strategy: "jwt",
 		maxAge: 7 * 24 * 60 * 60, // 7 days
 	},
-
 	adapter: PrismaAdapter(db) as Adapter,
-
 	providers: [
 		CredentialsProvider({
 			credentials: {},
@@ -155,47 +135,22 @@ export const authOptions: NextAuthOptions = {
 			async authorize(credentials: any): Promise<any> {
 				const validateFields = loginZ.safeParse(credentials);
 				if (!validateFields.success) return null;
-
 				const { email, password } = validateFields.data;
 				const data = await login({ email, password });
 				if (!data) return null;
-
 				const { accessToken, refreshToken } = data;
-
-				// 🔧 Include role with permissions to pass into JWT callback
-				const existingUser = await db.user.findUnique({
-					where: { email },
-					include: {
-						role: {
-							include: {
-								permissions: {
-									include: {
-										permission: true,
-									},
-								},
-							},
-						},
-					},
-				});
+				const existingUser: User | null = await getUserByEmail(email);
 				if (!existingUser) return null;
-
 				const passwordMatch = await bcrypt.compare(
 					password,
 					existingUser.password,
 				);
 				if (!passwordMatch) return null;
-
-				// 🔧 Cast `user` type to include permissions for use in `jwt` callback
 				const user = {
 					...existingUser,
-					refreshToken,
-					accessToken,
-				} as User & {
-					role: Role & {
-						permissions: { permission: { name: string } }[];
-					};
+					refreshToken: refreshToken,
+					accessToken: accessToken,
 				};
-
 				return user;
 			},
 		}),
@@ -208,6 +163,13 @@ export const getServerAuthSession = (ctx: {
 }) => {
 	return getServerSession(ctx.req, ctx.res, authOptions);
 };
+
+// export const getServerAuthSession = (ctx: {
+// 	req: GetServerSidePropsContext["req"];
+// 	res: GetServerSidePropsContext["res"];
+// }) => {
+// 	return getServerSession(ctx.req, ctx.res, authOptions);
+// };
 
 export const auth = (
 	...args:
