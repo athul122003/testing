@@ -25,6 +25,9 @@ import { Textarea } from "~/components/ui/textarea";
 import { uploadImageToCloudinary } from "~/lib/cloudinaryImageUploader";
 import { getBlogMeta } from "~/lib/getBlogMetaData";
 import { BlogPreview } from "./BlogPreview";
+import { formatMarkdownText } from "~/lib/formatMarkdownText";
+import type { FormatType } from "~/lib/formatMarkdownText";
+import { useBlogMutation } from "~/actions/tanstackHooks/blog-queries";
 
 interface BlogFormProps {
 	setActivePage: (page: string) => void;
@@ -58,12 +61,20 @@ export function BlogForm({
 		status: "DRAFT",
 	});
 
+	const { mutate, isPending } = useBlogMutation({
+		onSuccessCallback: () => {
+			setActivePage("blogs");
+			setEditingBlog(null);
+		},
+	});
+
 	const [featuredImageFile, setFeaturedImageFile] = useState<File | null>(null);
 
 	const { data: session } = useSession();
 
 	const markdownImageInputRef = useRef<HTMLInputElement | null>(null);
 	const featuredImageInputRef = useRef<HTMLInputElement | null>(null);
+	const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
 
 	useEffect(() => {
 		if (editingBlog) {
@@ -111,14 +122,10 @@ export function BlogForm({
 			id: editingBlog?.id || undefined,
 		};
 
-		try {
-			await createOrUpdateBlog(blogData, userId);
-			setActivePage("blogs");
-			setEditingBlog(null);
-		} catch (err) {
-			console.error("Failed to submit blog", err);
-			alert("Failed to submit blog");
-		}
+		mutate({
+			blogData,
+			userId,
+		});
 	};
 
 	const handleCancel = () => {
@@ -126,44 +133,25 @@ export function BlogForm({
 		setEditingBlog(null);
 	};
 
-	const formatText = (type: string) => {
-		const textarea = document.getElementById(
-			"blog-content",
-		) as HTMLTextAreaElement;
+	const formatText = (type: FormatType) => {
+		const textarea = textAreaRef.current;
 		if (!textarea) return;
 
 		const start = textarea.selectionStart;
 		const end = textarea.selectionEnd;
-		const selectedText = formData.content.substring(start, end);
-
-		let formatted = selectedText;
-		switch (type) {
-			case "bold":
-				formatted = `**${selectedText}**`;
-				break;
-			case "italic":
-				formatted = `*${selectedText}*`;
-				break;
-			case "list":
-				formatted = `\n- ${selectedText}`;
-				break;
-			case "link":
-				formatted = `[${selectedText}](url)`;
-				break;
-		}
-
-		const newContent =
-			formData.content.substring(0, start) +
-			formatted +
-			formData.content.substring(end);
-
+		const newContent = formatMarkdownText({
+			content: formData.content,
+			type,
+			start,
+			end,
+		});
 		setFormData({ ...formData, content: newContent });
 
 		setTimeout(() => {
 			textarea.focus();
 			textarea.setSelectionRange(
-				start + formatted.length,
-				start + formatted.length,
+				start + (newContent.length - formData.content.length),
+				start + (newContent.length - formData.content.length),
 			);
 		}, 0);
 	};
@@ -390,6 +378,7 @@ export function BlogForm({
 
 										<Textarea
 											id="blog-content"
+											ref={textAreaRef}
 											placeholder="Write your blog content here..."
 											rows={20}
 											className="border-0 resize-none font-mono"
@@ -422,6 +411,7 @@ export function BlogForm({
 									Cancel
 								</Button>
 								<Button
+									disabled={isPending}
 									onClick={() =>
 										handleSubmit(
 											editingBlog?.blogState === "PUBLISHED"
@@ -432,13 +422,32 @@ export function BlogForm({
 									className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
 								>
 									<Save className="h-4 w-4 mr-2" />
-									{editingBlog ? "Update" : "Save as Draft"}
+									{isPending
+										? editingBlog
+											? "Updating..."
+											: "Saving..."
+										: editingBlog
+											? "Update"
+											: "Save as Draft"}
 								</Button>
+
+								{editingBlog?.blogState === "PUBLISHED" && (
+									<Button
+										variant="secondary"
+										disabled={isPending}
+										onClick={() => handleSubmit("DRAFT")}
+										className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-300 dark:hover:bg-yellow-800"
+									>
+										{isPending ? "Reverting..." : "Revert to Draft"}
+									</Button>
+								)}
+
 								<Button
+									disabled={isPending}
 									onClick={() => handleSubmit("PUBLISHED")}
 									className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
 								>
-									Publish
+									{`${isPending ? "Publishing..." : "Publish"}`}
 								</Button>
 							</div>
 						</CardContent>
