@@ -3,6 +3,14 @@
 import { env } from "~/env";
 import cloudinary from "~/lib/cloudinary";
 
+const CLOUDINARY_API_KEY = env.CLOUDINARY_API_KEY;
+const CLOUDINARY_API_SECRET = env.CLOUDINARY_API_SECRET;
+const CLOUDINARY_CLOUD_NAME = env.CLOUDINARY_CLOUD_NAME;
+
+if (!CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET || !CLOUDINARY_CLOUD_NAME) {
+	throw new Error("Missing Cloudinary environment variables");
+}
+
 export async function getCloudinarySignature(
 	folder: string = "default-flc-folder",
 ) {
@@ -10,14 +18,14 @@ export async function getCloudinarySignature(
 
 	const signature = cloudinary.utils.api_sign_request(
 		{ timestamp, folder },
-		process.env.CLOUDINARY_API_SECRET,
+		CLOUDINARY_API_SECRET,
 	);
 
 	return {
 		timestamp,
 		signature,
-		apiKey: process.env.CLOUDINARY_API_KEY,
-		cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+		apiKey: CLOUDINARY_API_KEY,
+		cloudName: CLOUDINARY_CLOUD_NAME,
 		folder,
 	};
 }

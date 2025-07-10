@@ -15,7 +15,6 @@ import {
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
-import { createOrUpdateBlog } from "~/actions/blog";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
@@ -28,6 +27,8 @@ import { BlogPreview } from "./BlogPreview";
 import { formatMarkdownText } from "~/lib/formatMarkdownText";
 import type { FormatType } from "~/lib/formatMarkdownText";
 import { useBlogMutation } from "~/actions/tanstackHooks/blog-queries";
+import { blogSchema, BlogType, StatusType } from "~/zod/blogZ";
+import { toast } from "sonner";
 
 interface BlogFormProps {
 	setActivePage: (page: string) => void;
@@ -35,25 +36,12 @@ interface BlogFormProps {
 	setEditingBlog: (blog: Blog | null) => void;
 }
 
-type StatusType = "DRAFT" | "PUBLISHED";
-
-export type BlogFormData = {
-	id?: string;
-	title: string;
-	content: string;
-	excerpt?: string;
-	featuredImage?: string;
-	status?: StatusType;
-	readTime?: number;
-	words?: number;
-};
-
 export function BlogForm({
 	setActivePage,
 	editingBlog,
 	setEditingBlog,
 }: BlogFormProps) {
-	const [formData, setFormData] = useState<BlogFormData>({
+	const [formData, setFormData] = useState<BlogType>({
 		title: "",
 		content: "",
 		excerpt: "",
@@ -99,6 +87,11 @@ export function BlogForm({
 		let imageUrl = formData.featuredImage;
 
 		if (featuredImageFile) {
+			if (featuredImageFile.size > 1024 * 1024) {
+				toast.error("Featured image must be ≤ 1MB.");
+				return;
+			}
+
 			try {
 				imageUrl = await uploadImageToCloudinary(
 					featuredImageFile,
@@ -113,7 +106,7 @@ export function BlogForm({
 
 		const { readTime, words } = getBlogMeta(formData.content);
 
-		const blogData: BlogFormData = {
+		const blogData: BlogType = {
 			...formData,
 			status,
 			featuredImage: imageUrl || "",
@@ -121,6 +114,15 @@ export function BlogForm({
 			words,
 			id: editingBlog?.id || undefined,
 		};
+
+		const validatedData = blogSchema.safeParse(blogData);
+		if (!validatedData.success) {
+			const errorMessage = validatedData.error.errors
+				.map((err) => `${err.path.join(".")}: ${err.message}`)
+				.join("\n");
+			toast.error("Invalid Blog Data: " + errorMessage);
+			return;
+		}
 
 		mutate({
 			blogData,

@@ -1,7 +1,7 @@
 "use server";
 
 import { reviewState } from "@prisma/client";
-import type { BlogFormData } from "~/components/blog/blog-form";
+import type { BlogType } from "~/zod/blogZ";
 import prisma from "~/lib/prisma";
 
 const getBlogs = async () => {
@@ -24,7 +24,7 @@ const getBlogs = async () => {
 		throw new Error("Failed to fetch blogs");
 	}
 };
-const createOrUpdateBlog = async (blogData: BlogFormData, userId: number) => {
+const createOrUpdateBlog = async (blogData: BlogType, userId: number) => {
 	try {
 		if (blogData.id) {
 			const updatedBlog = await prisma.blog.update({
