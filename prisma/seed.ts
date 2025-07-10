@@ -49,7 +49,14 @@ const main = async () => {
 			),
 		);
 
-		const roleNames = ["ADMIN", "DEVELOPER", "ORGANISER", "USER", "MODERATOR"];
+		const roleNames = [
+			"ADMIN",
+			"DEVELOPER",
+			"ORGANISER",
+			"USER",
+			"MODERATOR",
+			"CP",
+		];
 
 		const roles = await Promise.all(
 			roleNames.map((name) =>
@@ -95,34 +102,46 @@ const main = async () => {
 		});
 		console.log("Role permissions seeded");
 
-		// Step 4: Create 35 Users
-		for (let i = 1; i <= 35; i++) {
-			const role = roles[(i - 1) % roles.length];
-			const hashedPassword = await bcrypt.hash("password123", saltRounds);
+		// Step 4: Create users grouped by role (e.g., admin1@example.com, user2@example.com)
+		const usersPerRole = 6;
+		let userIndex = 1;
 
-			await db.user.upsert({
-				where: { email: `user${i}@example.com` },
-				update: {},
-				create: {
-					name: `User ${i}`,
-					slug: `user-${i}`,
-					email: `user${i}@example.com`,
-					usn: `USN${1000 + i}`,
-					emailVerified: new Date(),
-					password: hashedPassword,
-					phone: `90000000${i.toString().padStart(2, "0")}`,
-					image: null,
-					year: "2025",
-					roleId: role.id,
-					memberSince: new Date(),
-					totalActivityPoints: 0,
-					bio: `This is user ${i}`,
-					reasonToJoin: "Learn and grow",
-					expectations: "Collaborate with peers",
-					contribution: "Code and documentation",
-					githubLink: `https://github.com/user${i}`,
-				},
-			});
+		for (const role of roles) {
+			for (let i = 1; i <= usersPerRole; i++) {
+				const roleSlug = role.name.toLowerCase();
+				const userNumber = i;
+				const email = `${roleSlug}${userNumber}@example.com`;
+				const name = `${role.name} ${userNumber}`;
+				const slug = `${roleSlug}-${userNumber}`;
+				const usn = `USN${1000 + userIndex}`;
+				const hashedPassword = await bcrypt.hash("789789", saltRounds);
+
+				await db.user.upsert({
+					where: { email },
+					update: {},
+					create: {
+						name,
+						slug,
+						email,
+						usn,
+						emailVerified: new Date(),
+						password: hashedPassword,
+						phone: `90000000${userIndex.toString().padStart(2, "0")}`,
+						image: null,
+						year: "2025",
+						roleId: role.id,
+						memberSince: new Date(),
+						totalActivityPoints: 0,
+						bio: `This is ${name}`,
+						reasonToJoin: "Learn and grow",
+						expectations: "Collaborate with peers",
+						contribution: "Code and documentation",
+						githubLink: `https://github.com/${roleSlug}${userNumber}`,
+					},
+				});
+
+				userIndex++;
+			}
 		}
 
 		const allUsers = await db.user.findMany();

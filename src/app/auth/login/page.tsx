@@ -77,7 +77,8 @@ const LoginForm: FunctionComponent<Props> = ({ className }) => {
 
 			if (result?.ok) {
 				toast.success("Logged in successfully");
-				router.push(`/`);
+				//router.push(`/`);
+				window.location.href = "/";
 			} else {
 				toast.error(
 					result?.error === "CredentialsSignin"

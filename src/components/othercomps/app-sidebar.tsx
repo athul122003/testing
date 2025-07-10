@@ -20,16 +20,8 @@ import {
 	SidebarRail,
 } from "~/components/ui/sidebar";
 import * as ToolTip from "../ui/tooltip";
-
-const menuItems = [
-	{ title: "", icon: LayoutDashboard, id: "dashboard" },
-	{ title: "", icon: Calendar, id: "events" },
-	{ title: "", icon: FileText, id: "blogs" },
-	{ title: "", icon: ImageIcon, id: "gallery" },
-	{ title: "", icon: CreditCard, id: "payments" },
-	{ title: "", icon: Users, id: "users" },
-	{ title: "", icon: Settings, id: "settings" },
-];
+import { useDashboardData } from "~/providers/dashboardDataContext";
+import { permissionKeys } from "~/actions/middleware/routePermissions";
 
 interface AppSidebarProps {
 	activePage: string;
@@ -37,9 +29,27 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ activePage, setActivePage }: AppSidebarProps) {
+	const { hasPerm } = useDashboardData();
+
 	const itemRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 	const indicatorRef = useRef<HTMLDivElement | null>(null);
 	const containerRef = useRef<HTMLDivElement | null>(null);
+
+	// UPDATE FOR PERMISSION BASED RENDERING
+	const menuItems = [
+		{ title: "", icon: LayoutDashboard, id: "dashboard" },
+		{ title: "", icon: Calendar, id: "events" },
+		{ title: "", icon: FileText, id: "blogs" },
+		{ title: "", icon: ImageIcon, id: "gallery" },
+		{ title: "", icon: CreditCard, id: "payments" },
+		...(hasPerm(
+			permissionKeys.MANAGE_USER_ROLES,
+			permissionKeys.MANAGE_ROLE_PERMISSIONS,
+		)
+			? [{ title: "", icon: Users, id: "users" }]
+			: []), // Users menu item only if user has permission
+		{ title: "", icon: Settings, id: "settings" },
+	];
 
 	const moveIndicator = () => {
 		const activeBtn = itemRefs.current[activePage];
@@ -54,33 +64,22 @@ export function AppSidebar({ activePage, setActivePage }: AppSidebarProps) {
 			});
 		}
 	};
+
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <no need of exhaustive dependencies>
 	useLayoutEffect(() => {
 		moveIndicator();
-		// re-run on window resize
 		const resizeObserver = new ResizeObserver(() => moveIndicator());
 		if (containerRef.current) resizeObserver.observe(containerRef.current);
 		return () => resizeObserver.disconnect();
 	}, []);
+
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <no need of exhaustive dependencies>
 	useEffect(() => {
 		moveIndicator();
 	}, [activePage]);
+
 	return (
 		<Sidebar className="border-r-0 bg-white dark:bg-black">
-			{/* <SidebarHeader
-				className="p-6 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-black"
-			>
-				<div className="flex items-center gap-3">
-					<div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-						<LayoutDashboard className="w-4 h-4 text-white" />
-					</div>
-					<div>
-						<h2 className="text-lg font-bold text-gray-900 dark:text-white">Admin Panel</h2>
-						<p className="text-xs text-gray-500 dark:text-gray-400">Management System</p>
-					</div>
-				</div>
-			</SidebarHeader> */}
 			<SidebarContent className="p-4 bg-white dark:bg-black">
 				<div ref={containerRef} className="relative">
 					<div
