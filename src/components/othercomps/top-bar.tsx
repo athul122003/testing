@@ -2,10 +2,11 @@
 
 import { Moon, Search, Sun, User } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import { Dialog, DialogContent } from "~/components/ui/dialog";
+import { signOut } from "next-auth/react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -14,16 +15,7 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { Input } from "~/components/ui/input";
 import { DashboardBreadCrumb } from "../customcomps/dashboardBreadCrumb";
-
-const searchItems = [
-	{ title: "Dashboard", category: "Pages", id: "dashboard" },
-	{ title: "Events", category: "Pages", id: "events" },
-	{ title: "Blogs", category: "Pages", id: "blogs" },
-	{ title: "Gallery", category: "Pages", id: "gallery" },
-	{ title: "Payments", category: "Pages", id: "payments" },
-	{ title: "Users", category: "Pages", id: "users" },
-	{ title: "Settings", category: "Pages", id: "settings" },
-];
+import { permissionKeys } from "~/actions/middleware/routePermissions";
 
 interface TopBarProps {
 	activePage: string;
@@ -40,8 +32,25 @@ const navigationMap: Record<string, { title: string }> = {
 	"blog-form": { title: "Blog Form" },
 	"event-form": { title: "Event Form" },
 };
+import { useDashboardData } from "~/providers/dashboardDataContext";
 
 export function TopBar({ activePage, setActivePage }: TopBarProps) {
+	const { user, role, hasPerm } = useDashboardData();
+	const searchItems = [
+		{ title: "Dashboard", category: "Pages", id: "dashboard" },
+		{ title: "Events", category: "Pages", id: "events" },
+		{ title: "Blogs", category: "Pages", id: "blogs" },
+		{ title: "Gallery", category: "Pages", id: "gallery" },
+		{ title: "Payments", category: "Pages", id: "payments" },
+		...(hasPerm(
+			permissionKeys.MANAGE_USER_ROLES,
+			permissionKeys.MANAGE_ROLE_PERMISSIONS,
+		)
+			? [{ title: "Users", category: "Pages", id: "users" }]
+			: []), //  Only show if permission exists
+		{ title: "Settings", category: "Pages", id: "settings" },
+	];
+
 	const [searchOpen, setSearchOpen] = useState(false);
 	const [searchTerm, setSearchTerm] = useState("");
 	const { theme, setTheme } = useTheme();
@@ -123,10 +132,11 @@ export function TopBar({ activePage, setActivePage }: TopBarProps) {
 									</Avatar>
 									<div className="text-left">
 										<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-											Admin User
+											{`${user?.name} || ID: ${user?.id}`}
 										</p>
+
 										<p className="text-xs text-gray-500 dark:text-gray-400">
-											admin@example.com
+											{user?.email} || {role}
 										</p>
 									</div>
 								</div>
@@ -144,7 +154,10 @@ export function TopBar({ activePage, setActivePage }: TopBarProps) {
 								<DropdownMenuItem className="text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800">
 									Preferences
 								</DropdownMenuItem>
-								<DropdownMenuItem className="text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800">
+								<DropdownMenuItem
+									onClick={() => signOut({ callbackUrl: "/" })}
+									className="text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+								>
 									Sign Out
 								</DropdownMenuItem>
 							</DropdownMenuContent>

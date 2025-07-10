@@ -14,8 +14,11 @@ import { PaymentsPage } from "~/components/payments/payments-page";
 import { SettingsPage } from "~/components/settings/settings-page";
 import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar";
 import { UsersPage } from "~/components/user1/users-page";
+import { useDashboardData } from "~/providers/dashboardDataContext";
+import { permissionKeys as perm } from "~/actions/middleware/routePermissions";
 
 export function Dashboard() {
+	const { hasPerm } = useDashboardData();
 	const [activePage, setActivePage] = useState("dashboard");
 	const [editingEvent, setEditingEvent] = useState(null);
 	const [editingBlog, setEditingBlog] = useState<Blog | null>(null);
@@ -59,7 +62,12 @@ export function Dashboard() {
 			case "payments":
 				return <PaymentsPage />;
 			case "users":
-				return <UsersPage />;
+				if (hasPerm(perm.MANAGE_USER_ROLES, perm.MANAGE_ROLE_PERMISSIONS)) {
+					return <UsersPage />;
+				} else {
+					setActivePage("dashboard");
+					return <DashboardContent />;
+				}
 			case "settings":
 				return <SettingsPage />;
 			default:

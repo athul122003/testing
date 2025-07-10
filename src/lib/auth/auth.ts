@@ -153,50 +153,55 @@ export const authOptions: NextAuthOptions = {
 			credentials: {},
 			// biome-ignore lint/suspicious/noExplicitAny: usage required for CredentialsProvider
 			async authorize(credentials: any): Promise<any> {
-				const validateFields = loginZ.safeParse(credentials);
-				if (!validateFields.success) return null;
+				try {
+					const validateFields = loginZ.safeParse(credentials);
+					if (!validateFields.success) return null;
 
-				const { email, password } = validateFields.data;
-				const data = await login({ email, password });
-				if (!data) return null;
+					let { email, password } = validateFields.data;
+					email = email.toLowerCase(); // ✅ Convert to lowercase
 
-				const { accessToken, refreshToken } = data;
+					const data = await login({ email, password });
+					if (!data) return null;
 
-				// 🔧 Include role with permissions to pass into JWT callback
-				const existingUser = await db.user.findUnique({
-					where: { email },
-					include: {
-						role: {
-							include: {
-								permissions: {
-									include: {
-										permission: true,
+					const { accessToken, refreshToken } = data;
+
+					const existingUser = await db.user.findUnique({
+						where: { email },
+						include: {
+							role: {
+								include: {
+									permissions: {
+										include: {
+											permission: true,
+										},
 									},
 								},
 							},
 						},
-					},
-				});
-				if (!existingUser) return null;
+					});
 
-				const passwordMatch = await bcrypt.compare(
-					password,
-					existingUser.password,
-				);
-				if (!passwordMatch) return null;
+					if (!existingUser) return null;
 
-				// 🔧 Cast `user` type to include permissions for use in `jwt` callback
-				const user = {
-					...existingUser,
-					refreshToken,
-					accessToken,
-				} as User & {
-					role: Role & {
-						permissions: { permission: { name: string } }[];
+					const passwordMatch = await bcrypt.compare(
+						password,
+						existingUser.password,
+					);
+					if (!passwordMatch) return null;
+
+					const user = {
+						...existingUser,
+						refreshToken,
+						accessToken,
+					} as User & {
+						role: Role & {
+							permissions: { permission: { name: string } }[];
+						};
 					};
-				};
 
-				return user;
+					return user;
+				} catch {
+					return null;
+				}
 			},
 		}),
 	],

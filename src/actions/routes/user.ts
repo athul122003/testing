@@ -24,7 +24,14 @@ const updateRoleSchema = z.object({
 // --- Protected Actions ---
 
 export const searchUser = protectedAction(
-	async (input: unknown) => {
+	async (input: {
+		query: string;
+		page: number;
+		limit: number;
+		sortBy: string;
+		sortOrder: "asc" | "desc";
+		role?: string;
+	}) => {
 		const { query, page, limit, sortBy, sortOrder, role } =
 			searchSchema.parse(input);
 
