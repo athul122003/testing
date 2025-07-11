@@ -4,17 +4,29 @@ import { server } from "~/actions/serverAction";
 export async function POST(req: NextRequest) {
 	try {
 		const url = req.nextUrl;
-		const action = url.pathname.split("/").pop(); // extracts 'getAll', 'getById', etc.
+		const action = url.pathname.split("/").pop();
 
-		// Only read body if needed later (not used in getAll)
+		let body: any = {};
 		if (action !== "getAll") {
-			await req.json(); // Read and discard to avoid breaking if someone sends a body
+			body = await req.json();
 		}
 
 		switch (action) {
 			case "getAll": {
 				const events = await server.event.getPublishedEvents();
-				return NextResponse.json({ success: true, data: events });
+				return NextResponse.json(events);
+			}
+
+			case "registerSolo": {
+				const { userId, eventId } = body;
+
+				const result = await server.event.registerUserToSoloEvent(
+					userId,
+					eventId,
+				);
+				return NextResponse.json(result, {
+					status: result.success ? 200 : 400,
+				});
 			}
 
 			default:
