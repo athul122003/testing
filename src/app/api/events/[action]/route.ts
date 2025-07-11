@@ -4,17 +4,86 @@ import { server } from "~/actions/serverAction";
 export async function POST(req: NextRequest) {
 	try {
 		const url = req.nextUrl;
-		const action = url.pathname.split("/").pop(); // extracts 'getAll', 'getById', etc.
+		const action = url.pathname.split("/").pop();
 
-		// Only read body if needed later (not used in getAll)
+		let body: unknown = {};
 		if (action !== "getAll") {
-			await req.json(); // Read and discard to avoid breaking if someone sends a body
+			body = await req.json();
 		}
 
 		switch (action) {
 			case "getAll": {
 				const events = await server.event.getPublishedEvents();
-				return NextResponse.json({ success: true, data: events });
+				return NextResponse.json(events);
+			}
+
+			case "registerSolo": {
+				const { userId, eventId } = body as { userId: number; eventId: number };
+
+				const result = await server.event.registerUserToSoloEvent(
+					userId,
+					eventId,
+				);
+				return NextResponse.json(result, {
+					status: result.success ? 200 : 400,
+				});
+			}
+
+			case "createTeam": {
+				const { userId, eventId } = body as { userId: number; eventId: number };
+
+				const result = await server.event.createTeam(userId, eventId);
+				return NextResponse.json(result, {
+					status: result.success ? 200 : 400,
+				});
+			}
+
+			case "joinTeam": {
+				const { userId, teamId } = body as { userId: number; teamId: string };
+
+				if (!userId || !teamId) {
+					return NextResponse.json(
+						{ success: false, error: "Missing userId or teamId" },
+						{ status: 400 },
+					);
+				}
+
+				const result = await server.event.joinTeam(userId, teamId);
+				return NextResponse.json(result, {
+					status: result.success ? 200 : 400,
+				});
+			}
+
+			case "confirmTeam": {
+				const { userId, teamId } = body as { userId: number; teamId: string };
+
+				if (!userId || !teamId) {
+					return NextResponse.json(
+						{ success: false, error: "Missing userId or teamId" },
+						{ status: 400 },
+					);
+				}
+
+				const result = await server.event.confirmTeam(userId, teamId);
+				return NextResponse.json(result, {
+					status: result.success ? 200 : 400,
+				});
+			}
+
+			case "deleteTeam": {
+				const { userId, teamId } = body as { userId: number; teamId: string };
+
+				if (!userId || !teamId) {
+					return NextResponse.json(
+						{ success: false, error: "Missing userId or teamId" },
+						{ status: 400 },
+					);
+				}
+
+				const result = await server.event.deleteTeam(userId, teamId);
+				return NextResponse.json(result, {
+					status: result.success ? 200 : 400,
+				});
 			}
 
 			default:
