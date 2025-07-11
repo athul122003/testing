@@ -27,7 +27,7 @@ import { BlogPreview } from "./BlogPreview";
 import { formatMarkdownText } from "~/lib/formatMarkdownText";
 import type { FormatType } from "~/lib/formatMarkdownText";
 import { useBlogMutation } from "~/actions/tanstackHooks/blog-queries";
-import { blogSchema, BlogType, StatusType } from "~/zod/blogZ";
+import { blogSchema, type BlogType, type StatusType } from "~/zod/blogZ";
 import { toast } from "sonner";
 
 interface BlogFormProps {
