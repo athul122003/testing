@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -10,18 +9,18 @@ datasource db {
 
 //User and Profile
 model User {
-  id                  Int       @id @default(autoincrement())
-  name                String
-  slug                String?   @unique //new
-  email               String    @unique
-  emailVerified       DateTime?
-  usn                 String    @unique
-  password            String
-  phone               String
-  image               String?
-  year                String
-  roleId              String
-  role                Role   @relation(fields: [roleId], references: [id])
+  id            Int       @id @default(autoincrement())
+  name          String
+  slug          String?   @unique //new
+  email         String    @unique
+  emailVerified DateTime?
+  usn           String    @unique
+  password      String
+  phone         String
+  image         String?
+  year          String
+  roleId        String
+  role          Role      @relation(fields: [roleId], references: [id])
 
   bio                 String    @default("")
   memberSince         DateTime?
@@ -57,28 +56,29 @@ model User {
 }
 
 model Role {
-  id           String           @id @default(cuid())
-  name         String           
-  users        User[]           
-  permissions  RolePermission[] 
+  id          String           @id @default(cuid())
+  name        String
+  users       User[]
+  permissions RolePermission[]
+
   @@unique([name])
 }
 
 model Permission {
-  id           String           @id @default(cuid())
-  name         String           @unique
-  roles        RolePermission[] 
+  id    String           @id @default(cuid())
+  name  String           @unique
+  roles RolePermission[]
 }
 
 model RolePermission {
-  id           String       @id @default(cuid())
+  id           String @id @default(cuid())
   roleId       String
   permissionId String
-  
-  role         Role         @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  permission   Permission   @relation(fields: [permissionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  @@unique([roleId, permissionId]) 
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([roleId, permissionId])
 }
 
 model Branch {
@@ -327,11 +327,14 @@ model Blog {
   content     String
   readTime    Int
   words       Int
-  images      Json[]
+  image       String? //new: image url for the blog
   blogState   BlogState @default(DRAFT)
 
   userId Int
   User   User @relation(fields: [userId], references: [id])
+
+  reviewState reviewState @default(PENDING) //new to notify the user whether the blog is approved rejected or pending review
+  feedback    String? //new:feedback from the reviewer(admin) to the user(blog author)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -388,8 +391,6 @@ model Payment {
   updatedAt DateTime @updatedAt
 }
 
-
-
 enum EventCategory {
   WORKSHOP
   COMPETITION
@@ -444,6 +445,12 @@ enum QuizState {
 enum BlogState {
   DRAFT
   PUBLISHED
+}
+
+enum reviewState {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 enum PaymentType {

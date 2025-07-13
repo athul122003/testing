@@ -1,4 +1,4 @@
-import * as cron from "node-cron";
+//import * as cron from "node-cron";
 import { v4 as uuidv4 } from "uuid";
 import { db } from "~/server/db";
 import { compareHashedPassword, getUserByEmail } from "./auth-util";
@@ -119,35 +119,35 @@ const login = async (input: { email: string; password: string }) => {
 	}
 };
 
-// eslint-disable-next-line @typescript-eslint/no-misused-promises
-cron.schedule("0 */12 * * *", async () => {
-	//every 12 hours
-	await db.refreshToken.deleteMany({
-		where: {
-			revoked: true,
-		},
-	});
-	await db.verificationToken.deleteMany({
-		where: {
-			revoked: true,
-		},
-	});
+// // eslint-disable-next-line @typescript-eslint/no-misused-promises
+// cron.schedule("0 */12 * * *", async () => {
+// 	//every 12 hours
+// 	await db.refreshToken.deleteMany({
+// 		where: {
+// 			revoked: true,
+// 		},
+// 	});
+// 	await db.verificationToken.deleteMany({
+// 		where: {
+// 			revoked: true,
+// 		},
+// 	});
 
-	//deleting non-revoked tokens after their expiry time
-	const expiryTime = new Date();
-	expiryTime.setHours(expiryTime.getHours() - 25);
+// 	//deleting non-revoked tokens after their expiry time
+// 	const expiryTime = new Date();
+// 	expiryTime.setHours(expiryTime.getHours() - 25);
 
-	await db.verificationToken.deleteMany({
-		where: {
-			revoked: false,
-			createdAt: {
-				lte: expiryTime,
-			},
-		},
-	});
+// 	await db.verificationToken.deleteMany({
+// 		where: {
+// 			revoked: false,
+// 			createdAt: {
+// 				lte: expiryTime,
+// 			},
+// 		},
+// 	});
 
-	console.log("cron job running: deleted revoked tokens");
-});
+// 	console.log("cron job running: deleted revoked tokens");
+// });
 
 export {
 	addVerificationTokenToWhitelist,

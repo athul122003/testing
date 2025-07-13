@@ -1,0 +1,180 @@
+"use server";
+
+import type { Session } from "next-auth";
+import type { Prisma } from "@prisma/client";
+import { z } from "zod";
+import { db } from "~/server/db";
+import { protectedAction } from "~/actions/middleware/protectedAction";
+
+// --- Zod Schemas ---
+const searchSchema = z.object({
+	query: z.string().optional(),
+	page: z.number().min(1),
+	limit: z.number().min(1),
+	sortBy: z.string().default("role"),
+	sortOrder: z.enum(["asc", "desc"]),
+	role: z.string().optional(),
+});
+
+const updateRoleSchema = z.object({
+	userId: z.number(),
+	roleName: z.string(),
+});
+
+// --- Protected Actions ---
+
+export const searchUser = protectedAction(
+	async (input: {
+		query: string;
+		page: number;
+		limit: number;
+		sortBy: string;
+		sortOrder: "asc" | "desc";
+		role?: string;
+	}) => {
+		const { query, page, limit, sortBy, sortOrder, role } =
+			searchSchema.parse(input);
+
+		const skip = (page - 1) * limit;
+
+		const baseConditions: Prisma.UserWhereInput[] = [];
+
+		if (query?.trim()) {
+			baseConditions.push({
+				OR: [
+					{ name: { contains: query, mode: "insensitive" } },
+					{ email: { contains: query, mode: "insensitive" } },
+					{ usn: { contains: query, mode: "insensitive" } },
+					!Number.isNaN(Number(query)) ? { id: Number(query) } : undefined,
+				].filter(Boolean) as Prisma.UserWhereInput[],
+			});
+		}
+
+		if (role && role !== "all") {
+			baseConditions.push({
+				role: {
+					name: role,
+				},
+			});
+		}
+
+		const where: Prisma.UserWhereInput =
+			baseConditions.length > 0 ? { AND: baseConditions } : {};
+
+		const orderByClause: Prisma.UserOrderByWithRelationInput =
+			sortBy === "role"
+				? { role: { name: sortOrder } }
+				: { [sortBy]: sortOrder };
+
+		const [results, total] = await Promise.all([
+			db.user.findMany({
+				where,
+				skip,
+				take: limit,
+				orderBy: orderByClause,
+				select: {
+					id: true,
+					name: true,
+					usn: true,
+					memberSince: true,
+					email: true,
+					role: {
+						select: {
+							id: true,
+							name: true,
+						},
+					},
+				},
+			}),
+			db.user.count({ where }),
+		]);
+
+		return {
+			data: results,
+			total,
+			page,
+			totalPages: Math.ceil(total / limit),
+		};
+	},
+	{ actionName: "user.search" },
+);
+
+export const updateUserRole = protectedAction(
+	async (session: Session, input: unknown) => {
+		const { userId, roleName } = updateRoleSchema.parse(input);
+
+		if (session.user.id === userId) {
+			throw new Error("You cannot update your own role.");
+		}
+
+		if (roleName === "ADMIN" && session.user.role.name !== "ADMIN") {
+			throw new Error("Only admins can assign the ADMIN role.");
+		}
+
+		const targetUser = await db.user.findUnique({
+			where: { id: userId },
+			include: { role: true },
+		});
+
+		if (!targetUser) throw new Error("User not found");
+
+		if (
+			targetUser.role.name === "ADMIN" &&
+			session.user.role.name !== "ADMIN"
+		) {
+			throw new Error("Only admins can update roles of ADMIN users.");
+		}
+
+		const role = await db.role.findUnique({ where: { name: roleName } });
+		if (!role) throw new Error("Invalid role");
+
+		const updated = await db.user.update({
+			where: { id: userId },
+			data: { roleId: role.id },
+			select: {
+				id: true,
+				role: { select: { name: true, id: true } },
+			},
+		});
+
+		return updated;
+	},
+	{ actionName: "user.updateOneRole" },
+);
+
+export const updateMultipleUserRoles = protectedAction(
+	async (session: Session, input: { userIds: number[]; roleName: string }) => {
+		const { userIds, roleName } = input;
+
+		if (userIds.includes(session.user.id)) {
+			throw new Error("You cannot update your own role.");
+		}
+
+		if (roleName === "ADMIN" && session.user.role.name !== "ADMIN") {
+			throw new Error("Only admins can assign the ADMIN role.");
+		}
+
+		const role = await db.role.findUnique({
+			where: { name: roleName },
+		});
+		if (!role) throw new Error("Invalid role");
+
+		const usersToUpdate = await db.user.findMany({
+			where: { id: { in: userIds } },
+			include: { role: true },
+		});
+
+		const hasAdmin = usersToUpdate.some((u) => u.role.name === "ADMIN");
+		if (hasAdmin && session.user.role.name !== "ADMIN") {
+			throw new Error("Only admins can change roles of ADMIN users.");
+		}
+
+		const updated = await db.user.updateMany({
+			where: { id: { in: userIds } },
+			data: { roleId: role.id },
+		});
+
+		return updated;
+	},
+	{ actionName: "user.updateMultipleRoles" },
+);

@@ -5,7 +5,6 @@ import { getUserByEmail } from "~/lib/auth/auth-util";
 import { generateVerificationToken } from "~/lib/auth/jwt";
 import { sendVerificationEmail } from "~/lib/auth/nodemailer";
 
-// Zod schema for input validation
 const sendVerifyEmailInputSchema = z.object({
 	email: z.string().email("Invalid email address").toLowerCase(),
 });
@@ -36,21 +35,36 @@ export async function POST(req: Request) {
 	}
 }
 
-export const sendVerificationEmailMutation: (email: string) => Promise<void> =
-	async (email) => {
-		const existingUser = await getUserByEmail(email);
+// export function OPTIONS(req: Request) {
+// 	const origin = req.headers.get("Origin") || "*";
 
-		if (!existingUser) throw new Error("USER_NOT_FOUND");
+// 	const headers = new Headers();
+// 	headers.set("Access-Control-Allow-Origin", origin);
+// 	headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+// 	headers.set("Access-Control-Allow-Headers", "Content-Type");
 
-		if (existingUser.emailVerified) throw new Error("USER_ALREADY_VERIFIED");
+// 	return new Response(null, {
+// 		status: 204,
+// 		headers,
+// 	});
+// }
 
-		const { id: token } = await addVerificationTokenToWhitelist({
-			userId: existingUser.id,
-		});
+const sendVerificationEmailMutation: (email: string) => Promise<void> = async (
+	email,
+) => {
+	const existingUser = await getUserByEmail(email);
 
-		const verificationToken = generateVerificationToken(existingUser, token);
+	if (!existingUser) throw new Error("USER_NOT_FOUND");
 
-		const url = `https://www.finiteloop.co.in/auth/verify-email?token=${verificationToken}`;
+	if (existingUser.emailVerified) throw new Error("USER_ALREADY_VERIFIED");
 
-		await sendVerificationEmail(existingUser.email, url, existingUser.name);
-	};
+	const { id: token } = await addVerificationTokenToWhitelist({
+		userId: existingUser.id,
+	});
+
+	const verificationToken = generateVerificationToken(existingUser, token);
+
+	const url = `https://www.finiteloop.co.in/auth/verify-email?token=${verificationToken}`;
+
+	await sendVerificationEmail(existingUser.email, url, existingUser.name);
+};

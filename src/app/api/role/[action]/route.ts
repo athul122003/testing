@@ -1,19 +1,19 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { server } from "~/lib/actions/serverAction";
+import { server } from "~/actions/serverAction";
 
-export async function POST(
-	req: NextRequest,
-	{ params }: { params: { action: string } },
-) {
+export async function POST(req: NextRequest) {
 	try {
+		const url = req.nextUrl;
+		const action = url.pathname.split("/").pop(); // Extracts `action` from the URL
+
 		let body = null;
 
 		// Only parse JSON if the action expects a body
-		if (["create", "delete", "updatePermissions"].includes(params.action)) {
+		if (action && ["create", "delete", "updatePermissions"].includes(action)) {
 			body = await req.json();
 		}
 
-		switch (params.action) {
+		switch (action) {
 			case "getAll":
 				return NextResponse.json(await server.role.getAll());
 

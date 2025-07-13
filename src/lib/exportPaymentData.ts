@@ -1,6 +1,5 @@
-import { PaymentWithUser } from "./queries/payment-queries";
-import type { PaymentWithUser } from "~/components/pages/payments-page";
 import { formatDateTime } from "~/lib/formatDateTime";
+import type { PaymentWithUser } from "../actions/tanstackHooks/payment-queries";
 
 // Utility to convert payments to CSV
 export function convertPaymentsToCSV(data: PaymentWithUser["payments"]) {

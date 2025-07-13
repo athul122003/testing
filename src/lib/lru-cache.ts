@@ -61,7 +61,7 @@ export function createPersistentLRUCache<K extends string, V>(
 	function clear() {
 		memoryCache.clear();
 		Object.keys(localStorage)
-			.filter((k) => k.startsWith(keyPrefix + ":"))
+			.filter((k) => k.startsWith(`${keyPrefix}:`))
 			.forEach((k) => localStorage.removeItem(k));
 	}
 

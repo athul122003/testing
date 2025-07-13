@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { env } from "~/env";
 import { addPasswordResetTokenToWhitelist } from "~/lib/auth/auth.service";
 import { getUserByEmail } from "~/lib/auth/auth-util";
 import { generatePasswordResetToken } from "~/lib/auth/jwt";

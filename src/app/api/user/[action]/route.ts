@@ -1,22 +1,19 @@
-// src/api/user/[action]/route.ts
 import { type NextRequest, NextResponse } from "next/server";
-import { server } from "~/lib/actions/serverAction";
+import { server } from "~/actions/serverAction";
 
-export async function POST(
-	req: NextRequest,
-	{ params }: { params: { action: string } },
-) {
-	const body = await req.json();
-
+export async function POST(req: NextRequest) {
 	try {
-		switch (params.action) {
+		const action = req.nextUrl.pathname.split("/").pop(); // gets 'search' or 'updateUserRole'
+		const body = await req.json();
+
+		switch (action) {
 			case "search":
 				return NextResponse.json({
 					success: true,
 					...(await server.user.searchUser(body)),
 				});
-			case "updateRole":
-				return NextResponse.json(await server.user.updateRole(body));
+			case "updateUserRole":
+				return NextResponse.json(await server.user.updateUserRole(body));
 			default:
 				return NextResponse.json(
 					{ success: false, error: "Unknown action" },
