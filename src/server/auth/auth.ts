@@ -44,6 +44,7 @@ declare module "next-auth" {
 			phone: string;
 			accessToken: string;
 			refreshToken: string;
+			permissions?: string[]; // ADDED PERMISSIONS TO FIX THIS, TODO [PARIPOORNA] CHECK ONCE AGAIN
 		};
 		accessToken: string;
 	}

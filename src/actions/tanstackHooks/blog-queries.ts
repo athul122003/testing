@@ -7,11 +7,22 @@ import {
 	publishBlog,
 	draftBlog,
 } from "~/actions/blog";
-import type { BlogFormData } from "~/components/blog/blog-form";
+import type { BlogForm } from "~/components/blog/blog-form";
 import { toast } from "sonner";
 
 export type BlogWithUser = Awaited<ReturnType<typeof getBlogs>>;
 export type Blog = BlogWithUser[number];
+
+type BlogType = {
+	title: string;
+	content: string;
+	status: "DRAFT" | "PUBLISHED";
+	id?: string | undefined;
+	excerpt?: string | undefined;
+	featuredImage?: string | undefined;
+	readTime?: number | undefined;
+	words?: number | undefined;
+};
 
 //fetch blogs query
 export function useBlogs() {
@@ -34,7 +45,7 @@ export function useBlogMutation({
 			blogData,
 			userId,
 		}: {
-			blogData: BlogFormData;
+			blogData: BlogType;
 			userId: number;
 		}) => {
 			return await createOrUpdateBlog(blogData, userId);
