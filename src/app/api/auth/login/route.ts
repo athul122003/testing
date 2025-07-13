@@ -4,7 +4,21 @@ import { loginZ } from "~/zod/authZ";
 
 export async function POST(req: Request) {
 	try {
-		const body = await req.json();
+		const contentType = req.headers.get("content-type") || "";
+
+		let body: Record<string, string>;
+
+		if (contentType.includes("application/json")) {
+			body = await req.json();
+		} else if (contentType.includes("application/x-www-form-urlencoded")) {
+			const text = await req.text();
+			body = Object.fromEntries(new URLSearchParams(text));
+		} else {
+			return new Response(
+				JSON.stringify({ message: "Unsupported content type" }),
+				{ status: 415, headers: { "Content-Type": "application/json" } },
+			);
+		}
 
 		const parsed = loginZ.safeParse(body);
 		if (!parsed.success) {
@@ -39,6 +53,7 @@ export async function POST(req: Request) {
 				accessToken,
 				refreshToken,
 			}),
+			{ status: 200, headers: { "Content-Type": "application/json" } },
 		);
 	} catch (error) {
 		console.error("Login error", error);
