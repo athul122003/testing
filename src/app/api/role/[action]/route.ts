@@ -17,11 +17,11 @@ export async function POST(req: NextRequest) {
 			case "getAll":
 				return NextResponse.json(await server.role.getAll());
 
-			case "create":
-				return NextResponse.json(await server.role.create(body));
+			// case "create":
+			// 	return NextResponse.json(await server.role.create(body)); TODO [PARIPOORNA] FIX THIS
 
-			case "delete":
-				return NextResponse.json(await server.role.deleteRole(body));
+			// case "delete":
+			// 	return NextResponse.json(await server.role.deleteRole(body));	TODO [PARIPOORNA] FIX THIS
 
 			case "updatePermissions":
 				return NextResponse.json(await server.role.updateRolePermissions(body));

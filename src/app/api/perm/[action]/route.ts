@@ -12,11 +12,11 @@ export async function POST(req: NextRequest) {
 			case "getAll":
 				return NextResponse.json(await server.permission.getAll());
 
-			case "create":
-				return NextResponse.json(await server.permission.create(body));
+			// case "create":
+			// 	return NextResponse.json(await server.permission.create(body)); TODO [PARIPOORNA] FIX THIS
 
-			case "delete":
-				return NextResponse.json(await server.permission.deletePerm(body));
+			// case "delete":
+			// 	return NextResponse.json(await server.permission.deletePerm(body)); TODO [PARIPOORNA] FIX THIS
 
 			default:
 				return NextResponse.json(
