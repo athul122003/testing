@@ -3,7 +3,7 @@ import { getLeaderboardData, getRankOfUser } from "~/actions/leaderboard";
 
 // NOT DONE, DONT USE THIS AS IT MIGHT BE REMOVED IN THE FUTURE
 
-export async function GET(req: NextRequest) {
+export async function POST(req: NextRequest) {
 	try {
 		const url = req.nextUrl;
 		const action = url.pathname.split("/").pop();
