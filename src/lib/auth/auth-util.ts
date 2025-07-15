@@ -1,12 +1,17 @@
-import type { User } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { db } from "~/server/db";
+import type { User, Role } from "@prisma/client";
 
-const getUserByEmail = async (email: string): Promise<User | null> => {
+const getUserByEmail = async (
+	email: string,
+): Promise<(User & { role: Role }) | null> => {
 	try {
 		return await db.user.findUnique({
 			where: {
 				email,
+			},
+			include: {
+				role: true,
 			},
 		});
 	} catch (error) {
