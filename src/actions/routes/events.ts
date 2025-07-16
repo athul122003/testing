@@ -4,8 +4,10 @@ import { db } from "~/server/db";
 export async function getPublishedEvents() {
 	try {
 		const events = await db.event.findMany({
-			where: { state: "PUBLISHED" },
-			orderBy: { fromDate: "asc" },
+			where: {
+				OR: [{ state: "PUBLISHED" }, { state: "LIVE" }, { state: "LIVE" }],
+			},
+			orderBy: { fromDate: "desc" },
 		});
 
 		return {
@@ -373,6 +375,9 @@ export async function confirmTeam(userId: number, teamId: string) {
 				error: "Team is already confirmed",
 			};
 		}
+
+		// TODO [RAHUL]: IF FLC MEMBERS ONLY, CHECK IF ALL MEMBERS ARE FLC MEMBERS
+		// TODO [RAHUL]: IF PAID EVENT, CHECK IF PAYMENT IS DONE
 
 		// Total size includes leader
 		const totalSize = 1 + team.Members.length;
