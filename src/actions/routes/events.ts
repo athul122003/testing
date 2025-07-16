@@ -233,10 +233,33 @@ export async function joinTeam(userId: number, teamId: string) {
 				},
 			},
 		});
+		const updatedTeam = await db.team.findUnique({
+			where: { id: teamId },
+			include: {
+				Members: {
+					select: { id: true, name: true },
+				},
+				Leader: {
+					select: { id: true, name: true },
+				},
+			},
+		});
 
 		return {
 			success: true,
 			message: "User successfully joined the team",
+			members: updatedTeam
+				? [
+						{
+							id: updatedTeam.Leader.id,
+							name: updatedTeam.Leader.name,
+						},
+						...updatedTeam.Members.map((m) => ({
+							id: m.id,
+							name: m.name,
+						})),
+					]
+				: [],
 		};
 	} catch (error) {
 		console.error("joinTeam Error:", error);
@@ -277,10 +300,16 @@ export async function getTeam(userId: number, eventId: number) {
 		data: {
 			teamId: team.id,
 			isLeader: team.leaderId === userId,
-			members: team.Members.map((m) => ({
-				id: m.id,
-				name: m.name,
-			})),
+			members: [
+				{
+					id: team.Leader.id,
+					name: team.Leader.name,
+				},
+				...team.Members.map((m) => ({
+					id: m.id,
+					name: m.name,
+				})),
+			],
 		},
 	};
 }
