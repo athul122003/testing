@@ -29,6 +29,14 @@ export async function POST(req: NextRequest) {
 				});
 			}
 
+			case "checkSolo": {
+				const { userId, eventId } = body as { userId: number; eventId: number };
+
+				const result = await server.event.checkSolo(userId, eventId);
+				console.log("Check Solo Result:", result);
+				return NextResponse.json({ success: result.success });
+			}
+
 			case "createTeam": {
 				const { userId, eventId } = body as { userId: number; eventId: number };
 
@@ -49,6 +57,15 @@ export async function POST(req: NextRequest) {
 				}
 
 				const result = await server.event.joinTeam(userId, teamId);
+				return NextResponse.json(result, {
+					status: result.success ? 200 : 400,
+				});
+			}
+
+			case "getTeam": {
+				const { userId, eventId } = body as { userId: number; eventId: number };
+
+				const result = await server.event.getTeam(userId, eventId);
 				return NextResponse.json(result, {
 					status: result.success ? 200 : 400,
 				});

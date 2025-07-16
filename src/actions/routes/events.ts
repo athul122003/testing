@@ -83,6 +83,34 @@ export async function registerUserToSoloEvent(userId: number, eventId: number) {
 	}
 }
 
+export async function checkSolo(userId: number, eventId: number) {
+	const team = await db.team.findFirst({
+		where: {
+			eventId,
+			OR: [{ Members: { some: { id: userId } } }, { leaderId: userId }],
+			Event: {
+				maxTeamSize: 1,
+			},
+		},
+		include: {
+			Members: {
+				select: { id: true, name: true },
+			},
+		},
+	});
+
+	if (!team) {
+		return {
+			success: false,
+			error: "Not registered for this solo event.",
+		};
+	}
+
+	return {
+		success: true,
+	};
+}
+
 export async function createTeam(userId: number, eventId: number) {
 	try {
 		// Check if the event exists and is a solo event
@@ -130,7 +158,9 @@ export async function createTeam(userId: number, eventId: number) {
 
 		return {
 			success: true,
-			data: team,
+			data: {
+				teamId: team.id,
+			},
 		};
 	} catch (error) {
 		console.error("registerUserToSoloEvent Error:", error);
@@ -203,10 +233,33 @@ export async function joinTeam(userId: number, teamId: string) {
 				},
 			},
 		});
+		const updatedTeam = await db.team.findUnique({
+			where: { id: teamId },
+			include: {
+				Members: {
+					select: { id: true, name: true },
+				},
+				Leader: {
+					select: { id: true, name: true },
+				},
+			},
+		});
 
 		return {
 			success: true,
 			message: "User successfully joined the team",
+			members: updatedTeam
+				? [
+						{
+							id: updatedTeam.Leader.id,
+							name: updatedTeam.Leader.name,
+						},
+						...updatedTeam.Members.map((m) => ({
+							id: m.id,
+							name: m.name,
+						})),
+					]
+				: [],
 		};
 	} catch (error) {
 		console.error("joinTeam Error:", error);
@@ -215,6 +268,50 @@ export async function joinTeam(userId: number, teamId: string) {
 			error: "Failed to join team",
 		};
 	}
+}
+
+export async function getTeam(userId: number, eventId: number) {
+	const teams = await db.team.findMany({
+		where: {
+			eventId: eventId,
+			OR: [{ Members: { some: { id: userId } } }, { leaderId: userId }],
+		},
+		include: {
+			Members: {
+				select: { id: true, name: true },
+			},
+			Leader: {
+				select: { id: true, name: true },
+			},
+		},
+	});
+
+	if (!teams || teams.length === 0) {
+		return {
+			success: false,
+			error: "User is not part of any team for this event.",
+		};
+	}
+
+	const team = teams[0];
+
+	return {
+		success: true,
+		data: {
+			teamId: team.id,
+			isLeader: team.leaderId === userId,
+			members: [
+				{
+					id: team.Leader.id,
+					name: team.Leader.name,
+				},
+				...team.Members.map((m) => ({
+					id: m.id,
+					name: m.name,
+				})),
+			],
+		},
+	};
 }
 
 export async function confirmTeam(userId: number, teamId: string) {
