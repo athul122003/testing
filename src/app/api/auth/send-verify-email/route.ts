@@ -64,7 +64,7 @@ const sendVerificationEmailMutation: (email: string) => Promise<void> = async (
 
 	const verificationToken = generateVerificationToken(existingUser, token);
 
-	const url = `https://www.finiteloop.co.in/auth/verify-email?token=${verificationToken}`;
+	const url = `${process.env.NEXTAUTH_URL}/auth/verify-email?token=${verificationToken}`;
 
 	await sendVerificationEmail(existingUser.email, url, existingUser.name);
 };

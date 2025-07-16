@@ -29,17 +29,33 @@ export async function POST(req: NextRequest) {
 				});
 			}
 
-			case "createTeam": {
+			case "checkSolo": {
 				const { userId, eventId } = body as { userId: number; eventId: number };
 
-				const result = await server.event.createTeam(userId, eventId);
+				const result = await server.event.checkSolo(userId, eventId);
+				console.log("Check Solo Result:", result);
+				return NextResponse.json({ success: result.success });
+			}
+
+			case "createTeam": {
+				const { userId, eventId, teamName } = body as {
+					userId: number;
+					eventId: number;
+					teamName: string;
+				};
+
+				const result = await server.event.createTeam(userId, eventId, teamName);
 				return NextResponse.json(result, {
 					status: result.success ? 200 : 400,
 				});
 			}
 
 			case "joinTeam": {
-				const { userId, teamId } = body as { userId: number; teamId: string };
+				const { userId, teamId, eventId } = body as {
+					userId: number;
+					teamId: string;
+					eventId: number;
+				};
 
 				if (!userId || !teamId) {
 					return NextResponse.json(
@@ -48,7 +64,16 @@ export async function POST(req: NextRequest) {
 					);
 				}
 
-				const result = await server.event.joinTeam(userId, teamId);
+				const result = await server.event.joinTeam(userId, teamId, eventId);
+				return NextResponse.json(result, {
+					status: result.success ? 200 : 400,
+				});
+			}
+
+			case "getTeam": {
+				const { userId, eventId } = body as { userId: number; eventId: number };
+
+				const result = await server.event.getTeam(userId, eventId);
 				return NextResponse.json(result, {
 					status: result.success ? 200 : 400,
 				});

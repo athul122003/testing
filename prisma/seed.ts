@@ -54,8 +54,10 @@ const main = async () => {
 			"DEVELOPER",
 			"ORGANISER",
 			"USER",
+			"MEMBER",
 			"MODERATOR",
 			"CP",
+			"MEMBER",
 		];
 
 		const roles = await Promise.all(
@@ -72,7 +74,7 @@ const main = async () => {
 
 		for (let i = 0; i < roles.length; i++) {
 			const role = roles[i];
-			if (role.name === "USER") continue;
+			if (role.name === "USER" || role.name === "MEMBER") continue;
 			if (role.name === "ADMIN") {
 				for (const perm of permissions) {
 					rolePermissionPairs.push({

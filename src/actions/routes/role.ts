@@ -57,7 +57,7 @@ export const deleteRole = protectedAction(
 		});
 
 		if (!role) throw new Error("Role not found");
-		if (["USER", "ADMIN"].includes(role.name))
+		if (["USER", "ADMIN", "MEMBER"].includes(role.name))
 			throw new Error(`Cannot delete default ${role.name} role`);
 
 		const userRole = await db.role.findUnique({
@@ -67,10 +67,31 @@ export const deleteRole = protectedAction(
 
 		if (!userRole) throw new Error("Default USER role not found");
 
-		await db.user.updateMany({
-			where: { roleId: role.id },
-			data: { roleId: userRole.id },
+		const memberRole = await db.role.findUnique({
+			where: { name: "MEMBER" },
+			select: { id: true },
 		});
+
+		const allRoleUsers = await db.user.findMany({
+			where: { roleId: role.id },
+			select: { id: true, paymentId: true },
+		});
+
+		if (allRoleUsers.length > 0) {
+			for (const user of allRoleUsers) {
+				if (user.paymentId !== null) {
+					await db.user.update({
+						where: { id: user.id },
+						data: { roleId: memberRole?.id || userRole.id },
+					});
+				} else {
+					await db.user.update({
+						where: { id: user.id },
+						data: { roleId: userRole.id },
+					});
+				}
+			}
+		}
 
 		await db.role.delete({ where: { id: role.id } });
 
@@ -96,7 +117,7 @@ export const updateRolePermissions = protectedAction(
 		}
 
 		// ❌ Prevent updates to default protected roles
-		if (["USER", "ADMIN"].includes(role.name)) {
+		if (["USER", "ADMIN", "MEMBER"].includes(role.name)) {
 			throw new Error(`Cannot update permissions for the ${role.name} role`);
 		}
 

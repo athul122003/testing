@@ -5,9 +5,16 @@ export function middleware(request: NextRequest) {
 	if (request.nextUrl.pathname.startsWith("/api")) {
 		const response = NextResponse.next();
 
-		const origin = request.headers.get("origin") ?? "*";
-		response.headers.set("Access-Control-Allow-Origin", origin);
-		response.headers.set("Access-Control-Allow-Credentials", "true");
+		const allowedOrigins = [
+			"http://localhost:3000",
+			"https://flc-client-25.vercel.app",
+		]; // frontend
+		const origin = request.headers.get("origin");
+		if (origin && allowedOrigins.includes(origin)) {
+			response.headers.set("Access-Control-Allow-Origin", origin);
+			response.headers.set("Access-Control-Allow-Credentials", "true");
+		}
+
 		response.headers.set(
 			"Access-Control-Allow-Methods",
 			"GET, POST, PUT, OPTIONS",
