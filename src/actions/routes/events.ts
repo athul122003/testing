@@ -42,6 +42,13 @@ export async function registerUserToSoloEvent(userId: number, eventId: number) {
 			};
 		}
 
+		if (event.deadline && new Date() > event.deadline) {
+			return {
+				success: false,
+				error: "Registration for this event has closed",
+			};
+		}
+
 		// Check if the user already has a team for this event
 		const existingTeam = await db.team.findFirst({
 			where: {
@@ -132,6 +139,13 @@ export async function createTeam(userId: number, eventId: number) {
 			};
 		}
 
+		if (event.deadline && new Date() > event.deadline) {
+			return {
+				success: false,
+				error: "Registration for this event has closed",
+			};
+		}
+
 		// Check if the user already has a team for this event
 		const existingTeam = await db.team.findFirst({
 			where: {
@@ -186,6 +200,20 @@ export async function joinTeam(userId: number, teamId: string) {
 			return {
 				success: false,
 				error: "Team not found",
+			};
+		}
+
+		if (team.leaderId === userId) {
+			return {
+				success: false,
+				error: "User is already the leader of this team",
+			};
+		}
+
+		if (team.isConfirmed) {
+			return {
+				success: false,
+				error: "Cannot join a confirmed team",
 			};
 		}
 
