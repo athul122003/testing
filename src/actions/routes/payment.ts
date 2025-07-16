@@ -33,7 +33,6 @@ const verifyAndSavePaymentSchema = z.discriminatedUnion("paymentType", [
 	z.object({
 		paymentType: z.literal(PaymentType.MEMBERSHIP),
 		paymentName: z.string(),
-		amount: z.number(),
 		razorpayOrderId: z.string(),
 		razorpayPaymentId: z.string(),
 		razorpaySignature: z.string(),
@@ -182,7 +181,6 @@ export async function savePayment(input: VerifyAndSavePaymentInput) {
 					id: input.sessionUserId,
 				},
 			},
-			amount: input.amount,
 		},
 	});
 
