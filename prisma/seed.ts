@@ -56,6 +56,7 @@ const main = async () => {
 			"USER",
 			"MODERATOR",
 			"CP",
+			"MEMBER",
 		];
 
 		const roles = await Promise.all(

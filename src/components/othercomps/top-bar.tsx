@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import { Dialog, DialogContent } from "~/components/ui/dialog";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -35,6 +35,7 @@ const navigationMap: Record<string, { title: string }> = {
 import { useDashboardData } from "~/providers/dashboardDataContext";
 
 export function TopBar({ activePage, setActivePage }: TopBarProps) {
+	const { data: session } = useSession();
 	const { user, role, hasPerm } = useDashboardData();
 	const searchItems = [
 		{ title: "Dashboard", category: "Pages", id: "dashboard" },
@@ -155,7 +156,21 @@ export function TopBar({ activePage, setActivePage }: TopBarProps) {
 									Preferences
 								</DropdownMenuItem>
 								<DropdownMenuItem
-									onClick={() => signOut({ callbackUrl: "/" })}
+									onClick={async () => {
+										try {
+											await fetch(`/api/auth/signout`, {
+												method: "POST",
+												headers: {
+													"Content-Type": "application/json",
+												},
+												body: JSON.stringify({ userId: session?.user.id }),
+												credentials: "include",
+											});
+											signOut({ redirect: false });
+										} catch (err) {
+											console.error("Error signing out:", err);
+										}
+									}}
 									className="text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800"
 								>
 									Sign Out
