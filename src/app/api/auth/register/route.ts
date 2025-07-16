@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { z } from "zod";
-import { authOptions } from "~/lib/auth/auth";
 import { db } from "~/server/db";
 
 const registerInputSchema = z.object({
+	userId: z.number(),
 	reasonToJoin: z.string().optional(),
 	expectations: z.string().optional(),
 	contribution: z.string().optional(),
@@ -13,12 +12,6 @@ const registerInputSchema = z.object({
 
 export async function POST(req: Request) {
 	try {
-		const session = await getServerSession(authOptions);
-
-		if (!session || !session.user) {
-			return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-		}
-
 		const body = await req.json();
 		const input = registerInputSchema.safeParse(body);
 
@@ -29,8 +22,7 @@ export async function POST(req: Request) {
 			);
 		}
 
-		const { reasonToJoin, expectations, contribution } = input.data;
-		const userId = session.user.id;
+		const { userId, reasonToJoin, expectations, contribution } = input.data;
 
 		await db.user.update({
 			where: {
@@ -41,6 +33,9 @@ export async function POST(req: Request) {
 				reasonToJoin,
 				expectations,
 				contribution,
+				role: {
+					connect: { name: "MEMBER" },
+				},
 			},
 		});
 
