@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 						{ status: 500 },
 					);
 				}
-				if (isAvailable) {
+				if (isAvailable.success) {
 					return NextResponse.json({ available: true });
 				} else {
 					return NextResponse.json({ available: false });
