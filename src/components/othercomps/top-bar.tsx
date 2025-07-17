@@ -5,8 +5,9 @@ import { useTheme } from "next-themes";
 import { useState } from "react";
 import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
+import { toast } from "sonner";
 import { Dialog, DialogContent } from "~/components/ui/dialog";
-import { signOut, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -166,7 +167,8 @@ export function TopBar({ activePage, setActivePage }: TopBarProps) {
 												body: JSON.stringify({ userId: session?.user.id }),
 												credentials: "include",
 											});
-											signOut({ redirect: false });
+											toast.success("Successfully signed out!");
+											window.location.href = "/auth/login";
 										} catch (err) {
 											console.error("Error signing out:", err);
 										}
