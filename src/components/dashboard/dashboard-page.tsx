@@ -7,6 +7,7 @@ import { BlogsPage } from "~/components/blog/blogs-page";
 import { DashboardContent } from "~/components/dashboard/dashboard-content";
 import { EventForm } from "~/components/event/event-form";
 import { EventsPage } from "~/components/event/events-page";
+import { EventParticipants } from "~/components/event/event-participants";
 import { GalleryPage } from "~/components/gallery/gallery-page";
 import { AppSidebar } from "~/components/othercomps/app-sidebar";
 import { TopBar } from "~/components/othercomps/top-bar";
@@ -40,6 +41,14 @@ export function Dashboard() {
 						setActivePage={setActivePage}
 						editingEvent={editingEvent}
 						setEditingEvent={setEditingEvent}
+					/>
+				);
+			case "event-participants":
+				return (
+					<EventParticipants
+						// setActivePage={setActivePage}
+						setEditingEvent={setEditingEvent}
+						editingEvent={editingEvent} // Pass the event to the participants page
 					/>
 				);
 			case "blogs":
