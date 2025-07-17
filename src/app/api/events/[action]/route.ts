@@ -12,6 +12,29 @@ export async function POST(req: NextRequest) {
 		}
 
 		switch (action) {
+			case "check-available": {
+				const { eventId } = body as { eventId: number };
+				if (!eventId) {
+					return NextResponse.json(
+						{ success: false, error: "Missing eventId" },
+						{ status: 400 },
+					);
+				}
+
+				const isAvailable = await server.event.checkMaxTeamsReached(eventId);
+				if (isAvailable === null) {
+					return NextResponse.json(
+						{ success: false, error: "Failed to check availability" },
+						{ status: 500 },
+					);
+				}
+				if (isAvailable) {
+					return NextResponse.json({ available: true });
+				} else {
+					return NextResponse.json({ available: false });
+				}
+			}
+
 			case "getAll": {
 				const events = await server.event.getPublishedEvents();
 				return NextResponse.json(events);

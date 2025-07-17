@@ -542,6 +542,41 @@ export async function confirmTeam(userId: number, teamId: string) {
 	}
 }
 
+export async function checkMaxTeamsReached(eventId: number) {
+	try {
+		const event = await db.event.findUnique({
+			where: { id: eventId },
+		});
+		if (!event) {
+			return {
+				success: false,
+				error: "Event not found",
+			};
+		}
+		const teamCount = await db.team.count({
+			where: {
+				AND: [{ eventId: event.id }, { isConfirmed: true }],
+			},
+		});
+		if (teamCount >= event.maxTeams) {
+			return {
+				success: false,
+				error: "Maximum number of teams reached for this event",
+			};
+		}
+		return {
+			success: true,
+			message: "Max teams not reached",
+		};
+	} catch (error) {
+		console.error("checkMaxTeamsReached Error:", error);
+		return {
+			success: false,
+			error: "Failed to check max teams",
+		};
+	}
+}
+
 export async function deleteTeam(userId: number, teamId: string) {
 	try {
 		// Fetch the team to verify leadership
