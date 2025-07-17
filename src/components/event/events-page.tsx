@@ -94,9 +94,9 @@ export function EventsPage({
 	};
 
 	const handleViewParticipants = (event: Event) => {
-		setSelectedEvent(event); // 👈 set the event
-		setActivePage("event-participants"); // go to participants page
-		setIsDetailOpen(false); // close modal
+		setEditingEvent(event);
+		setActivePage("event-participants");
+		setIsDetailOpen(false);
 	};
 
 	const getStateColor = (state: string) => {

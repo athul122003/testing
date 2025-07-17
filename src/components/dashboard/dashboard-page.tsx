@@ -44,13 +44,7 @@ export function Dashboard() {
 					/>
 				);
 			case "event-participants":
-				return (
-					<EventParticipants
-						// setActivePage={setActivePage}
-						setEditingEvent={setEditingEvent}
-						editingEvent={editingEvent} // Pass the event to the participants page
-					/>
-				);
+				return <EventParticipants editingEvent={editingEvent} />;
 			case "blogs":
 				return (
 					<BlogsPage

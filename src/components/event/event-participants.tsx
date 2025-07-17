@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "~/components/ui/button";
 import {
 	Dialog,
@@ -9,6 +9,7 @@ import {
 import { Card, CardContent } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { getTeamsForEvent } from "~/actions/teams";
 
 type Team = {
 	id: string;
@@ -19,51 +20,30 @@ type Team = {
 type EventParticipantsProps = {
 	// biome-ignore lint/suspicious/noExplicitAny: FIX THIS LATER
 	editingEvent: any;
-	// setActivePage: (page: string) => void;
-	// biome-ignore lint/suspicious/noExplicitAny: FIX THIS LATER
-	setEditingEvent: (event: any) => void;
 };
 
-// 🧪 fallback mock teams
-const mockTeams: Team[] = [
-	{
-		id: "team1",
-		name: "Alpha Coders",
-		members: ["Alice", "Bob", "Charlie"],
-	},
-	{
-		id: "team2",
-		name: "Byte Force",
-		members: ["Dave", "Eve"],
-	},
-	{
-		id: "team3",
-		name: "Code Ninjas",
-		members: ["Frank", "Grace", "Heidi"],
-	},
-];
-
-export function EventParticipants({
-	editingEvent,
-	// setActivePage,
-	setEditingEvent,
-}: EventParticipantsProps) {
+export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 	const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
 	const [searchQuery, setSearchQuery] = useState("");
+	const [teams, setTeams] = useState<Team[]>([]);
 
-	const teams = useMemo(() => {
-		// You can add logic to fetch teams based on editingEvent.id here
-		return mockTeams;
-	}, []);
+	useEffect(() => {
+		const fetchTeams = async () => {
+			const fetched = await getTeamsForEvent(editingEvent.id);
+			setTeams(fetched);
+		};
+
+		fetchTeams();
+	}, [editingEvent.id]);
 
 	const filteredTeams = teams.filter((team) =>
 		team.name.toLowerCase().includes(searchQuery.toLowerCase()),
 	);
 
 	return (
-		<div className="min-h-screen p-8 bg-background text-foreground">
+		<div className="min-h-screen p-8 ">
 			<div className="flex justify-between items-center mb-6">
-				<h1 className="text-2xl font-semibold">
+				<h1 className="text-4xl font-semibold">
 					{editingEvent?.name ?? "Registered Teams"}
 				</h1>
 				<Input
