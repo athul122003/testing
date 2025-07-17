@@ -1,6 +1,12 @@
 "use client";
-
-import { Bell, Database, Palette, Save, Shield } from "lucide-react";
+import {
+	Bell,
+	Database,
+	OctagonAlert,
+	Palette,
+	Save,
+	Shield,
+} from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
@@ -8,6 +14,9 @@ import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
 import { Switch } from "~/components/ui/switch";
 import { Textarea } from "~/components/ui/textarea";
+import MaintainenceSwitch from "../ui/switches/maintainenceSwitch";
+import NukeSwitch from "../ui/switches/nukeSwitch";
+import RegisterSwitch from "../ui/switches/regSwitch";
 
 export function SettingsPage() {
 	return (
@@ -22,6 +31,45 @@ export function SettingsPage() {
 			</div>
 
 			<div className="grid gap-6">
+				<Card className="border-0 shadow-lg bg-white dark:bg-slate-800">
+					<CardHeader>
+						<CardTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
+							<OctagonAlert className="h-5 w-5" />
+							Danger Zone
+						</CardTitle>
+					</CardHeader>
+					<CardContent className="space-y-6 flex justify-center items-center">
+						<div className="grid grid-cols-1 md:grid-cols-3 gap-4 justify-center items-center w-full">
+							<div className="border-4 border-black dark:border-white min-h-80 rounded-xl flex flex-col justify-between items-center p-4">
+								<Label
+									htmlFor="register_switch"
+									className="text-xl font-bold self-center"
+								>
+									Registration Switch
+								</Label>
+								<RegisterSwitch />
+							</div>
+							<div className="border-4 border-black dark:border-white min-h-80 rounded-xl flex flex-col justify-between items-center p-4">
+								<Label
+									htmlFor="maintainence_mode"
+									className="text-xl font-bold self-center"
+								>
+									Maintainence Mode
+								</Label>
+								<MaintainenceSwitch />
+							</div>
+							<div className="border-4 border-black dark:border-white min-h-80 rounded-xl flex flex-col justify-between items-center p-4">
+								<Label
+									htmlFor="nuke_switch"
+									className="text-xl font-bold self-center"
+								>
+									Nuke Website
+								</Label>
+								<NukeSwitch />
+							</div>
+						</div>
+					</CardContent>
+				</Card>
 				<Card className="border-0 shadow-lg bg-white dark:bg-slate-800">
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
