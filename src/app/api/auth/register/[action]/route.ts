@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "~/server/db";
+import { getServerSession } from "next-auth";
+import { authOptions } from "~/server/auth/auth";
 
 const registerInputSchema = z.object({
 	userId: z.number(),
@@ -50,6 +52,16 @@ export async function POST(req: NextRequest) {
 			}
 
 			case "update-status": {
+				const session = await getServerSession(authOptions);
+
+				if (!session || !session.user) {
+					return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+				}
+
+				if (session.user.role.name !== "ADMIN") {
+					return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+				}
+
 				const updateSchema = z.object({
 					value: z.boolean(),
 				});
