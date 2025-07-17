@@ -1,6 +1,6 @@
 "use client";
 
-import type { Blog } from "@prisma/client"; // Assuming you're using Prisma
+import type { Blog } from "@prisma/client";
 import {
 	ArrowLeft,
 	Bold,
