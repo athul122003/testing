@@ -54,8 +54,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { api } from "~/lib/api";
 import { useDashboardData } from "~/providers/dashboardDataContext";
 import { permissionKeys as perm } from "~/actions/middleware/routePermissions";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogDescription,
+} from "~/components/ui/dialog";
+import { useAddToCoreMutation } from "~/actions/tanstackHooks/core-queries";
+import { addToCore } from "~/actions/core";
 
 export function UsersPage() {
+	const [isCoreModalOpen, setIsCoreModalOpen] = useState(false);
+
 	/*
   const [roles, setRoles] = useState([]);
   
@@ -107,7 +118,33 @@ export function UsersPage() {
   }, []);
 
 */
-	// Fetch roles and permissions from the API
+	//TODO: need to fix
+	// //addToCore mutation
+	// const { mutate, isPending: addToCorePending } = useAddToCoreMutation({
+	//   onSuccessCallback: () => {
+	//     setIsCoreModalOpen(false);
+	//   },
+	// });
+	// //handleCore Submit
+	// const handleCoreSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+	//   e.preventDefault();
+	//   const formData = new FormData(e.currentTarget);
+	//   mutate(formData);
+	// };
+
+	const handleCoreSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		const formData = new FormData(event.currentTarget);
+		const res = await addToCore(formData);
+		if (res.status === "success") {
+			toast.success("Added to core successfully");
+		} else {
+			toast.error("Failed to add to core");
+			console.error("Error adding to core:", res);
+		}
+		setIsCoreModalOpen(false);
+	};
+	// // Fetch roles and permissions from the API
 
 	const {
 		hasPerm,
@@ -559,7 +596,11 @@ export function UsersPage() {
 																	<PaginationLink
 																		isActive={rolePage === 1}
 																		onClick={() => setRolePage(1)}
-																		className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${rolePage === 1 ? "bg-gray-100 dark:bg-slate-800" : ""}`}
+																		className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${
+																			rolePage === 1
+																				? "bg-gray-100 dark:bg-slate-800"
+																				: ""
+																		}`}
 																	>
 																		1
 																	</PaginationLink>
@@ -587,7 +628,11 @@ export function UsersPage() {
 																		<PaginationLink
 																			isActive={rolePage === i}
 																			onClick={() => setRolePage(i)}
-																			className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${rolePage === i ? "bg-gray-100 dark:bg-slate-800" : ""}`}
+																			className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${
+																				rolePage === i
+																					? "bg-gray-100 dark:bg-slate-800"
+																					: ""
+																			}`}
 																		>
 																			{i}
 																		</PaginationLink>
@@ -613,7 +658,11 @@ export function UsersPage() {
 																		<PaginationLink
 																			isActive={rolePage === total}
 																			onClick={() => setRolePage(total)}
-																			className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${rolePage === total ? "bg-gray-100 dark:bg-slate-800" : ""}`}
+																			className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${
+																				rolePage === total
+																					? "bg-gray-100 dark:bg-slate-800"
+																					: ""
+																			}`}
 																		>
 																			{total}
 																		</PaginationLink>
@@ -801,6 +850,15 @@ export function UsersPage() {
 																		className="hover:bg-gray-200 dark:hover:bg-slate-800"
 																	>
 																		<X className="h-4 w-4 text-red-500 dark:text-red-400" />
+																	</Button>
+
+																	<Button
+																		variant="outline"
+																		size="sm"
+																		onClick={() => setIsCoreModalOpen(true)}
+																		className="hover:bg-gray-200 dark:hover:bg-slate-800 text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
+																	>
+																		Add to Core
 																	</Button>
 																</div>
 															</div>
@@ -1014,7 +1072,11 @@ export function UsersPage() {
 																					<PaginationLink
 																						isActive={page === 1}
 																						onClick={() => setPage(1)}
-																						className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${page === 1 ? "bg-gray-100 dark:bg-slate-800" : ""}`}
+																						className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${
+																							page === 1
+																								? "bg-gray-100 dark:bg-slate-800"
+																								: ""
+																						}`}
 																					>
 																						1
 																					</PaginationLink>
@@ -1042,7 +1104,11 @@ export function UsersPage() {
 																						<PaginationLink
 																							isActive={page === i}
 																							onClick={() => setPage(i)}
-																							className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${page === i ? "bg-gray-100 dark:bg-slate-800" : ""}`}
+																							className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${
+																								page === i
+																									? "bg-gray-100 dark:bg-slate-800"
+																									: ""
+																							}`}
 																						>
 																							{i}
 																						</PaginationLink>
@@ -1068,7 +1134,11 @@ export function UsersPage() {
 																						<PaginationLink
 																							isActive={page === total}
 																							onClick={() => setPage(total)}
-																							className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${page === total ? "bg-gray-100 dark:bg-slate-800" : ""}`}
+																							className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${
+																								page === total
+																									? "bg-gray-100 dark:bg-slate-800"
+																									: ""
+																							}`}
 																						>
 																							{total}
 																						</PaginationLink>
@@ -1114,6 +1184,103 @@ export function UsersPage() {
 					</TabsContent>
 				)}
 			</Tabs>
+			{isCoreModalOpen && (
+				<Dialog open={isCoreModalOpen} onOpenChange={setIsCoreModalOpen}>
+					<DialogContent className="max-w-md bg-white dark:bg-black text-gray-900 dark:text-slate-200">
+						<DialogHeader>
+							<DialogTitle>Add to Core Team</DialogTitle>
+							<DialogDescription>
+								Assign position and type for the selected users.
+							</DialogDescription>
+						</DialogHeader>
+
+						<form onSubmit={handleCoreSubmit}>
+							<input
+								type="hidden"
+								name="userIds"
+								value={JSON.stringify(selectedUsers.map((u) => u.id))}
+							/>
+
+							<div className="grid gap-4 mt-4">
+								<div className="grid gap-1">
+									<label htmlFor="position" className="text-sm font-medium">
+										Position
+									</label>
+									<Input
+										id="position"
+										name="position"
+										required
+										placeholder="eg. Technical Head"
+									/>
+								</div>
+
+								<div className="grid gap-1">
+									<label htmlFor="type" className="text-sm font-medium">
+										Type
+									</label>
+									<Select name="type" required>
+										<SelectTrigger className="w-full bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700">
+											<SelectValue placeholder="Select Type" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="OFFICE_BEARER">
+												Office Bearer
+											</SelectItem>
+											<SelectItem value="FACULTY_COORDINATOR">
+												Faculty Coordinator
+											</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+
+								<div className="grid gap-1">
+									<label htmlFor="year" className="text-sm font-medium">
+										Year
+									</label>
+									<Select name="year" required>
+										<SelectTrigger className="w-full bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700">
+											<SelectValue placeholder="Select Year" />
+										</SelectTrigger>
+										<SelectContent>
+											{Array.from({ length: 6 }, (_, i) => {
+												const year = String(new Date().getFullYear() - i);
+												return (
+													<SelectItem key={year} value={year}>
+														{year}
+													</SelectItem>
+												);
+											})}
+										</SelectContent>
+									</Select>
+								</div>
+								<div className="grid gap-1">
+									<label htmlFor="priority" className="text-sm font-medium">
+										Priority
+									</label>
+									<Input
+										id="priority"
+										name="priority"
+										type="number"
+										required
+										placeholder="eg. 1"
+									/>
+								</div>
+							</div>
+
+							<div className="mt-6 flex justify-end gap-2">
+								<Button
+									type="button"
+									variant="ghost"
+									onClick={() => setIsCoreModalOpen(false)}
+								>
+									Cancel
+								</Button>
+								<Button type="submit">Confirm</Button>
+							</div>
+						</form>
+					</DialogContent>
+				</Dialog>
+			)}
 		</div>
 	);
 }
