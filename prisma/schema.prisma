@@ -391,6 +391,18 @@ model Payment {
   updatedAt DateTime @updatedAt
 }
 
+model Settings {
+  id          String @id @default(cuid())
+  name        String
+  status       Boolean
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name])
+}
+
 enum EventCategory {
   WORKSHOP
   COMPETITION
