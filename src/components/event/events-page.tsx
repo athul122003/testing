@@ -93,6 +93,12 @@ export function EventsPage({
 		setIsDetailOpen(true);
 	};
 
+	const handleViewParticipants = (event: Event) => {
+		setEditingEvent(event);
+		setActivePage("event-participants");
+		setIsDetailOpen(false);
+	};
+
 	const getStateColor = (state: string) => {
 		switch (state) {
 			case "PUBLISHED":
@@ -356,6 +362,13 @@ export function EventsPage({
 							</div>
 
 							<div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-slate-800">
+								<Button
+									type="button"
+									onClick={() => handleViewParticipants(selectedEvent)}
+									className="bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-200 border border-gray-300 dark:border-slate-800"
+								>
+									View Participants
+								</Button>
 								{selectedEvent.state === "DRAFT" && (
 									<Button
 										onClick={() => handlePublishEvent(selectedEvent.id)}
