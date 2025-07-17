@@ -82,6 +82,7 @@
 		"rehype-highlight": "^7.0.2",
 		"remark-gfm": "^4.0.1",
 		"sonner": "^1.7.4",
+		"styled-components": "^6.1.19",
 		"tailwind-merge": "^2.5.5",
 		"tailwindcss-animate": "^1.0.7",
 		"uuid": "^11.1.0",
