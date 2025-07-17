@@ -180,8 +180,35 @@ const main = async () => {
 		}
 
 		console.log("28 payments seeded");
+
+		const settings = [
+			{
+				name: "registrationsOpen",
+				status: true,
+				description: "Club Registrations Open",
+			},
+			{
+				name: "maintenanceMode",
+				status: false,
+				description: "Maintenance Mode",
+			},
+		];
+
+		for (const setting of settings) {
+			await db.settings.upsert({
+				where: { name: setting.name },
+				update: {
+					status: setting.status,
+					description: setting.description,
+				},
+				create: setting,
+			});
+		}
+
+		console.log("🌱 Settings seeded successfully!");
+
 		console.log(
-			"Seed complete: 5 roles, 5 permissions, 35 users, 28 payments, and branches seeded.",
+			"Seed complete: 5 roles, 5 permissions, 35 users, 28 payments, 2 settings, and branches seeded.",
 		);
 	} catch (err) {
 		console.error("Seed error:", err);
