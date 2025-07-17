@@ -3,6 +3,15 @@ import { db } from "~/server/db";
 
 export async function POST(req: Request) {
 	try {
+		const contentType = req.headers.get("content-type");
+
+		if (!contentType?.includes("application/json")) {
+			return NextResponse.json(
+				{ message: "Unsupported content type" },
+				{ status: 415 },
+			);
+		}
+
 		const { userId } = await req.json();
 		if (!userId) {
 			return NextResponse.json({ message: "Missing userId" }, { status: 400 });
