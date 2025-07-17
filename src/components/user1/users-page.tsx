@@ -62,7 +62,7 @@ import {
 	DialogDescription,
 } from "~/components/ui/dialog";
 import { useAddToCoreMutation } from "~/actions/tanstackHooks/core-queries";
-import { addToCore } from "~/actions/core";
+// import { addToCore } from "~/actions/core";
 
 export function UsersPage() {
 	const [isCoreModalOpen, setIsCoreModalOpen] = useState(false);
@@ -118,32 +118,32 @@ export function UsersPage() {
   }, []);
 
 */
-	//TODO: need to fix
-	// //addToCore mutation
-	// const { mutate, isPending: addToCorePending } = useAddToCoreMutation({
-	//   onSuccessCallback: () => {
-	//     setIsCoreModalOpen(false);
-	//   },
-	// });
-	// //handleCore Submit
-	// const handleCoreSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-	//   e.preventDefault();
-	//   const formData = new FormData(e.currentTarget);
-	//   mutate(formData);
-	// };
-
-	const handleCoreSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-		event.preventDefault();
-		const formData = new FormData(event.currentTarget);
-		const res = await addToCore(formData);
-		if (res.status === "success") {
-			toast.success("Added to core successfully");
-		} else {
-			toast.error("Failed to add to core");
-			console.error("Error adding to core:", res);
-		}
-		setIsCoreModalOpen(false);
+	//addToCore mutation
+	const { mutate: addToCore, isPending: addToCorePending } =
+		useAddToCoreMutation({
+			onSuccessCallback: () => {
+				setIsCoreModalOpen(false);
+			},
+		});
+	//handleCore Submit
+	const handleCoreSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+		e.preventDefault();
+		const formData = new FormData(e.currentTarget);
+		addToCore(formData);
 	};
+
+	// const handleCoreSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+	// 	event.preventDefault();
+	// 	const formData = new FormData(event.currentTarget);
+	// 	const res = await addToCore(formData);
+	// 	if (res.status === "success") {
+	// 		toast.success("Added to core successfully");
+	// 	} else {
+	// 		toast.error("Failed to add to core");
+	// 		console.error("Error adding to core:", res);
+	// 	}
+	// 	setIsCoreModalOpen(false);
+	// };
 	// // Fetch roles and permissions from the API
 
 	const {
@@ -1275,7 +1275,9 @@ export function UsersPage() {
 								>
 									Cancel
 								</Button>
-								<Button type="submit">Confirm</Button>
+								<Button type="submit" disabled={addToCorePending}>
+									Confirm
+								</Button>
 							</div>
 						</form>
 					</DialogContent>
