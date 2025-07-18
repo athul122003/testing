@@ -56,8 +56,7 @@ export async function POST(req: NextRequest) {
 				const { userId, eventId } = body as { userId: number; eventId: number };
 
 				const result = await server.event.checkSolo(userId, eventId);
-				console.log("Check Solo Result:", result);
-				return NextResponse.json({ success: result.success });
+				return NextResponse.json({ success: result.success, result });
 			}
 
 			case "createTeam": {

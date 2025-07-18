@@ -129,6 +129,7 @@ export async function checkSolo(userId: number, eventId: number) {
 
 	return {
 		success: true,
+		teamId: team.id,
 	};
 }
 
