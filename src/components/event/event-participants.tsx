@@ -8,7 +8,18 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "~/components/ui/dialog";
-import { Card, CardContent } from "~/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "~/components/ui/table";
+import { Badge } from "~/components/ui/badge";
+import { TrendingUp } from "lucide-react";
+import { Search } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import {
@@ -16,6 +27,7 @@ import {
 	deleteTeam,
 	updateTeamName,
 	removeMemberFromTeam,
+	addMemberToTeam,
 } from "~/actions/teams";
 import { toast } from "sonner";
 
@@ -39,7 +51,9 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [teams, setTeams] = useState<Team[]>([]);
 	const [teamNameInput, setTeamNameInput] = useState("");
-	const [addingMemberName, setAddingMemberName] = useState("");
+	const [addingMemberId, setAddingMemberId] = useState("");
+	const [page, setPage] = useState(1);
+	const pageSize = 10;
 
 	useEffect(() => {
 		if (editingEvent?.id) {
@@ -54,6 +68,8 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 	const filteredTeams = teams.filter((team) =>
 		team.name.toLowerCase().includes(searchQuery.toLowerCase()),
 	);
+
+	const totalPages = Math.ceil(filteredTeams.length / pageSize);
 
 	// Update local teams state directly
 	function updateTeamInList(updatedTeam: Team) {
@@ -100,36 +116,227 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 		}
 	}
 
+	async function handleAddMember() {
+		if (!selectedTeam || !addingMemberId) return;
+
+		try {
+			const updatedMembers = await addMemberToTeam(
+				selectedTeam.id,
+				Number(addingMemberId),
+			);
+			setSelectedTeam({ ...selectedTeam, members: updatedMembers });
+			setTeams((prev) =>
+				prev.map((t) =>
+					t.id === selectedTeam.id ? { ...t, members: updatedMembers } : t,
+				),
+			);
+			setAddingMemberId("");
+			toast.success("Member added successfully");
+		} catch (err: any) {
+			toast.error(err.message || "Failed to add member");
+		}
+	}
+
 	return (
-		<div className="min-h-screen p-8">
+		<div className="space-y-8">
 			<div className="flex justify-between items-center mb-6">
-				<h1 className="text-4xl font-semibold">
-					{editingEvent?.name ?? "Registered Teams"}
-				</h1>
-				<Input
-					placeholder="Search teams"
-					value={searchQuery}
-					onChange={(e) => setSearchQuery(e.target.value)}
-					className="max-w-xs"
-				/>
+				<div>
+					<h1 className="text-4xl font-bold text-gray-900 dark:text-slate-200 mb-2">
+						{editingEvent?.name ?? "Registered Teams"}
+					</h1>
+					<p className="text-gray-600 dark:text-slate-400">
+						Track and manage participants
+					</p>
+				</div>
 			</div>
 
-			<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-				{filteredTeams.map((team) => (
-					<Card
-						key={team.id}
-						className="hover:shadow-xl cursor-pointer"
-						onClick={() => setSelectedTeam(team)}
-					>
-						<CardContent className="p-4">
-							<h2 className="text-lg font-medium mb-2">{team.name}</h2>
-							<p className="text-sm text-muted-foreground">
-								{team.members.length} members
-							</p>
-						</CardContent>
-					</Card>
-				))}
+			<div className="grid gap-6 md:grid-cols-2">
+				<Card className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
+					<CardHeader className="pb-3">
+						<div className="flex justify-between items-center">
+							<CardTitle className="text-sm text-gray-700 dark:text-slate-300">
+								Successful Transactions
+							</CardTitle>
+							<div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-green-600 dark:from-green-700 dark:to-green-800">
+								<TrendingUp className="h-4 w-4 text-white" />
+							</div>
+						</div>
+					</CardHeader>
+					<CardContent>
+						<div className="text-2xl font-bold text-green-600 dark:text-green-400">
+							30
+						</div>
+						<div className="text-sm text-gray-500 dark:text-slate-400">
+							Across all records
+						</div>
+						<div className="mt-2 text-lg font-semibold text-green-500 dark:text-green-300">
+							20
+						</div>
+						<div className="text-sm text-gray-500 dark:text-slate-400">
+							In current view
+						</div>
+					</CardContent>
+				</Card>
+				<Card className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
+					<CardHeader className="pb-3">
+						<div className="flex justify-between items-center">
+							<CardTitle className="text-sm text-gray-700 dark:text-slate-300">
+								Successful Transactions
+							</CardTitle>
+							<div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-green-600 dark:from-green-700 dark:to-green-800">
+								<TrendingUp className="h-4 w-4 text-white" />
+							</div>
+						</div>
+					</CardHeader>
+					<CardContent>
+						<div className="text-2xl font-bold text-green-600 dark:text-green-400">
+							30
+						</div>
+						<div className="text-sm text-gray-500 dark:text-slate-400">
+							Across all records
+						</div>
+						<div className="mt-2 text-lg font-semibold text-green-500 dark:text-green-300">
+							20
+						</div>
+						<div className="text-sm text-gray-500 dark:text-slate-400">
+							In current view
+						</div>
+					</CardContent>
+					<CardContent>
+						<div className="text-2xl font-bold text-green-600 dark:text-green-400">
+							30
+						</div>
+						<div className="text-sm text-gray-500 dark:text-slate-400">
+							Across all records
+						</div>
+						<div className="mt-2 text-lg font-semibold text-green-500 dark:text-green-300">
+							20
+						</div>
+						<div className="text-sm text-gray-500 dark:text-slate-400">
+							In current view
+						</div>
+					</CardContent>
+				</Card>
 			</div>
+
+			<Card className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
+				<CardHeader>
+					<div className="flex justify-between items-center">
+						<CardTitle className="text-xl text-gray-900 dark:text-slate-200">
+							Registered Teams
+						</CardTitle>
+						<div className="relative">
+							<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-slate-400" />
+							<Input
+								placeholder="Search teams..."
+								value={searchQuery}
+								onChange={(e) => setSearchQuery(e.target.value)}
+								className="pl-10 w-64 bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-400"
+							/>
+						</div>
+					</div>
+				</CardHeader>
+				<CardContent>
+					<Table className="bg-white dark:bg-black text-gray-900 dark:text-slate-200">
+						<TableHeader>
+							<TableRow className="bg-gray-50 dark:bg-slate-900">
+								<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+									Team Name
+								</TableHead>
+								<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+									Members
+								</TableHead>
+								<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+									Status
+								</TableHead>
+								<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+									Actions
+								</TableHead>
+							</TableRow>
+						</TableHeader>
+						<TableBody>
+							{filteredTeams.map((team: Team) => (
+								<TableRow
+									key={team.id}
+									className="hover:bg-gray-50 dark:hover:bg-slate-900"
+								>
+									{/* Team Name */}
+									<TableCell className="font-medium">
+										<div className="text-gray-900 dark:text-slate-200">
+											{team.name}
+										</div>
+									</TableCell>
+
+									{/* Members */}
+									<TableCell>
+										<div className="flex flex-wrap gap-2 text-gray-900 dark:text-slate-200">
+											{team.members.length > 0
+												? team.members.map((m) => (
+														<span
+															key={m.id}
+															className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300"
+														>
+															{m.name}
+														</span>
+													))
+												: "No members"}
+										</div>
+									</TableCell>
+
+									{/* Status */}
+									<TableCell>
+										{/* Implement this */}
+										{/* <Badge
+											className={`${team.isConfirmed
+													? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+													: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+												} w-fit`}
+										>
+											{team.isConfirmed ? "Confirmed" : "Pending"}
+										</Badge> */}
+										<Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 w-fit">
+											Confirmed
+										</Badge>
+									</TableCell>
+
+									{/* Actions */}
+									<TableCell>
+										<Button
+											variant="ghost"
+											size="sm"
+											onClick={() => setSelectedTeam(team)}
+											className="hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300"
+										>
+											✏ Edit
+										</Button>
+									</TableCell>
+								</TableRow>
+							))}
+						</TableBody>
+					</Table>
+
+					{/* Pagination */}
+					<div className="flex justify-between items-center mt-6">
+						<Button
+							onClick={() => setPage((p) => Math.max(1, p - 1))}
+							disabled={page === 1}
+							className="bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
+						>
+							⬅ Prev
+						</Button>
+						<span className="text-sm text-gray-500 dark:text-slate-400">
+							Page {page} of {totalPages}
+						</span>
+						<Button
+							onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+							disabled={page === totalPages}
+							className="bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
+						>
+							Next ➡
+						</Button>
+					</div>
+				</CardContent>
+			</Card>
 
 			<Dialog open={!!selectedTeam} onOpenChange={() => setSelectedTeam(null)}>
 				<DialogContent className="sm:max-w-md">
@@ -185,12 +392,11 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 							{/* Add Member (disabled placeholder) */}
 							<div className="flex items-center space-x-2">
 								<Input
-									placeholder="Add new member (disabled for now)"
-									value={addingMemberName}
-									onChange={(e) => setAddingMemberName(e.target.value)}
-									disabled
+									placeholder="Add new member"
+									value={addingMemberId}
+									onChange={(e) => setAddingMemberId(e.target.value)}
 								/>
-								<Button disabled>Add</Button>
+								<Button onClick={handleAddMember}>Add</Button>
 							</div>
 
 							{/* Delete Team */}

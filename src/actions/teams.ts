@@ -55,3 +55,48 @@ export async function updateTeamName(teamId: string, newName: string) {
 		},
 	});
 }
+
+export async function addMemberToTeam(teamId: string, userId: number) {
+	const team = await db.team.findUnique({
+		where: { id: teamId },
+		include: {
+			Members: { select: { id: true, name: true } },
+		},
+	});
+
+	if (!team) {
+		throw new Error("Team not found");
+	}
+
+	const user = await db.user.findUnique({
+		where: { id: userId },
+		select: { id: true, name: true },
+	});
+
+	if (!user) {
+		throw new Error("User not found");
+	}
+
+	const isAlreadyMember = team.Members.some((m) => m.id === userId);
+	if (isAlreadyMember) {
+		throw new Error("User is already a member of this team");
+	}
+
+	await db.team.update({
+		where: { id: teamId },
+		data: {
+			Members: {
+				connect: { id: userId },
+			},
+		},
+	});
+
+	const updatedTeam = await db.team.findUnique({
+		where: { id: teamId },
+		include: {
+			Members: { select: { id: true, name: true } },
+		},
+	});
+
+	return updatedTeam?.Members || [];
+}
