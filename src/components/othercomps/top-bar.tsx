@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import { toast } from "sonner";
 import { Dialog, DialogContent } from "~/components/ui/dialog";
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -159,18 +159,23 @@ export function TopBar({ activePage, setActivePage }: TopBarProps) {
 								<DropdownMenuItem
 									onClick={async () => {
 										try {
-											await fetch(`/api/auth/signout`, {
+											const res = await fetch("/api/auth/revoke", {
 												method: "POST",
 												headers: {
 													"Content-Type": "application/json",
 												},
 												body: JSON.stringify({ userId: session?.user.id }),
-												credentials: "include",
 											});
-											toast.success("Successfully signed out!");
-											window.location.href = "/auth/login";
+
+											if (!res.ok) {
+												throw new Error("Failed to revoke refresh tokens");
+											}
+
+											toast.success("Signed out successfully!");
+											await signOut({ callbackUrl: "/auth/login" });
 										} catch (err) {
-											console.error("Error signing out:", err);
+											console.error("Sign out failed:", err);
+											toast.error("Error signing out");
 										}
 									}}
 									className="text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800"
