@@ -39,6 +39,8 @@ type Member = {
 type Team = {
 	id: string;
 	name: string;
+	isConfirmed: boolean;
+	leaderName?: string; // Optional, if leader is not always present
 	members: Member[];
 };
 
@@ -155,65 +157,32 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 					<CardHeader className="pb-3">
 						<div className="flex justify-between items-center">
 							<CardTitle className="text-sm text-gray-700 dark:text-slate-300">
-								Successful Transactions
+								Confirmed Teams
 							</CardTitle>
-							<div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-green-600 dark:from-green-700 dark:to-green-800">
-								<TrendingUp className="h-4 w-4 text-white" />
-							</div>
 						</div>
 					</CardHeader>
+
 					<CardContent>
+						{/* Total Confirmed Teams */}
 						<div className="text-2xl font-bold text-green-600 dark:text-green-400">
-							30
-						</div>
-						<div className="text-sm text-gray-500 dark:text-slate-400">
-							Across all records
-						</div>
-						<div className="mt-2 text-lg font-semibold text-green-500 dark:text-green-300">
-							20
-						</div>
-						<div className="text-sm text-gray-500 dark:text-slate-400">
-							In current view
+							{teams.filter((team) => team.isConfirmed).length}
 						</div>
 					</CardContent>
 				</Card>
+
 				<Card className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
 					<CardHeader className="pb-3">
 						<div className="flex justify-between items-center">
 							<CardTitle className="text-sm text-gray-700 dark:text-slate-300">
-								Successful Transactions
+								Unconfirmed Teams
 							</CardTitle>
-							<div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-green-600 dark:from-green-700 dark:to-green-800">
-								<TrendingUp className="h-4 w-4 text-white" />
-							</div>
 						</div>
 					</CardHeader>
+
 					<CardContent>
-						<div className="text-2xl font-bold text-green-600 dark:text-green-400">
-							30
-						</div>
-						<div className="text-sm text-gray-500 dark:text-slate-400">
-							Across all records
-						</div>
-						<div className="mt-2 text-lg font-semibold text-green-500 dark:text-green-300">
-							20
-						</div>
-						<div className="text-sm text-gray-500 dark:text-slate-400">
-							In current view
-						</div>
-					</CardContent>
-					<CardContent>
-						<div className="text-2xl font-bold text-green-600 dark:text-green-400">
-							30
-						</div>
-						<div className="text-sm text-gray-500 dark:text-slate-400">
-							Across all records
-						</div>
-						<div className="mt-2 text-lg font-semibold text-green-500 dark:text-green-300">
-							20
-						</div>
-						<div className="text-sm text-gray-500 dark:text-slate-400">
-							In current view
+						{/* Total Unconfirmed Teams */}
+						<div className="text-2xl font-bold text-red-600 dark:text-red-400">
+							{teams.filter((team) => !team.isConfirmed).length}
 						</div>
 					</CardContent>
 				</Card>
@@ -244,13 +213,16 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 									Team Name
 								</TableHead>
 								<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+									Leader
+								</TableHead>
+								<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
 									Members
 								</TableHead>
 								<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
 									Status
 								</TableHead>
 								<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-									Actions
+									Edit
 								</TableHead>
 							</TableRow>
 						</TableHeader>
@@ -264,6 +236,17 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 									<TableCell className="font-medium">
 										<div className="text-gray-900 dark:text-slate-200">
 											{team.name}
+										</div>
+									</TableCell>
+
+									<TableCell className="font-medium">
+										<div className="text-gray-900 dark:text-slate-200">
+											<span
+												key={team.leaderName}
+												className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300"
+											>
+												{team.leaderName || "Unknown Leader"}
+											</span>
 										</div>
 									</TableCell>
 
@@ -285,17 +268,14 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 
 									{/* Status */}
 									<TableCell>
-										{/* Implement this */}
-										{/* <Badge
-											className={`${team.isConfirmed
+										<Badge
+											className={`${
+												team.isConfirmed
 													? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
 													: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-												} w-fit`}
+											} w-fit`}
 										>
 											{team.isConfirmed ? "Confirmed" : "Pending"}
-										</Badge> */}
-										<Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 w-fit">
-											Confirmed
 										</Badge>
 									</TableCell>
 
@@ -307,7 +287,7 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 											onClick={() => setSelectedTeam(team)}
 											className="hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300"
 										>
-											✏ Edit
+											. . .
 										</Button>
 									</TableCell>
 								</TableRow>
@@ -363,6 +343,14 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 								>
 									Update Name
 								</Button>
+							</div>
+
+							{/* Leader */}
+							<div>
+								<Label>Leader</Label>
+								<div className="text-gray-900 dark:text-slate-200 pt-1">
+									{selectedTeam.leaderName || "Unknown Leader"}
+								</div>
 							</div>
 
 							{/* Members */}
