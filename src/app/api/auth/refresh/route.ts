@@ -16,13 +16,17 @@ export async function POST(req: Request) {
 			await refreshTokens(refreshToken);
 
 		const user = await getUserById(userId);
-
 		if (!user) {
 			return new Response(JSON.stringify({ message: "User not found" }), {
 				status: 404,
 				headers: { "Content-Type": "application/json" },
 			});
 		}
+
+		const attended = user.Attendance.length;
+		const eventsDone = 0;
+		const attendance =
+			eventsDone > 0 ? Math.floor((attended / eventsDone) * 100) : 0;
 
 		return new Response(
 			JSON.stringify({
@@ -40,6 +44,7 @@ export async function POST(req: Request) {
 					year: user.year,
 					bio: user.bio,
 					activityPoints: user.totalActivityPoints,
+					attendance,
 					image: user.image || null,
 				},
 			}),

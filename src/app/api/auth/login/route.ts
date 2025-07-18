@@ -42,6 +42,11 @@ export async function POST(req: Request) {
 			});
 		}
 
+		const attended = user.Attendance.length;
+		const eventsDone = 0;
+		const attendance =
+			eventsDone > 0 ? Math.floor((attended / eventsDone) * 100) : 0;
+
 		return new Response(
 			JSON.stringify({
 				user: {
@@ -55,6 +60,7 @@ export async function POST(req: Request) {
 					year: user.year,
 					bio: user.bio,
 					activityPoints: user.totalActivityPoints,
+					attendance,
 					image: user.image || null,
 				},
 				accessToken,
