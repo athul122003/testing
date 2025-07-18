@@ -8,6 +8,12 @@ export async function getTeamsForEvent(eventId: number) {
 			eventId,
 		},
 		include: {
+			Leader: {
+				select: {
+					id: true,
+					name: true,
+				},
+			},
 			Members: {
 				select: {
 					id: true,
@@ -23,6 +29,8 @@ export async function getTeamsForEvent(eventId: number) {
 	return teams.map((team) => ({
 		id: team.id,
 		name: team.name,
+		isConfirmed: team.isConfirmed,
+		leaderName: team.Leader?.name,
 		members: team.Members.map((member) => ({
 			id: member.id,
 			name: member.name,
@@ -54,4 +62,68 @@ export async function updateTeamName(teamId: string, newName: string) {
 			name: newName,
 		},
 	});
+}
+
+export async function addMemberToTeam(teamId: string, userId: number) {
+	const team = await db.team.findUnique({
+		where: { id: teamId },
+		include: {
+			Members: { select: { id: true, name: true } },
+			Event: { select: { id: true, name: true, maxTeamSize: true } },
+		},
+	});
+
+	if (!team) {
+		throw new Error("Team not found");
+	}
+
+	// 1. SOLO event check (maxTeamSize === 1)
+	if (team.Event?.maxTeamSize === 1) {
+		throw new Error(
+			`Cannot add members to "${team.Event.name}" because it is a SOLO event.`,
+		);
+	}
+
+	// 2. Team size check
+	if (team.Members.length >= team.Event.maxTeamSize) {
+		throw new Error(
+			`Team already has the maximum allowed members (${team.Event.maxTeamSize}).`,
+		);
+	}
+
+	// 3. Check if user exists
+	const user = await db.user.findUnique({
+		where: { id: userId },
+		select: { id: true, name: true },
+	});
+
+	if (!user) {
+		throw new Error("User not found");
+	}
+
+	// 4. Check if user is already in team
+	const isAlreadyMember = team.Members.some((m) => m.id === userId);
+	if (isAlreadyMember) {
+		throw new Error("User is already a member of this team");
+	}
+
+	// 5. Add member
+	await db.team.update({
+		where: { id: teamId },
+		data: {
+			Members: {
+				connect: { id: userId },
+			},
+		},
+	});
+
+	// 6. Fetch updated members
+	const updatedTeam = await db.team.findUnique({
+		where: { id: teamId },
+		include: {
+			Members: { select: { id: true, name: true } },
+		},
+	});
+
+	return updatedTeam?.Members || [];
 }
