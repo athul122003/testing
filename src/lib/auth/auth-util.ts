@@ -21,11 +21,17 @@ const getUserByEmail = async (
 	}
 };
 
-const getUserById = async (id: number): Promise<User | null> => {
+const getUserById = async (
+	id: number,
+): Promise<(User & { role: Role } & { Branch: Branch | null }) | null> => {
 	try {
 		return await db.user.findUnique({
 			where: {
 				id,
+			},
+			include: {
+				role: true,
+				Branch: true,
 			},
 		});
 	} catch (error) {

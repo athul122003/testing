@@ -178,3 +178,46 @@ export const updateMultipleUserRoles = protectedAction(
 	},
 	{ actionName: "user.updateMultipleRoles" },
 );
+
+export const updateUser = protectedAction(
+	async (
+		session: Session,
+		input: {
+			userId: number;
+			name?: string;
+			usn?: string;
+			branch?: string;
+			year?: string;
+			bio?: string;
+		},
+	) => {
+		const { userId, name, usn, branch, year, bio } = input;
+
+		if (session.user.id !== userId && session.user.role.name !== "ADMIN") {
+			throw new Error("You do not have permission to update this user.");
+		}
+
+		const data: Prisma.UserUpdateInput = {};
+		if (name !== undefined) data.name = name;
+		if (usn !== undefined) data.usn = usn;
+		if (branch !== undefined) data.Branch = { connect: { id: branch } };
+		if (year !== undefined) data.year = year;
+		if (bio !== undefined) data.bio = bio;
+
+		const updatedUser = await db.user.update({
+			where: { id: userId },
+			data,
+			select: {
+				id: true,
+				name: true,
+				email: true,
+				usn: true,
+				year: true,
+				bio: true,
+			},
+		});
+
+		return updatedUser;
+	},
+	{ actionName: "user.updateOne" },
+);

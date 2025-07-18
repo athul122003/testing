@@ -54,6 +54,7 @@ export async function POST(req: Request) {
 					branch: user.Branch?.name,
 					year: user.year,
 					bio: user.bio,
+					activityPoints: user.totalActivityPoints,
 					image: user.image || null,
 				},
 				accessToken,
