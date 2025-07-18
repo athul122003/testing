@@ -93,7 +93,7 @@ export async function registerUserToSoloEvent(userId: number, eventId: number) {
 
 		return {
 			success: true,
-			data: team,
+			data: { teamId: team.id },
 		};
 	} catch (error) {
 		console.error("registerUserToSoloEvent Error:", error);
@@ -129,6 +129,7 @@ export async function checkSolo(userId: number, eventId: number) {
 
 	return {
 		success: true,
+		teamId: team.id,
 	};
 }
 

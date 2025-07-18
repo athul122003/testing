@@ -1,5 +1,5 @@
+import { getUserById } from "~/lib/auth/auth-util";
 import { refreshToken as refreshTokens } from "~/lib/auth/jwt";
-import { db } from "~/server/db";
 
 export async function POST(req: Request) {
 	try {
@@ -15,11 +15,7 @@ export async function POST(req: Request) {
 		const { accessToken, refreshToken: newToken } =
 			await refreshTokens(refreshToken);
 
-		const user = await db.user.findUnique({
-			where: { id: userId },
-			select: { role: true, name: true, email: true },
-		});
-
+		const user = await getUserById(userId);
 		if (!user) {
 			return new Response(JSON.stringify({ message: "User not found" }), {
 				status: 404,
@@ -27,16 +23,29 @@ export async function POST(req: Request) {
 			});
 		}
 
+		const attended = user.Attendance.length;
+		const eventsDone = 0;
+		const attendance =
+			eventsDone > 0 ? Math.floor((attended / eventsDone) * 100) : 0;
+
 		return new Response(
 			JSON.stringify({
 				message: "Token refreshed",
 				accessToken,
 				refreshToken: newToken,
 				user: {
-					id: userId,
-					role: user.role.name,
+					id: user.id,
 					name: user.name,
 					email: user.email,
+					role: user.role.name,
+					phone: user.phone,
+					usn: user.usn,
+					branch: user.Branch?.name,
+					year: user.year,
+					bio: user.bio,
+					activityPoints: user.totalActivityPoints,
+					attendance,
+					image: user.image || null,
 				},
 			}),
 			{

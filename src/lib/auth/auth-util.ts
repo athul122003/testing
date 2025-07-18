@@ -1,10 +1,15 @@
 import bcrypt from "bcryptjs";
 import { db } from "~/server/db";
-import type { User, Role, Branch } from "@prisma/client";
+import type { User, Role, Branch, Attendance } from "@prisma/client";
 
 const getUserByEmail = async (
 	email: string,
-): Promise<(User & { role: Role } & { Branch: Branch | null }) | null> => {
+): Promise<
+	| (User & { role: Role } & { Branch: Branch | null } & {
+			Attendance: Attendance[];
+	  })
+	| null
+> => {
 	try {
 		return await db.user.findUnique({
 			where: {
@@ -13,6 +18,7 @@ const getUserByEmail = async (
 			include: {
 				role: true,
 				Branch: true,
+				Attendance: true,
 			},
 		});
 	} catch (error) {
@@ -21,11 +27,23 @@ const getUserByEmail = async (
 	}
 };
 
-const getUserById = async (id: number): Promise<User | null> => {
+const getUserById = async (
+	id: number,
+): Promise<
+	| (User & { role: Role } & { Branch: Branch | null } & {
+			Attendance: Attendance[];
+	  })
+	| null
+> => {
 	try {
 		return await db.user.findUnique({
 			where: {
 				id,
+			},
+			include: {
+				role: true,
+				Branch: true,
+				Attendance: true,
 			},
 		});
 	} catch (error) {

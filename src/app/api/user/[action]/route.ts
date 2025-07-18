@@ -28,3 +28,30 @@ export async function POST(req: NextRequest) {
 		);
 	}
 }
+
+export async function PATCH(req: NextRequest) {
+	try {
+		const action = req.nextUrl.pathname.split("/").pop();
+		const body = await req.json();
+
+		console.log("PATCH action:", body);
+		switch (action) {
+			case "update-user": {
+				const result = await server.user.updateUser(body);
+				console.log("Update user result:", result);
+				return NextResponse.json(result);
+			}
+			default:
+				return NextResponse.json(
+					{ success: false, error: "Unknown action" },
+					{ status: 400 },
+				);
+		}
+	} catch (error) {
+		console.error("PATCH error:", error);
+		return NextResponse.json(
+			{ success: false, error: (error as Error).message },
+			{ status: 500 },
+		);
+	}
+}
