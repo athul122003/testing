@@ -66,7 +66,7 @@ export async function POST(req: Request) {
 				},
 				accessToken,
 				refreshToken,
-				accessTokenExpiry: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30, // 30 days
+				accessTokenExpiry: Math.floor(Date.now() / 1000) + 60 * 60 * 24, // 1 day
 			}),
 			{ status: 200, headers: { "Content-Type": "application/json" } },
 		);
