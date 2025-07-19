@@ -1,13 +1,13 @@
 import bcrypt from "bcryptjs";
 import { db } from "~/server/db";
-import type { User, Role, Branch, Attendance } from "@prisma/client";
+import type { User, Role, Branch, Attendance, UserLink } from "@prisma/client";
 
 const getUserByEmail = async (
 	email: string,
 ): Promise<
 	| (User & { role: Role } & { Branch: Branch | null } & {
 			Attendance: Attendance[];
-	  })
+	  } & { UserLink: UserLink[] })
 	| null
 > => {
 	try {
@@ -19,6 +19,7 @@ const getUserByEmail = async (
 				role: true,
 				Branch: true,
 				Attendance: true,
+				UserLink: true,
 			},
 		});
 	} catch (error) {
@@ -32,7 +33,7 @@ const getUserById = async (
 ): Promise<
 	| (User & { role: Role } & { Branch: Branch | null } & {
 			Attendance: Attendance[];
-	  })
+	  } & { UserLink: UserLink[] })
 	| null
 > => {
 	try {
@@ -44,6 +45,7 @@ const getUserById = async (
 				role: true,
 				Branch: true,
 				Attendance: true,
+				UserLink: true,
 			},
 		});
 	} catch (error) {

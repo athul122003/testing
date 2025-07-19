@@ -14,6 +14,15 @@ export async function POST(req: NextRequest) {
 				});
 			case "updateUserRole":
 				return NextResponse.json(await server.user.updateUserRole(body));
+			case "addUserLink":
+				return NextResponse.json({
+					success: true,
+					...(await server.user.addUserLink(body)),
+				});
+			case "removeUserLink":
+				return NextResponse.json({
+					...(await server.user.removeUserLink(body)),
+				});
 			default:
 				return NextResponse.json(
 					{ success: false, error: "Unknown action" },

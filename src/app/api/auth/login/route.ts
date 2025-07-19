@@ -60,6 +60,7 @@ export async function POST(req: Request) {
 					year: user.year,
 					bio: user.bio,
 					activityPoints: user.totalActivityPoints,
+					userLinks: user.UserLink,
 					attendance,
 					image: user.image || null,
 				},

@@ -21,6 +21,12 @@ const updateRoleSchema = z.object({
 	roleName: z.string(),
 });
 
+const addUserLinkSchema = z.object({
+	userId: z.number(),
+	linkName: z.string().min(1),
+	url: z.string().url(),
+});
+
 // --- Protected Actions ---
 
 export const searchUser = protectedAction(
@@ -216,4 +222,49 @@ export const updateUser = async (input: {
 	});
 
 	return updatedUser;
+};
+
+export const addUserLink = async (input: unknown) => {
+	const { userId, linkName, url } = addUserLinkSchema.parse(input);
+
+	const user = await db.user.findUnique({ where: { id: userId } });
+	if (!user) throw new Error("User not found");
+
+	const newLink = await db.userLink.create({
+		data: {
+			linkName,
+			url,
+			userId,
+		},
+		select: {
+			id: true,
+			linkName: true,
+			url: true,
+			createdAt: true,
+			updatedAt: true,
+		},
+	});
+
+	return newLink;
+};
+
+export const removeUserLink = async (input: {
+	userId: number;
+	linkName: string;
+}) => {
+	const { userId, linkName } = input;
+
+	const user = await db.user.findUnique({ where: { id: userId } });
+	if (!user) throw new Error("User not found");
+
+	const link = await db.userLink.findFirst({
+		where: { userId, linkName },
+	});
+	if (!link) throw new Error("Link not found");
+
+	await db.userLink.delete({
+		where: { id: link.id },
+	});
+
+	return { success: true };
 };

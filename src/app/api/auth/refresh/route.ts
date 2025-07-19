@@ -45,6 +45,7 @@ export async function POST(req: Request) {
 					bio: user.bio,
 					activityPoints: user.totalActivityPoints,
 					attendance,
+					userLinks: user.UserLink,
 					image: user.image || null,
 				},
 			}),
