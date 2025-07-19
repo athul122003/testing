@@ -12,6 +12,13 @@ export async function POST(req: NextRequest) {
 					success: true,
 					...(await server.user.searchUser(body)),
 				});
+			case "searchbyId": {
+				const slug = parseInt(body.userId, 10);
+				return NextResponse.json({
+					success: true,
+					...(await server.user.searchUserById({ userId: slug })),
+				});
+			}
 			case "updateUserRole":
 				return NextResponse.json(await server.user.updateUserRole(body));
 			case "addUserLink":

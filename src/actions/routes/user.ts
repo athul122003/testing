@@ -268,3 +268,44 @@ export const removeUserLink = async (input: {
 
 	return { success: true };
 };
+
+export const searchUserById = async (input: { userId: number }) => {
+	const { userId } = input;
+
+	const user = await db.user.findUnique({
+		where: { id: userId },
+		select: {
+			id: true,
+			name: true,
+			usn: true,
+			Branch: {
+				select: {
+					id: true,
+					name: true,
+				},
+			},
+			totalActivityPoints: true,
+			UserLink: {
+				select: {
+					id: true,
+					linkName: true,
+					url: true,
+				},
+			},
+			year: true,
+			bio: true,
+			memberSince: true,
+			email: true,
+			role: {
+				select: {
+					id: true,
+					name: true,
+				},
+			},
+		},
+	});
+
+	if (!user) throw new Error("User not found");
+
+	return user;
+};
