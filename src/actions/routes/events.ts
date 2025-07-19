@@ -23,34 +23,8 @@ export async function getPublishedEvents() {
 	}
 }
 
-export async function registerUserToSoloEvent(userId: number, eventId: number) {
+async function registerConfirmSoloEvent(userId: number, eventId: number) {
 	try {
-		// Check if the event exists and is a solo event
-		const event = await db.event.findUnique({
-			where: { id: eventId },
-		});
-
-		if (!event) {
-			return {
-				success: false,
-				error: "Event not found",
-			};
-		}
-
-		if (event.maxTeamSize !== 1) {
-			return {
-				success: false,
-				error: "Event is not a solo event",
-			};
-		}
-
-		if (event.deadline && new Date() > event.deadline) {
-			return {
-				success: false,
-				error: "Registration for this event has closed",
-			};
-		}
-
 		const userInfo = await db.user.findUnique({
 			where: { id: userId },
 			select: { id: true, name: true },
@@ -63,22 +37,6 @@ export async function registerUserToSoloEvent(userId: number, eventId: number) {
 			};
 		}
 
-		// Check if the user already has a team for this event
-		const existingTeam = await db.team.findFirst({
-			where: {
-				eventId,
-				leaderId: userId,
-			},
-		});
-
-		if (existingTeam) {
-			return {
-				success: false,
-				error: "User is already registered for this event",
-			};
-		}
-
-		// Create the team
 		const team = await db.team.create({
 			data: {
 				name: userInfo.name,
@@ -101,6 +59,119 @@ export async function registerUserToSoloEvent(userId: number, eventId: number) {
 			success: false,
 			error: "Failed to register user to solo event.",
 		};
+	}
+}
+
+async function registerSoloEvent(userId: number, eventId: number) {
+	if (!userId || !eventId) {
+		return {
+			success: false,
+			error: "Missing userId or eventId",
+		};
+	}
+	const user = await db.user.findUnique({
+		where: { id: userId },
+		select: { id: true, name: true, roleId: true },
+	});
+	if (!user) {
+		return {
+			success: false,
+			error: "User not found",
+		};
+	}
+
+	const team = await db.team.create({
+		data: {
+			name: user.name,
+			eventId,
+			leaderId: userId,
+			Members: {
+				connect: [],
+			},
+		},
+	});
+	if (!team) {
+		return {
+			success: false,
+			error: "Failed to create team",
+		};
+	}
+	return {
+		success: true,
+		data: { teamId: team.id },
+	};
+}
+
+export async function soloEventReg(userId: number, eventId: number) {
+	if (!userId || !eventId) {
+		return {
+			success: false,
+			error: "Missing userId or eventId",
+		};
+	}
+	const event = await db.event.findUnique({
+		where: { id: eventId },
+	});
+	if (!event) {
+		return {
+			success: false,
+			error: "Event not found",
+		};
+	}
+	if (event.maxTeamSize !== 1) {
+		return {
+			success: false,
+			error: "Event is not a solo event",
+		};
+	}
+	const countOfTeams = await db.team.count({
+		where: {
+			eventId,
+			isConfirmed: true,
+		},
+	});
+	if (countOfTeams >= event.maxTeams) {
+		return {
+			success: false,
+			error: "Maximum number of teams reached for this event",
+		};
+	}
+	if (event.deadline && new Date() > event.deadline) {
+		return {
+			success: false,
+			error: "Registration for this event has closed",
+		};
+	}
+	if (event.isMembersOnly) {
+		const userInfo = await db.user.findUnique({
+			where: { id: userId },
+			select: { id: true, name: true, roleId: true },
+		});
+		if (!userInfo || userInfo.roleId !== "MEMBER") {
+			return {
+				success: false,
+				error: "Only FLC members can register for this event",
+			};
+		}
+	}
+	const existingTeam = await db.team.findFirst({
+		where: {
+			eventId,
+			leaderId: userId,
+		},
+	});
+
+	if (existingTeam) {
+		return {
+			success: false,
+			error: "User is already registered for this event",
+		};
+	}
+
+	if (event.nonFlcAmount > 0 || event.flcAmount > 0) {
+		return registerSoloEvent(userId, eventId);
+	} else {
+		return registerConfirmSoloEvent(userId, eventId);
 	}
 }
 
@@ -129,6 +200,7 @@ export async function checkSolo(userId: number, eventId: number) {
 
 	return {
 		success: true,
+		isConfirmed: team.isConfirmed,
 		teamId: team.id,
 	};
 }
@@ -159,6 +231,19 @@ export async function createTeam(
 			return {
 				success: false,
 				error: "Member role not found",
+			};
+		}
+
+		const countOfTeams = await db.team.count({
+			where: {
+				eventId,
+				isConfirmed: true,
+			},
+		});
+		if (countOfTeams >= event.maxTeams) {
+			return {
+				success: false,
+				error: "Maximum number of teams reached for this event",
 			};
 		}
 
@@ -485,9 +570,20 @@ export async function confirmTeam(userId: number, teamId: string) {
 			};
 		}
 		if (team.Event.isMembersOnly) {
+			const userInfo = await db.user.findUnique({
+				where: { id: userId },
+				select: { id: true, name: true, roleId: true },
+			});
+			if (!userInfo || userInfo.roleId !== memberRole.id) {
+				return {
+					success: false,
+					error: "Only FLC members can confirm the team for this event",
+				};
+			}
 			const nonFlcMembers = team.Members.filter(
 				(member) => member.roleId !== memberRole.id,
 			);
+
 			if (nonFlcMembers.length > 0) {
 				return {
 					success: false,
@@ -509,6 +605,13 @@ export async function confirmTeam(userId: number, teamId: string) {
 					error: "Payment is required to confirm the team.",
 				};
 			}
+		}
+
+		if (team.Event.deadline && new Date() > team.Event.deadline) {
+			return {
+				success: false,
+				error: "Registration for this event has closed",
+			};
 		}
 
 		// Total size includes leader

@@ -3,10 +3,8 @@ import { db } from "~/server/db";
 
 export async function getLeaderboardData() {
 	try {
-		const leaderboard = await db.user.findMany({
-			orderBy: {
-				totalActivityPoints: "desc",
-			},
+		const leaderboardRaw = await db.user.findMany({
+			orderBy: [{ totalActivityPoints: "desc" }, { id: "asc" }],
 			select: {
 				id: true,
 				name: true,
@@ -14,6 +12,18 @@ export async function getLeaderboardData() {
 				image: true,
 			},
 			take: 25,
+		});
+
+		let currentRank = 1;
+		let lastPoints: number | null = null;
+
+		const leaderboard = leaderboardRaw.map((user, index) => {
+			if (lastPoints !== null && user.totalActivityPoints !== lastPoints) {
+				currentRank = index + 1;
+			}
+			const userWithRank = { ...user, rank: currentRank };
+			lastPoints = user.totalActivityPoints;
+			return userWithRank;
 		});
 		return {
 			success: true,

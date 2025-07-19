@@ -43,10 +43,7 @@ export async function POST(req: NextRequest) {
 			case "registerSolo": {
 				const { userId, eventId } = body as { userId: number; eventId: number };
 
-				const result = await server.event.registerUserToSoloEvent(
-					userId,
-					eventId,
-				);
+				const result = await server.event.soloEventReg(userId, eventId);
 				return NextResponse.json(result, {
 					status: result.success ? 200 : 400,
 				});
