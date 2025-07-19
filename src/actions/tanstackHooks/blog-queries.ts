@@ -29,7 +29,7 @@ export function useBlogs() {
 	return useQuery({
 		queryKey: ["blogs"],
 		queryFn: getBlogs,
-		staleTime: 30_000,
+		staleTime: 1000 * 60 * 5,
 		placeholderData: (prev) => prev,
 	});
 }

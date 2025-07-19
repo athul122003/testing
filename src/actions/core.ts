@@ -1,5 +1,6 @@
 "use server";
 import { CoreType } from "@prisma/client";
+import { User } from "lucide-react";
 import prisma from "~/lib/prisma";
 
 export async function addToCore(formData: FormData) {
@@ -39,5 +40,24 @@ export async function addToCore(formData: FormData) {
 	} catch (error) {
 		console.error("Error in addToCore:", error);
 		throw new Error("Failed to add to core");
+	}
+}
+
+export async function getCoreMembers() {
+	try {
+		const coreMembers = await prisma.core.findMany({
+			include: {
+				User: {
+					select: {
+						name: true,
+						email: true,
+					},
+				},
+			},
+		});
+		return coreMembers;
+	} catch (error) {
+		console.error("Error in getCoreMembers:", error);
+		throw new Error("Failed to fetch core members");
 	}
 }
