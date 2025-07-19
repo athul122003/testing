@@ -62,6 +62,7 @@ import {
 	DialogDescription,
 } from "~/components/ui/dialog";
 import { useAddToCoreMutation } from "~/actions/tanstackHooks/core-queries";
+import CoreManagement from "./core-management";
 // import { addToCore } from "~/actions/core";
 
 export function UsersPage() {
@@ -364,7 +365,7 @@ export function UsersPage() {
 	return (
 		<div className="space-y-8">
 			<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-				<TabsList className="grid w-auto grid-cols-2 bg-white dark:bg-black border border-gray-300 dark:border-slate-800">
+				<TabsList className="grid w-auto grid-cols-3 bg-white dark:bg-black border border-gray-300 dark:border-slate-800">
 					{canManagePerm && (
 						<TabsTrigger
 							value="permissions"
@@ -381,7 +382,20 @@ export function UsersPage() {
 							User Management
 						</TabsTrigger>
 					)}
+					{canManageUser && (
+						<TabsTrigger
+							value="coreManagement"
+							className="data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-900 data-[state=active]:text-gray-900 dark:data-[state=active]:text-slate-200 data-[state=active]:border-2 data-[state=active]:border-gray-300 dark:data-[state=active]:border-slate-700 data-[state=active]:rounded-md text-gray-700 dark:text-slate-200"
+						>
+							Core Management
+						</TabsTrigger>
+					)}
 				</TabsList>
+				{canManageUser && (
+					<TabsContent value="coreManagement">
+						<CoreManagement />
+					</TabsContent>
+				)}
 				{canManagePerm && (
 					<TabsContent value="permissions">
 						<Card className="bg-white dark:bg-black border border-gray-200 dark:border-slate-800 shadow-xl">
