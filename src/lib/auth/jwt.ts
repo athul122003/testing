@@ -1,7 +1,6 @@
 import type { RefreshToken, VerificationToken } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
-import { env } from "~/env";
 import { db } from "~/server/db";
 import { refreshTokenZ } from "~/zod/authZ";
 import { addRefreshTokenToWhitelist } from "./auth.service";

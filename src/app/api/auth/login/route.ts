@@ -60,12 +60,13 @@ export async function POST(req: Request) {
 					year: user.year,
 					bio: user.bio,
 					activityPoints: user.totalActivityPoints,
+					userLinks: user.UserLink,
 					attendance,
 					image: user.image || null,
 				},
 				accessToken,
 				refreshToken,
-				accessTokenExpiry: Math.floor(Date.now() / 1000) + 60 * 15, // 15 min expiry
+				accessTokenExpiry: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30, // 30 days
 			}),
 			{ status: 200, headers: { "Content-Type": "application/json" } },
 		);
