@@ -15,7 +15,6 @@ import Image from "next/image";
 import { useState } from "react";
 import { toast } from "sonner";
 import { deleteEventAction, publishEventAction } from "~/actions/event";
-import { useEvents } from "~/actions/tanstackHooks/events-queries";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
@@ -25,6 +24,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "~/components/ui/dialog";
+import { useDashboardData } from "~/providers/dashboardDataContext";
 import { ComponentLoading } from "../ui/component-loading";
 
 interface EventsPageProps {
@@ -40,7 +40,9 @@ export function EventsPage({
 	const [selectedEvent, setSelectedEvent] = useState(null);
 	const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-	const { data: eventsData, isLoading } = useEvents();
+	const { eventsQuery, refetchEvents } = useDashboardData();
+
+	const { data: eventsData, isLoading } = eventsQuery;
 
 	const events = eventsData?.data || [];
 
@@ -66,12 +68,11 @@ export function EventsPage({
 		const res = await deleteEventAction(eventId);
 		if (res.success) {
 			toast.success("Event deleted successfully.");
-			setEvents((prev) => prev.filter((e) => e.id !== eventId));
 			setIsDetailOpen(false);
+			refetchEvents();
 		} else {
 			toast.error(res.error || "Failed to delete event");
 		}
-		setEvents(events.filter((event) => event.id !== eventId));
 		setIsDetailOpen(false);
 	};
 
@@ -79,9 +80,7 @@ export function EventsPage({
 		const res = await publishEventAction(eventId);
 		if (res.success) {
 			toast.success(`Event "${res.event.name}" published`);
-			setEvents((prev) =>
-				prev.map((e) => (e.id === eventId ? { ...e, state: "PUBLISHED" } : e)),
-			);
+			refetchEvents();
 			setIsDetailOpen(false);
 		} else {
 			toast.error(res.error || "Failed to publish event");

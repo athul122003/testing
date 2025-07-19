@@ -25,6 +25,7 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { createEventAction, editEventAction } from "~/actions/event";
 import { uploadImageToCloudinary } from "~/lib/cloudinaryImageUploader";
+import { useDashboardData } from "~/providers/dashboardDataContext";
 
 interface EventFormProps {
 	setActivePage: (page: string) => void;
@@ -56,6 +57,7 @@ export function EventForm({
 	editingEvent,
 	setEditingEvent,
 }: EventFormProps) {
+	const { refetchEvents } = useDashboardData();
 	const [formData, setFormData] = useState({
 		name: "",
 		imgSrc: "",
@@ -152,7 +154,8 @@ export function EventForm({
 		if (result.success) {
 			toast.success(editingEvent ? "Event updated" : "Event created");
 			setEditingEvent(null);
-			setActivePage("events-page");
+			refetchEvents?.();
+			setActivePage("events");
 		} else {
 			toast.error(result.error || "Failed to save event");
 			console.log(result.issues);

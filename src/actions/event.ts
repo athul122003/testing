@@ -1,11 +1,12 @@
 "use server";
 
-import { EventState, EventType } from "@prisma/client";
+import { type Event, EventState, EventType } from "@prisma/client";
 import { z } from "zod";
 import { db } from "~/server/db";
 import { createEventZ } from "~/zod/eventZ";
 
 export type CreateEventInput = z.infer<typeof createEventZ>;
+export type EventsQuery = Awaited<ReturnType<typeof getAllEvents>>;
 
 export async function createEventAction(values: CreateEventInput) {
 	try {
@@ -200,7 +201,18 @@ export async function publishEventAction(eventId: number) {
 	}
 }
 
-export async function getAllEvents() {
+export async function getAllEvents(): Promise<
+	| {
+			success: true;
+			data: Event[];
+			error?: undefined;
+	  }
+	| {
+			success: false;
+			error: string;
+			data: [];
+	  }
+> {
 	try {
 		const events = await db.event.findMany({
 			orderBy: { fromDate: "asc" },
@@ -215,6 +227,7 @@ export async function getAllEvents() {
 		return {
 			success: false,
 			error: "Failed to fetch events.",
+			data: [],
 		};
 	}
 }

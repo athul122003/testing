@@ -1,13 +1,14 @@
 "use client";
 
 import { Moon, Search, Sun, User } from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
+import { toast } from "sonner";
+import { permissionKeys } from "~/actions/middleware/routePermissions";
 import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
-import { toast } from "sonner";
 import { Dialog, DialogContent } from "~/components/ui/dialog";
-import { signOut, useSession } from "next-auth/react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -16,7 +17,6 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { Input } from "~/components/ui/input";
 import { DashboardBreadCrumb } from "../customcomps/dashboardBreadCrumb";
-import { permissionKeys } from "~/actions/middleware/routePermissions";
 
 interface TopBarProps {
 	activePage: string;
@@ -33,6 +33,7 @@ const navigationMap: Record<string, { title: string }> = {
 	"blog-form": { title: "Blog Form" },
 	"event-form": { title: "Event Form" },
 };
+
 import { useDashboardData } from "~/providers/dashboardDataContext";
 
 export function TopBar({ activePage, setActivePage }: TopBarProps) {
@@ -134,11 +135,14 @@ export function TopBar({ activePage, setActivePage }: TopBarProps) {
 									</Avatar>
 									<div className="text-left">
 										<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-											{`${user?.name} || ID: ${user?.id}`}
+											{user?.name ? user.name : `ID: ${user?.id}`}
 										</p>
-
 										<p className="text-xs text-gray-500 dark:text-gray-400">
-											{user?.email} || {role}
+											{user?.email}
+											{user?.email && role ? (
+												<span className="mx-1">·</span>
+											) : null}
+											{role}
 										</p>
 									</div>
 								</div>

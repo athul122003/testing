@@ -1,29 +1,36 @@
 "use client";
 
-import type { Permission, Role } from "@prisma/client";
+import type {
+	EventCategory,
+	EventState,
+	EventType,
+	Permission,
+	Role,
+} from "@prisma/client";
+import { type UseQueryResult, useQuery } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 import {
-	type ReactNode,
 	createContext,
+	type ReactNode,
 	useCallback,
 	useContext,
 	useState,
 } from "react";
-import { type UseQueryResult, useQuery } from "@tanstack/react-query";
-import { useSession } from "next-auth/react"; // NEW2.0: Used to extract user permissions & role
-
+import { getAllEvents } from "~/actions/event";
 import { getPaymentInfo, getSummaryStats } from "~/actions/payment-info";
 import type {
 	PaymentWithUser,
 	SummaryStats,
 } from "~/actions/tanstackHooks/payment-queries";
 import { api } from "~/lib/api";
+import type { EventsQuery } from "~/actions/event";
 
-// 🔧 Updated type to make optional properties conditionally available
 type DashboardDataContextType = {
 	paymentsQuery: UseQueryResult<PaymentWithUser>;
 	summaryStatsQuery: UseQueryResult<SummaryStats>;
-	rolesQuery?: UseQueryResult<Role[]>; // ⬅️ optional now based on permission
-	permissionsQuery?: UseQueryResult<Permission[]>; // ⬅️ optional now based on permission
+	rolesQuery?: UseQueryResult<Role[]>;
+	eventsQuery: UseQueryResult<EventsQuery>;
+	permissionsQuery?: UseQueryResult<Permission[]>;
 	usersQuery?: UseQueryResult<{
 		data: Array<{
 			id: number;
@@ -39,13 +46,14 @@ type DashboardDataContextType = {
 		total: number;
 		page: number;
 		totalPages: number;
-	}>; // ⬅️ optional now based on permission
+	}>;
 
 	refetchPayments: () => void;
 	refetchStats: () => void;
-	refetchUsers?: () => void; // ⬅️ optional now based on permission
-	refetchRoles?: () => void; //  NEW
-	refetchPermissions?: () => void; //  NEW
+	refetchUsers?: () => void;
+	refetchRoles?: () => void;
+	refetchEvents?: () => void;
+	refetchPermissions?: () => void;
 
 	setPaymentParams: (
 		page: number,
@@ -60,10 +68,10 @@ type DashboardDataContextType = {
 		sortBy: string,
 		sortOrder: "asc" | "desc",
 		role?: string,
-	) => void; // ⬅️ optional now based on permission
+	) => void;
 
-	permissions: string[]; // NEW2.0: Exposed current user permissions globally
-	role: string | undefined; // NEW2.0: Exposed current user role globally
+	permissions: string[];
+	role: string | undefined;
 	user:
 		| {
 				id: string;
@@ -72,7 +80,7 @@ type DashboardDataContextType = {
 		  }
 		| undefined;
 
-	hasPerm: (...perms: string[]) => boolean; // NEW2.0: Centralized permission check utility
+	hasPerm: (...perms: string[]) => boolean;
 };
 
 const DashboardDataContext = createContext<DashboardDataContextType | null>(
@@ -84,9 +92,9 @@ export const DashboardDataProvider = ({
 }: {
 	children: ReactNode;
 }) => {
-	const { data: session } = useSession(); // NEW2.0: Getting session for permissions
-	const permissions: string[] = session?.user?.permissions ?? []; // NEW2.0
-	const role: string | undefined = session?.user?.role?.name; // NEW2.0
+	const { data: session } = useSession();
+	const permissions: string[] = session?.user?.permissions ?? [];
+	const role: string | undefined = session?.user?.role?.name;
 	const user =
 		session?.user?.id && session.user.name && session.user.email
 			? {
@@ -97,7 +105,7 @@ export const DashboardDataProvider = ({
 			: undefined;
 
 	const hasPerm = (...perms: string[]) =>
-		perms.some((perm) => permissions.includes(perm)); // NEW2.0
+		perms.some((perm) => permissions.includes(perm));
 
 	const canManageUsers = hasPerm("MANAGE_USER_ROLES");
 	const canManageRoles = hasPerm(
@@ -222,20 +230,27 @@ export const DashboardDataProvider = ({
 		enabled: canManageUsers,
 	});
 
+	const eventsQuery = useQuery<EventsQuery>({
+		queryKey: ["events"],
+		queryFn: getAllEvents,
+		refetchOnWindowFocus: false,
+		staleTime: 30_000,
+	});
+
 	const value: DashboardDataContextType = {
 		paymentsQuery,
 		summaryStatsQuery,
+		eventsQuery: eventsQuery,
 		rolesQuery: canManageRoles ? rolesQuery : undefined,
 		permissionsQuery: canManagePermissions ? permissionsQuery : undefined,
 		usersQuery: canManageUsers ? usersQuery : undefined,
 		refetchPayments: paymentsQuery.refetch,
+		refetchEvents: eventsQuery.refetch,
 		refetchStats: summaryStatsQuery.refetch,
 		refetchUsers: canManageUsers ? usersQuery.refetch : undefined,
 		refetchRoles: canManageRoles ? rolesQuery.refetch : undefined,
 		setPaymentParams,
 		setUserParams: canManageUsers ? setUserParams : undefined,
-
-		// === NEW2.0: Added Global Access to Permission-based Features ===
 		permissions,
 		role,
 		user,
