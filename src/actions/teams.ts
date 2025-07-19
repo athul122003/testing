@@ -1,5 +1,4 @@
 "use server";
-
 import { db } from "~/server/db";
 
 export async function getTeamsForEvent(eventId: number) {
@@ -31,6 +30,7 @@ export async function getTeamsForEvent(eventId: number) {
 		name: team.name,
 		isConfirmed: team.isConfirmed,
 		leaderName: team.Leader?.name,
+		leaderId: team.Leader?.id,
 		members: team.Members.map((member) => ({
 			id: member.id,
 			name: member.name,
@@ -126,4 +126,42 @@ export async function addMemberToTeam(teamId: string, userId: number) {
 	});
 
 	return updatedTeam?.Members || [];
+}
+
+export async function markAttendance(eventId: number, userId: number) {
+	const attendance = await db.attendance.upsert({
+		where: {
+			userId_eventId: {
+				userId,
+				eventId,
+			},
+		},
+		update: {
+			hasAttended: true,
+		},
+		create: {
+			eventId,
+			userId,
+			hasAttended: true,
+		},
+	});
+	return attendance;
+}
+
+export async function hasAttended(
+	eventId: number,
+	userId: number,
+): Promise<boolean> {
+	const attendance = await db.attendance.findUnique({
+		where: {
+			userId_eventId: {
+				userId,
+				eventId,
+			},
+		},
+		select: {
+			hasAttended: true,
+		},
+	});
+	return attendance?.hasAttended ?? false;
 }
