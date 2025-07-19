@@ -173,7 +173,6 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 				<h1 className="text-3xl font-bold text-slate-800 dark:text-white">
 					Event Attendance
 				</h1>
-				<Scanner onScan={handleScan} />
 			</div>
 
 			<div className="flex flex-col md:flex-row gap-4 items-center">
