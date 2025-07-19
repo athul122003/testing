@@ -8,6 +8,7 @@ import { DashboardContent } from "~/components/dashboard/dashboard-content";
 import { EventForm } from "~/components/event/event-form";
 import { EventsPage } from "~/components/event/events-page";
 import { EventParticipants } from "~/components/event/event-participants";
+import { EventAttendance } from "~/components/event/event-attendance";
 import { GalleryPage } from "~/components/gallery/gallery-page";
 import { AppSidebar } from "~/components/othercomps/app-sidebar";
 import { TopBar } from "~/components/othercomps/top-bar";
@@ -45,6 +46,8 @@ export function Dashboard() {
 				);
 			case "event-participants":
 				return <EventParticipants editingEvent={editingEvent} />;
+			case "event-attendance":
+				return <EventAttendance editingEvent={editingEvent} />;
 			case "blogs":
 				return (
 					<BlogsPage

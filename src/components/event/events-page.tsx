@@ -98,6 +98,12 @@ export function EventsPage({
 		setIsDetailOpen(false);
 	};
 
+	const handleAttendance = (event: Event) => {
+		setEditingEvent(event);
+		setActivePage("event-attendance");
+		setIsDetailOpen(false);
+	};
+
 	const getStateColor = (state: string) => {
 		switch (state) {
 			case "PUBLISHED":
@@ -376,6 +382,16 @@ export function EventsPage({
 										Publish Event
 									</Button>
 								)}
+								{selectedEvent.state === "LIVE" ||
+									("PUBLISHED" && (
+										<Button
+											onClick={() => handleAttendance(selectedEvent)}
+											className="bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800 text-green-700 dark:text-green-200 border border-green-300 dark:border-green-800"
+										>
+											Mark Attendance
+										</Button>
+									))}
+
 								<Button
 									onClick={() => handleEditEvent(selectedEvent)}
 									className="bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-200 border border-gray-300 dark:border-slate-800"
