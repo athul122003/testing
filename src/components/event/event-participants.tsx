@@ -281,12 +281,12 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 
 	return (
 		<div className="space-y-8">
-			<div className="flex justify-between items-center mb-6">
+			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 				<div>
-					<h1 className="text-4xl font-bold text-gray-900 dark:text-slate-200 mb-2">
+					<h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-slate-200">
 						{editingEvent?.name ?? "Registered Teams"}
 					</h1>
-					<p className="text-gray-600 dark:text-slate-400">
+					<p className="text-sm sm:text-base text-gray-600 dark:text-slate-400">
 						Track and manage participants
 					</p>
 				</div>
@@ -299,18 +299,14 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 				</Button>
 			</div>
 
-			<div className="grid gap-6 md:grid-cols-2">
+			<div className="grid gap-4 sm:grid-cols-2">
 				<Card className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
 					<CardHeader className="pb-3">
-						<div className="flex justify-between items-center">
-							<CardTitle className="text-sm text-gray-700 dark:text-slate-300">
-								Confirmed Teams
-							</CardTitle>
-						</div>
+						<CardTitle className="text-sm text-gray-700 dark:text-slate-300">
+							Confirmed Teams
+						</CardTitle>
 					</CardHeader>
-
 					<CardContent>
-						{/* Total Confirmed Teams */}
 						<div className="text-2xl font-bold text-green-600 dark:text-green-400">
 							{teams.filter((team) => team.isConfirmed).length}
 						</div>
@@ -319,15 +315,11 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 
 				<Card className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
 					<CardHeader className="pb-3">
-						<div className="flex justify-between items-center">
-							<CardTitle className="text-sm text-gray-700 dark:text-slate-300">
-								Unconfirmed Teams
-							</CardTitle>
-						</div>
+						<CardTitle className="text-sm text-gray-700 dark:text-slate-300">
+							Unconfirmed Teams
+						</CardTitle>
 					</CardHeader>
-
 					<CardContent>
-						{/* Total Unconfirmed Teams */}
 						<div className="text-2xl font-bold text-red-600 dark:text-red-400">
 							{teams.filter((team) => !team.isConfirmed).length}
 						</div>
@@ -337,17 +329,17 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 
 			<Card className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
 				<CardHeader>
-					<div className="flex justify-between items-center">
+					<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 						<CardTitle className="text-xl text-gray-900 dark:text-slate-200">
 							Registered Teams
 						</CardTitle>
-						<div className="relative">
+						<div className="relative w-full sm:w-auto">
 							<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-slate-400" />
 							<Input
 								placeholder="Search teams..."
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
-								className="pl-10 w-64 bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-400"
+								className="pl-10 w-full sm:w-64 bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-400"
 							/>
 						</div>
 					</div>
@@ -437,13 +429,13 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 											. . .
 										</Button>
 									</TableCell>
-								</TableRow>
-							))}
-						</TableBody>
-					</Table>
+									</TableRow>
+								))}
+							</TableBody>
+						</Table>
+					</div>
 
-					{/* Pagination */}
-					<div className="flex justify-between items-center mt-6">
+					<div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
 						<Button
 							onClick={() => setPage((p) => Math.max(1, p - 1))}
 							disabled={page === 1}

@@ -193,16 +193,15 @@ export function PaymentsPage() {
 
 	return (
 		<div className="space-y-8">
-			<div className="flex justify-between items-center">
+			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 				<div>
-					<h1 className="text-4xl font-bold text-gray-900 dark:text-slate-200 mb-2">
+					<h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-slate-200">
 						Payments
 					</h1>
-					<p className="text-gray-600 dark:text-slate-400">
+					<p className="text-sm sm:text-base text-gray-600 dark:text-slate-400">
 						Track and manage payment transactions
 					</p>
 				</div>
-
 				<DropdownMenu>
 					<DropdownMenuTrigger asChild>
 						<Button className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg">
@@ -230,7 +229,7 @@ export function PaymentsPage() {
 				</DropdownMenu>
 			</div>
 
-			<div className="grid gap-6 md:grid-cols-4">
+			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 				<Card className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
 					<CardHeader className="pb-3">
 						<div className="flex justify-between items-center">
@@ -257,7 +256,6 @@ export function PaymentsPage() {
 						</div>
 					</CardContent>
 				</Card>
-
 				<Card className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
 					<CardHeader className="pb-3">
 						<div className="flex justify-between items-center">
@@ -284,7 +282,6 @@ export function PaymentsPage() {
 						</div>
 					</CardContent>
 				</Card>
-
 				<Card className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
 					<CardHeader className="pb-3">
 						<div className="flex justify-between items-center">
@@ -311,7 +308,6 @@ export function PaymentsPage() {
 						</div>
 					</CardContent>
 				</Card>
-
 				<Card className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
 					<CardHeader className="pb-3">
 						<div className="flex justify-between items-center">
@@ -344,14 +340,13 @@ export function PaymentsPage() {
 					</CardContent>
 				</Card>
 			</div>
-
 			<Card className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
 				<CardHeader>
-					<div className="flex justify-between items-center">
+					<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 						<CardTitle className="text-xl text-gray-900 dark:text-slate-200">
 							Payment History
 						</CardTitle>
-						<div className="flex gap-3">
+						<div className="flex flex-col sm:flex-row gap-3">
 							<Input
 								type="date"
 								value={
@@ -367,9 +362,7 @@ export function PaymentsPage() {
 											: undefined,
 									}))
 								}
-								className="w-[150px] bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-300 [color-scheme:light] dark:[color-scheme:dark]
-             [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:brightness-0 
-             dark:[&::-webkit-calendar-picker-indicator]:invert-[0.7]"
+								className="w-full sm:w-[150px] bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-300"
 							/>
 							<Input
 								type="date"
@@ -386,21 +379,19 @@ export function PaymentsPage() {
 											: undefined,
 									}))
 								}
-								className="w-[150px] bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-300 [color-scheme:light] dark:[color-scheme:dark]
-             [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:brightness-0 
-             dark:[&::-webkit-calendar-picker-indicator]:invert-[0.7]"
+								className="w-full sm:w-[150px] bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-300"
 							/>
-							<div className="relative">
+							<div className="relative w-full sm:w-auto">
 								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-slate-400" />
 								<Input
 									placeholder="Search payments..."
 									value={searchTerm}
 									onChange={(e) => setSearchTerm(e.target.value)}
-									className="pl-10 w-64 bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-400"
+									className="pl-10 w-full sm:w-64 bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200"
 								/>
 							</div>
 							<Select value={statusFilter} onValueChange={setStatusFilter}>
-								<SelectTrigger className="w-40 bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200">
+								<SelectTrigger className="w-full sm:w-40 bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200">
 									<Filter className="h-4 w-4 mr-2" />
 									<SelectValue placeholder="Status" />
 								</SelectTrigger>
@@ -414,91 +405,93 @@ export function PaymentsPage() {
 					</div>
 				</CardHeader>
 				<CardContent>
-					<Table className="bg-white dark:bg-black text-gray-900 dark:text-slate-200">
-						<TableHeader>
-							<TableRow className="bg-gray-50 dark:bg-slate-900">
-								<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-									Order Id
-								</TableHead>
-								<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-									User
-								</TableHead>
-								<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-									Date & Time
-								</TableHead>
-								<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-									Method
-								</TableHead>
-								<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-									Amount
-								</TableHead>
-								<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-									Status
-								</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{filteredPayments.map((payment: Payment) => {
-								const { date, time } = formatDateTime(
-									new Date(payment.createdAt),
-								);
-								const paymentStatus = getPaymentStatus(payment);
+					<div className="overflow-x-auto">
+						<Table className="min-w-full bg-white dark:bg-black text-gray-900 dark:text-slate-200">
+							<TableHeader>
+								<TableRow className="bg-gray-50 dark:bg-slate-900">
+									<TableHead className="text-gray-900 dark:text-slate-200">
+										Order Id
+									</TableHead>
+									<TableHead className="text-gray-900 dark:text-slate-200">
+										User
+									</TableHead>
+									<TableHead className="text-gray-900 dark:text-slate-200">
+										Date & Time
+									</TableHead>
+									<TableHead className="text-gray-900 dark:text-slate-200">
+										Method
+									</TableHead>
+									<TableHead className="text-gray-900 dark:text-slate-200">
+										Amount
+									</TableHead>
+									<TableHead className="text-gray-900 dark:text-slate-200">
+										Status
+									</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{filteredPayments.map((payment: Payment) => {
+									const { date, time } = formatDateTime(
+										new Date(payment.createdAt),
+									);
+									const paymentStatus = getPaymentStatus(payment);
 
-								return (
-									<TableRow
-										key={payment.id}
-										className="hover:bg-gray-50 dark:hover:bg-slate-900"
-									>
-										<TableCell className="font-medium">
-											<div className="max-w-[180px] overflow-x-auto whitespace-nowrap text-gray-900 dark:text-slate-200">
-												{payment.razorpayOrderId}
-											</div>
-										</TableCell>
-										<TableCell>
-											<div>
-												<div className="font-medium text-gray-900 dark:text-slate-200">
-													{payment.User?.name}
+									return (
+										<TableRow
+											key={payment.id}
+											className="hover:bg-gray-50 dark:hover:bg-slate-900"
+										>
+											<TableCell className="font-medium">
+												<div className="max-w-[180px] overflow-x-auto whitespace-nowrap text-gray-900 dark:text-slate-200">
+													{payment.razorpayOrderId}
 												</div>
-												<div className="text-sm text-gray-500 dark:text-slate-400">
-													{payment.User?.email}
+											</TableCell>
+											<TableCell>
+												<div>
+													<div className="font-medium text-gray-900 dark:text-slate-200">
+														{payment.User?.name}
+													</div>
+													<div className="text-sm text-gray-500 dark:text-slate-400">
+														{payment.User?.email}
+													</div>
 												</div>
-											</div>
-										</TableCell>
-										<TableCell>
-											<div>
-												<div className="font-medium text-gray-900 dark:text-slate-200">
-													{date}
+											</TableCell>
+											<TableCell>
+												<div>
+													<div className="font-medium text-gray-900 dark:text-slate-200">
+														{date}
+													</div>
+													<div className="text-sm text-gray-500 dark:text-slate-400">
+														{time}
+													</div>
 												</div>
-												<div className="text-sm text-gray-500 dark:text-slate-400">
-													{time}
-												</div>
-											</div>
-										</TableCell>
-										<TableCell className="text-gray-900 dark:text-slate-200">
-											{payment.paymentType}
-										</TableCell>
-										<TableCell className="font-bold text-gray-900 dark:text-slate-200">
-											{payment.amount > 0
-												? formatCurrency(payment.amount)
-												: "-"}
-										</TableCell>
-										<TableCell>
-											<Badge
-												className={`${getStatusColor(
-													paymentStatus,
-												)} flex items-center gap-1 w-fit`}
-											>
-												{getStatusIcon(paymentStatus)}
-												{paymentStatus}
-											</Badge>
-										</TableCell>
-									</TableRow>
-								);
-							})}
-						</TableBody>
-					</Table>
+											</TableCell>
+											<TableCell className="text-gray-900 dark:text-slate-200">
+												{payment.paymentType}
+											</TableCell>
+											<TableCell className="font-bold text-gray-900 dark:text-slate-200">
+												{payment.amount > 0
+													? formatCurrency(payment.amount)
+													: "-"}
+											</TableCell>
+											<TableCell>
+												<Badge
+													className={`${getStatusColor(
+														paymentStatus,
+													)} flex items-center gap-1 w-fit`}
+												>
+													{getStatusIcon(paymentStatus)}
+													{paymentStatus}
+												</Badge>
+											</TableCell>
+										</TableRow>
+									);
+								})}
+							</TableBody>
+						</Table>
+					</div>
 
-					<div className="flex justify-between items-center mt-6">
+					<div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
 						<Button
 							onClick={() => setPage((p) => Math.max(1, p - 1))}
 							disabled={page === 1}

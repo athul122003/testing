@@ -156,6 +156,70 @@ export async function markAttendance(eventId: number, userId: number) {
 	return attendance;
 }
 
+export async function markAttendanceByScan(eventId: number, teamId: string) {
+	const team = await db.team.findUnique({
+		where: { id: teamId },
+		include: {
+			Members: {
+				select: {
+					id: true,
+				},
+			},
+			Leader: {
+				select: {
+					id: true,
+				},
+			},
+		},
+	});
+	if (!team) {
+		throw new Error("Team not found");
+	}
+
+	const memberIds = team.Members.map((member) => member.id);
+	const leaderId = team.Leader?.id;
+	const uniqueUserIds = Array.from(new Set([...memberIds, leaderId]));
+
+	const errors: { userId: number; error: string }[] = [];
+
+	await Promise.all(
+		uniqueUserIds.map(async (userId) => {
+			const existing = await db.attendance.findUnique({
+				where: {
+					userId_eventId: {
+						userId,
+						eventId,
+					},
+				},
+			});
+			if (existing?.hasAttended) {
+				errors.push({ userId, error: "Attendance already marked" });
+				return;
+			}
+			await db.attendance.upsert({
+				where: {
+					userId_eventId: {
+						userId,
+						eventId,
+					},
+				},
+				update: {
+					hasAttended: true,
+				},
+				create: {
+					eventId,
+					userId,
+					hasAttended: true,
+				},
+			});
+		}),
+	);
+
+	if (errors.length > 0) {
+		throw errors;
+	}
+}
+
 export async function hasAttended(
 	eventId: number,
 	userId: number,

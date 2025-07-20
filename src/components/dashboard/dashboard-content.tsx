@@ -111,7 +111,7 @@ export function DashboardContent() {
 				))}
 			</div>
 
-			<div className="grid gap-6 lg:grid-cols-2">
+			{/* <div className="grid gap-6 lg:grid-cols-2">
 				<Card className="border-0 shadow-lg bg-white dark:bg-gray-900">
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
@@ -187,7 +187,7 @@ export function DashboardContent() {
 						</div>
 					</CardContent>
 				</Card>
-			</div>
+			</div> */}
 		</div>
 	);
 }

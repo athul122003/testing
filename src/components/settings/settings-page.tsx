@@ -195,7 +195,7 @@ export function SettingsPage() {
 						</div>
 						<Separator />
 						<Button
-							className="w-1/4 bg-blue-900 text-white hover:bg-blue-700"
+							className="w-fit bg-blue-900 text-white hover:bg-blue-700"
 							onClick={() => {
 								handleChangePassword();
 							}}

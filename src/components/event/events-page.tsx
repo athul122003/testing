@@ -124,13 +124,13 @@ export function EventsPage({
 	}
 
 	return (
-		<div className="space-y-8">
-			<div className="flex justify-between items-center">
+		<div className="space-y-6">
+			<div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
 				<div>
-					<h1 className="text-4xl font-bold text-gray-900 dark:text-slate-200 mb-2">
+					<h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-slate-200">
 						Events
 					</h1>
-					<p className="text-gray-600 dark:text-slate-400">
+					<p className="text-sm md:text-base text-gray-600 dark:text-slate-400">
 						Manage and organize your events
 					</p>
 				</div>
@@ -143,7 +143,7 @@ export function EventsPage({
 				</Button>
 			</div>
 
-			<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 				{events.map((event) => (
 					<Card
 						key={event.id}
@@ -158,11 +158,13 @@ export function EventsPage({
 								height={300}
 								src={event.imgSrc || "/placeholder.svg"}
 								alt={event.name}
-								className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+								className="w-full h-40 sm:h-48 object-cover group-hover:scale-105 transition-transform duration-300"
 							/>
 							<div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
 							<div
-								className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-medium ${getStateColor(event.state)}`}
+								className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-medium ${getStateColor(
+									event.state,
+								)}`}
 							>
 								{event.state}
 							</div>
@@ -172,10 +174,10 @@ export function EventsPage({
 								</div>
 							</div>
 						</div>
-						<CardContent className="p-6">
+						<CardContent className="p-4 sm:p-6">
 							<div className="space-y-4">
 								<div>
-									<h3 className="text-xl font-bold text-gray-900 dark:text-slate-200 mb-2">
+									<h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-200 mb-2">
 										{event.name}
 									</h3>
 									<p className="text-sm text-gray-600 dark:text-slate-400 line-clamp-2">
@@ -210,7 +212,7 @@ export function EventsPage({
 									</div>
 								</div>
 
-								<div className="flex gap-2">
+								<div className="flex gap-2 flex-wrap">
 									<Badge className="bg-gray-100 dark:bg-slate-900 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-800">
 										{event.eventType}
 									</Badge>
@@ -229,11 +231,10 @@ export function EventsPage({
 				))}
 			</div>
 
-			{/* Event Detail Modal */}
 			<Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-				<DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-black border border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+				<DialogContent className="max-w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-black border border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
 					<DialogHeader>
-						<DialogTitle className="text-2xl text-gray-900 dark:text-slate-200">
+						<DialogTitle className="text-xl sm:text-2xl text-gray-900 dark:text-slate-200">
 							{selectedEvent?.name}
 						</DialogTitle>
 					</DialogHeader>
@@ -245,16 +246,18 @@ export function EventsPage({
 									height={300}
 									src={selectedEvent.imgSrc || "/placeholder.svg"}
 									alt={selectedEvent.name}
-									className="w-full h-64 object-cover rounded-lg"
+									className="w-full h-48 sm:h-64 object-cover rounded-lg"
 								/>
 								<div
-									className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-medium ${getStateColor(selectedEvent.state)}`}
+									className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-medium ${getStateColor(
+										selectedEvent.state,
+									)}`}
 								>
 									{selectedEvent.state}
 								</div>
 							</div>
 
-							<div className="grid grid-cols-2 gap-6">
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
 								<div className="space-y-4">
 									<div>
 										<h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200 mb-2">
@@ -355,7 +358,7 @@ export function EventsPage({
 										</div>
 									</div>
 
-									<div className="flex gap-2">
+									<div className="flex gap-2 flex-wrap">
 										<Badge className="bg-gray-100 dark:bg-slate-900 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-800">
 											{selectedEvent.eventType}
 										</Badge>
@@ -366,7 +369,7 @@ export function EventsPage({
 								</div>
 							</div>
 
-							<div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-slate-800">
+							<div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200 dark:border-slate-800">
 								<Button
 									type="button"
 									onClick={() => handleViewParticipants(selectedEvent)}
