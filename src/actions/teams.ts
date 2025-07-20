@@ -165,3 +165,24 @@ export async function hasAttended(
 	});
 	return attendance?.hasAttended ?? false;
 }
+export async function confirmTeam(teamId: string) {
+	const team = await db.team.findUnique({
+		where: { id: teamId },
+		select: { id: true, isConfirmed: true },
+	});
+
+	if (!team) {
+		throw new Error("Team not found");
+	}
+
+	if (team.isConfirmed) {
+		return { success: false, message: "Team is already confirmed" };
+	}
+
+	const updatedTeam = await db.team.update({
+		where: { id: teamId },
+		data: { isConfirmed: true },
+	});
+
+	return { success: true, data: updatedTeam };
+}

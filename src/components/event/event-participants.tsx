@@ -18,8 +18,8 @@ import {
 	TableRow,
 } from "~/components/ui/table";
 import { Badge } from "~/components/ui/badge";
-import { TrendingUp } from "lucide-react";
-import { Search } from "lucide-react";
+import { Switch } from "~/components/ui/switch";
+import { Search, Plus } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import {
@@ -28,6 +28,7 @@ import {
 	updateTeamName,
 	removeMemberFromTeam,
 	addMemberToTeam,
+	confirmTeam,
 } from "~/actions/teams";
 import { toast } from "sonner";
 
@@ -139,6 +140,28 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 		}
 	}
 
+	async function handleConfirmTeam(teamId: string) {
+		try {
+			const result = await confirmTeam(teamId);
+			if (!result.success) {
+				toast.error(result.message);
+				return;
+			}
+
+			// Update states
+			setSelectedTeam((prev) => prev && { ...prev, isConfirmed: true });
+			setTeams((prev) =>
+				prev.map((team) =>
+					team.id === teamId ? { ...team, isConfirmed: true } : team,
+				),
+			);
+
+			toast.success("Team confirmed successfully");
+		} catch (err: any) {
+			toast.error(err.message || "Failed to confirm team");
+		}
+	}
+
 	return (
 		<div className="space-y-8">
 			<div className="flex justify-between items-center mb-6">
@@ -150,6 +173,13 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 						Track and manage participants
 					</p>
 				</div>
+				<Button
+					// onClick={}
+					className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg"
+				>
+					<Plus className="h-4 w-4 mr-2" />
+					Create Team
+				</Button>
 			</div>
 
 			<div className="grid gap-6 md:grid-cols-2">
@@ -377,7 +407,7 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 								</ul>
 							</div>
 
-							{/* Add Member (disabled placeholder) */}
+							{/* Add Member */}
 							<div className="flex items-center space-x-2">
 								<Input
 									placeholder="Add new member"
@@ -386,6 +416,21 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 								/>
 								<Button onClick={handleAddMember}>Add</Button>
 							</div>
+
+							{/* Confirm Team Button */}
+							{!selectedTeam.isConfirmed ? (
+								<Button
+									className="w-full"
+									variant="default"
+									onClick={() => handleConfirmTeam(selectedTeam.id)}
+								>
+									Confirm Team
+								</Button>
+							) : (
+								<div className="flex justify-center items-center text-green-600 font-semibold">
+									Team is Confirmed
+								</div>
+							)}
 
 							{/* Delete Team */}
 							<Button
