@@ -1,6 +1,14 @@
 "use server";
 import { db } from "~/server/db";
 
+interface CreateTeamInput {
+	eventId: number;
+	teamName: string;
+	leaderId: number;
+	memberIds: number[];
+	isConfirmed?: boolean;
+}
+
 export async function getTeamsForEvent(eventId: number) {
 	const teams = await db.team.findMany({
 		where: {
@@ -185,4 +193,104 @@ export async function confirmTeam(teamId: string) {
 	});
 
 	return { success: true, data: updatedTeam };
+}
+
+export async function createTeam(input: CreateTeamInput) {
+	const { eventId, teamName, leaderId, memberIds, isConfirmed = false } = input;
+
+	// Validate event
+	const event = await db.event.findUnique({
+		where: { id: eventId },
+		select: { minTeamSize: true, maxTeamSize: true, name: true },
+	});
+
+	if (!event) {
+		return { success: false, error: "Event not found" };
+	}
+
+	const isSoloEvent = event.minTeamSize === 1 && event.maxTeamSize === 1;
+
+	// --- Solo Event Handling ---
+	let finalTeamName = teamName;
+	let finalMemberIds = memberIds;
+
+	if (isSoloEvent) {
+		// For solo events, team name is optional. Use leader's name if not provided.
+		if (!finalTeamName || finalTeamName.trim() === "") {
+			const leader = await db.user.findUnique({
+				where: { id: leaderId },
+				select: { name: true },
+			});
+			finalTeamName = leader?.name || `SoloTeam_${leaderId}`;
+		}
+
+		// Solo event constraint: members = []
+		if (memberIds.length > 0) {
+			return { success: false, error: "Cannot add members to a solo event" };
+		}
+
+		// Leader is the only member (no extra members to connect)
+		finalMemberIds = [];
+	}
+
+	// Team size constraint
+	const totalMembers = 1 + finalMemberIds.length; // Leader + members
+	if (!isSoloEvent) {
+		if (totalMembers < event.minTeamSize || totalMembers > event.maxTeamSize) {
+			return {
+				success: false,
+				error: `Team size must be between ${event.minTeamSize} and ${event.maxTeamSize} (including leader)`,
+			};
+		}
+	}
+
+	// Ensure leader is not leading another team
+	const leaderInTeam = await db.team.findFirst({
+		where: { eventId, leaderId },
+	});
+	if (leaderInTeam) {
+		return { success: false, error: "Leader already has a team in this event" };
+	}
+
+	// Ensure members are not in another team
+	if (finalMemberIds.length > 0) {
+		const conflictingMembers = await db.team.findMany({
+			where: {
+				eventId,
+				Members: { some: { id: { in: finalMemberIds } } },
+			},
+			select: { id: true, name: true },
+		});
+		if (conflictingMembers.length > 0) {
+			return {
+				success: false,
+				error: "Some members are already in another team for this event",
+				conflicts: conflictingMembers,
+			};
+		}
+	}
+
+	// Create team
+	const newTeam = await db.team.create({
+		data: {
+			name: finalTeamName,
+			eventId,
+			leaderId,
+			isConfirmed,
+			Members: {
+				connect: finalMemberIds.map((id) => ({ id })),
+			},
+		},
+		include: { Leader: true, Members: true },
+	});
+
+	const transformedTeam = {
+		id: newTeam.id,
+		name: newTeam.name,
+		isConfirmed: newTeam.isConfirmed,
+		leaderName: newTeam.Leader?.name ?? "Unknown",
+		members: newTeam.Members.map((m) => ({ id: m.id, name: m.name })),
+	};
+
+	return { success: true, data: transformedTeam };
 }

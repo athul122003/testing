@@ -29,6 +29,7 @@ import {
 	removeMemberFromTeam,
 	addMemberToTeam,
 	confirmTeam,
+	createTeam,
 } from "~/actions/teams";
 import { toast } from "sonner";
 
@@ -41,7 +42,7 @@ type Team = {
 	id: string;
 	name: string;
 	isConfirmed: boolean;
-	leaderName?: string; // Optional, if leader is not always present
+	leaderName?: string;
 	members: Member[];
 };
 
@@ -55,6 +56,12 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 	const [teams, setTeams] = useState<Team[]>([]);
 	const [teamNameInput, setTeamNameInput] = useState("");
 	const [addingMemberId, setAddingMemberId] = useState("");
+	const [createDialogOpen, setCreateDialogOpen] = useState(false);
+	const [newTeamName, setNewTeamName] = useState("");
+	const [newLeaderId, setNewLeaderId] = useState("");
+	const [newMemberIds, setNewMemberIds] = useState("");
+	const [creating, setCreating] = useState(false);
+	const [newIsConfirmed, setNewIsConfirmed] = useState(false);
 	const [page, setPage] = useState(1);
 	const pageSize = 10;
 
@@ -162,6 +169,58 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 		}
 	}
 
+	async function handleCreateTeam() {
+		const isSoloEvent =
+			editingEvent.minTeamSize === 1 && editingEvent.maxTeamSize === 1;
+
+		if (!newLeaderId || (!newTeamName && !isSoloEvent)) {
+			toast.error(
+				isSoloEvent
+					? "Leader ID is required"
+					: "Team name and leader ID are required",
+			);
+			return;
+		}
+
+		try {
+			setCreating(true);
+
+			const memberIdsArray = newMemberIds
+				.split(",")
+				.map((id) => id.trim())
+				.filter((id) => id !== "")
+				.map((id) => Number(id))
+				.filter((id) => !isNaN(id));
+
+			const result = await createTeam({
+				eventId: editingEvent.id,
+				teamName: newTeamName,
+				leaderId: Number(newLeaderId),
+				memberIds: memberIdsArray,
+				isConfirmed: newIsConfirmed,
+			});
+
+			if (!result.success) {
+				toast.error(result.error || "Failed to create team");
+				return;
+			}
+
+			toast.success("Team created successfully");
+			setTeams((prev) => [...prev, result.data as Team]);
+
+			// Reset form
+			setNewTeamName("");
+			setNewLeaderId("");
+			setNewMemberIds("");
+			setNewIsConfirmed(false);
+			setCreateDialogOpen(false);
+		} catch (err: any) {
+			toast.error(err.message || "Failed to create team");
+		} finally {
+			setCreating(false);
+		}
+	}
+
 	return (
 		<div className="space-y-8">
 			<div className="flex justify-between items-center mb-6">
@@ -174,7 +233,7 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 					</p>
 				</div>
 				<Button
-					// onClick={}
+					onClick={() => setCreateDialogOpen(true)}
 					className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg"
 				>
 					<Plus className="h-4 w-4 mr-2" />
@@ -442,6 +501,71 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 							</Button>
 						</div>
 					)}
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+				<DialogContent className="sm:max-w-md">
+					<DialogHeader>
+						<DialogTitle>Create New Team</DialogTitle>
+					</DialogHeader>
+
+					<div className="space-y-4">
+						{/* Team Name */}
+						<div>
+							<Label htmlFor="new-team-name">Team Name</Label>
+							<Input
+								id="new-team-name"
+								placeholder="Enter team name"
+								value={newTeamName}
+								onChange={(e) => setNewTeamName(e.target.value)}
+							/>
+						</div>
+
+						{/* Leader ID */}
+						<div>
+							<Label htmlFor="new-leader-id">Leader ID</Label>
+							<Input
+								id="new-leader-id"
+								placeholder="Enter leader user ID"
+								type="number"
+								value={newLeaderId}
+								onChange={(e) => setNewLeaderId(e.target.value)}
+							/>
+						</div>
+
+						{/* Member IDs */}
+						<div>
+							<Label htmlFor="new-member-ids">Member IDs</Label>
+							<Input
+								id="new-member-ids"
+								placeholder="Comma-separated member IDs"
+								value={newMemberIds}
+								onChange={(e) => setNewMemberIds(e.target.value)}
+							/>
+						</div>
+
+						<div>
+							<Label htmlFor="new-is-confirmed">Is Confirmed</Label>
+							<select
+								id="new-is-confirmed"
+								value={newIsConfirmed ? "true" : "false"}
+								onChange={(e) => setNewIsConfirmed(e.target.value === "true")}
+								className="w-full rounded-md border border-input bg-background p-2 text-sm"
+							>
+								<option value="false">False</option>
+								<option value="true">True</option>
+							</select>
+						</div>
+
+						<Button
+							className="w-full"
+							onClick={handleCreateTeam}
+							disabled={creating}
+						>
+							{creating ? "Creating..." : "Create Team"}
+						</Button>
+					</div>
 				</DialogContent>
 			</Dialog>
 		</div>

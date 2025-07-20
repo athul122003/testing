@@ -295,12 +295,12 @@ const main = async () => {
 			const user = allUsers[i];
 			await db.team.create({
 				data: {
-					name: "", // Leave blank for solo
+					name: user.name,
 					isConfirmed: true,
 					eventId: soloEvent.id,
 					leaderId: user.id,
 					Members: {
-						connect: { id: user.id },
+						connect: [],
 					},
 				},
 			});
