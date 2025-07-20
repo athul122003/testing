@@ -14,5 +14,6 @@ export default function Page() {
 	if (!session) {
 		redirect("/auth/login");
 	}
-	return isMobile ? <Scanner /> : <Dashboard />;
+	// isMobile ? <Scanner /> :
+	return <Dashboard />;
 }

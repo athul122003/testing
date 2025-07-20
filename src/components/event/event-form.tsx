@@ -169,15 +169,15 @@ export function EventForm({
 
 	return (
 		<div className="space-y-8">
-			<div className="flex items-center gap-4">
+			<div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
 				<Button variant="ghost" onClick={handleCancel} className="p-2">
 					<ArrowLeft className="h-5 w-5" />
 				</Button>
 				<div>
-					<h1 className="text-4xl font-bold text-slate-900 dark:text-white">
+					<h1 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white">
 						{editingEvent ? "Edit Event" : "Create New Event"}
 					</h1>
-					<p className="text-slate-600 dark:text-slate-400">
+					<p className="text-sm sm:text-base text-slate-600 dark:text-slate-400">
 						{editingEvent
 							? "Update event details"
 							: "Fill in the details to create a new event"}
@@ -187,12 +187,12 @@ export function EventForm({
 
 			<Card className="border-0 shadow-lg bg-white dark:bg-slate-800">
 				<CardHeader>
-					<CardTitle className="text-xl text-slate-900 dark:text-white">
+					<CardTitle className="text-lg sm:text-xl text-slate-900 dark:text-white">
 						Event Information
 					</CardTitle>
 				</CardHeader>
 				<CardContent className="space-y-6">
-					<div className="grid grid-cols-2 gap-6">
+					<div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
 						<div className="space-y-2">
 							<Label htmlFor="name">Event Name *</Label>
 							<Input
@@ -216,7 +216,6 @@ export function EventForm({
 							/>
 						</div>
 					</div>
-
 					<div className="space-y-2">
 						<Label htmlFor="description">Description</Label>
 						<Textarea
@@ -229,8 +228,7 @@ export function EventForm({
 							}
 						/>
 					</div>
-
-					<div className="grid grid-cols-3 gap-4">
+					<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 						<div className="space-y-2">
 							<Label>Event Type</Label>
 							<Select
@@ -292,8 +290,7 @@ export function EventForm({
 							</Select>
 						</div>
 					</div>
-
-					<div className="grid grid-cols-3 gap-4">
+					<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 						<div className="space-y-2">
 							<Label htmlFor="fromDate">From Date & Time *</Label>
 							<Input
@@ -328,8 +325,7 @@ export function EventForm({
 							/>
 						</div>
 					</div>
-
-					<div className="grid grid-cols-3 gap-4">
+					<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
 						<div className="space-y-2">
 							<Label htmlFor="maxTeams">Max Teams</Label>
 							<Input
@@ -365,7 +361,6 @@ export function EventForm({
 							/>
 						</div>
 					</div>
-
 					<div className="flex items-center space-x-2">
 						<Switch
 							id="membersOnly"
@@ -376,8 +371,7 @@ export function EventForm({
 						/>
 						<Label htmlFor="membersOnly">Members Only Event</Label>
 					</div>
-
-					<div className="grid grid-cols-2 gap-4">
+					<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 						<div className="space-y-2">
 							<Label htmlFor="flcAmount">FLC Member Amount ($)</Label>
 							<Input
@@ -403,10 +397,8 @@ export function EventForm({
 							/>
 						</div>
 					</div>
-
 					<div className="space-y-2">
 						<Label htmlFor="imgUpload">Event Image</Label>
-
 						<button
 							type="button"
 							className="w-full border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-8 text-center hover:border-slate-400 dark:hover:border-slate-500 transition-colors cursor-pointer"
@@ -447,7 +439,6 @@ export function EventForm({
 								</>
 							)}
 						</button>
-
 						<input
 							id="imgUpload"
 							type="file"
@@ -468,8 +459,8 @@ export function EventForm({
 							}}
 						/>
 					</div>
-
-					<div className="flex justify-end space-x-3 pt-6 border-t">
+					\{" "}
+					<div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
 						<Button variant="outline" onClick={handleCancel}>
 							Cancel
 						</Button>
