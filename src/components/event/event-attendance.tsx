@@ -9,9 +9,9 @@ import {
 	DialogContent,
 	DialogHeader,
 	DialogTitle,
+	DialogTrigger,
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
-import { Scanner } from "~/components/ui/scanner";
 import {
 	Table,
 	TableBody,
@@ -20,6 +20,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "~/components/ui/table";
+import { QRCodeScanner } from "../othercomps/qrCodeScanner";
 
 type Member = {
 	id: number;
@@ -173,6 +174,17 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 				<h1 className="text-3xl font-bold text-slate-800 dark:text-white">
 					Event Attendance
 				</h1>
+				<Dialog>
+					<DialogTrigger asChild>
+						<Button variant="outline">Scan QR Code</Button>
+					</DialogTrigger>
+					<DialogContent>
+						<DialogHeader>
+							<DialogTitle>Scan Team QR Code</DialogTitle>
+						</DialogHeader>
+						<QRCodeScanner eventId={event?.id} />
+					</DialogContent>
+				</Dialog>
 			</div>
 
 			<div className="flex flex-col md:flex-row gap-4 items-center">
@@ -184,7 +196,7 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 				/>
 			</div>
 
-			<Table className="rounded-lg overflow-hidden border">
+			<Table className="rounded-l</DialogTrigger>g overflow-hidden border">
 				<TableHeader>
 					<TableRow className="bg-slate-100 dark:bg-slate-800">
 						<TableHead>Team</TableHead>

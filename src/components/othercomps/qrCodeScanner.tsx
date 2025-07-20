@@ -2,22 +2,33 @@ import { useState } from "react";
 import { useZxing } from "react-zxing";
 import { Loader2 } from "lucide-react";
 import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
 
-export const QRCodeScanner: React.FC = () => {
+type QRCodeScannerProps = {
+	eventId: number;
+};
+
+export const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ eventId }) => {
 	const [result, setResult] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
-	const [scannedRes, setScannedRes] = useState<string | null>(null);
 	const { ref } = useZxing({
 		onResult(result) {
 			if (result) {
 				setResult(result.getText());
-				setScannedRes(result.getText());
 			}
 		},
 		onError(error) {
 			setError(error.message);
 		},
 	});
+
+	const handleMarkAttendance = () => {
+		if (result) {
+			setResult(null);
+		} else {
+			alert("No QR Code scanned");
+		}
+	};
 
 	const stopCamera = () => {
 		const stream = ref.current?.srcObject as MediaStream;
@@ -72,6 +83,19 @@ export const QRCodeScanner: React.FC = () => {
 					<Badge color={"danger"}>No QR Code in sight</Badge>
 				)}
 			</div>
+			<div className="flex flex-col items-center mt-4">
+				<Button
+					className="px-4 py-2 rounded-md bg-emerald-700 text-white font-semibold shadow hover:bg-emerald-800 transition-colors"
+					disabled={!result}
+					onClick={() => {
+						if (result) {
+							handleMarkAttendance();
+						}
+					}}
+				>
+					Mark Attendance
+				</Button>
+			</div>
 			<div className="flex gap-2 mt-4">
 				{/** biome-ignore lint/a11y/useButtonType: <explanation> */}
 				{/* <button
@@ -88,24 +112,23 @@ export const QRCodeScanner: React.FC = () => {
 					{result ? "Clear Scan" : "Start Camera"}
 				</button> */}
 				{!result && (
-					// biome-ignore lint/a11y/useButtonType: <explanation>
-					<div className="flex gap-2 mt-4">
-						{/** biome-ignore lint/a11y/useButtonType: <explanation> */}
-						<button
-							className="btn btn-primary"
+					<>
+						<Button
+							className="px-4 py-2 rounded-md bg-emerald-700 text-white font-semibold shadow hover:bg-emerald-800 transition-colors"
 							onClick={() => {
 								clearScanResults();
 								startCamera();
 							}}
 						>
 							Start Camera
-						</button>
-
-						{/** biome-ignore lint/a11y/useButtonType: <explanation> */}
-						<button className="btn btn-secondary" onClick={stopCamera}>
+						</Button>
+						<Button
+							className="px-4 py-2 rounded-md bg-gray-200 text-emerald-900 font-semibold shadow hover:bg-gray-300 transition-colors"
+							onClick={stopCamera}
+						>
 							Stop Camera
-						</button>
-					</div>
+						</Button>
+					</>
 				)}
 			</div>
 		</div>

@@ -41,6 +41,8 @@ const navigationMap: Record<string, { title: string }> = {
 	users: { title: "Users" },
 	"blog-form": { title: "Blog Form" },
 	"event-form": { title: "Event Form" },
+	"event-participants": { title: "Event Participants" },
+	"event-attendance": { title: "Event Attendance" },
 };
 
 export function TopBar({ activePage, setActivePage }: TopBarProps) {
@@ -82,6 +84,12 @@ export function TopBar({ activePage, setActivePage }: TopBarProps) {
 		}
 		if (activePage === "blog-form") {
 			items.unshift({ title: "Blogs" });
+		}
+		if (activePage === "event-participants") {
+			items.unshift({ title: "Events" });
+		}
+		if (activePage === "event-attendance") {
+			items.unshift({ title: "Events" });
 		}
 		return items;
 	};
