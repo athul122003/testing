@@ -37,10 +37,20 @@ export async function POST(req: NextRequest) {
 					...(await server.user.addUserLink({ ...body, userId: userId })),
 				});
 			}
-			case "removeUserLink":
+			case "removeUserLink": {
+				const customHeader = req.headers.get("authorization");
+				const data = parseJwtFromAuthHeader(customHeader || "");
+				if (!data || !data.userId) {
+					return NextResponse.json(
+						{ success: false, error: "Invalid or missing authentication data" },
+						{ status: 401 },
+					);
+				}
+				const userId = data.userId;
 				return NextResponse.json({
-					...(await server.user.removeUserLink(body)),
+					...(await server.user.removeUserLink({ ...body, userId: userId })),
 				});
+			}
 			default:
 				return NextResponse.json(
 					{ success: false, error: "Unknown action" },
