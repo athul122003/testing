@@ -221,22 +221,57 @@ export async function createTeam(input: CreateTeamInput) {
 				where: { id: leaderId },
 				select: { name: true },
 			});
-			finalTeamName = leader?.name || `SoloTeam_${leaderId}`;
+
+			if (!leader) {
+				return {
+					success: false,
+					error: `Members with ID ${leaderId} not found`,
+				};
+			}
+
+			finalTeamName = leader.name || `SoloTeam_${leaderId}`;
 		}
 
-		// Solo event constraint: members = []
+		// Solo event constraint: members must be empty
 		if (memberIds.length > 0) {
-			return { success: false, error: "Cannot add members to a solo event" };
+			return {
+				success: false,
+				error: `This is a solo event: you cannot add members. Leader ID ${leaderId} will be the only participant.`,
+			};
+		}
+
+		// Leader must be valid (double-check)
+		const leaderExists = await db.user.findUnique({
+			where: { id: leaderId },
+			select: { id: true },
+		});
+
+		if (!leaderExists) {
+			return {
+				success: false,
+				error: `User with ID ${leaderId} does not exist`,
+			};
 		}
 
 		// Leader is the only member (no extra members to connect)
 		finalMemberIds = [];
 	}
 
+	const leaderExists = await db.user.findUnique({ where: { id: leaderId } });
+	if (!leaderExists) {
+		return {
+			success: false,
+			error: `Leader with ID ${leaderId} does not exist`,
+		};
+	}
+
 	// Team size constraint
 	const totalMembers = 1 + finalMemberIds.length; // Leader + members
 	if (!isSoloEvent) {
-		if (totalMembers < event.minTeamSize || totalMembers > event.maxTeamSize) {
+		if (
+			totalMembers <= event.minTeamSize - 1 ||
+			totalMembers > event.maxTeamSize
+		) {
 			return {
 				success: false,
 				error: `Team size must be between ${event.minTeamSize} and ${event.maxTeamSize} (including leader)`,
@@ -252,19 +287,45 @@ export async function createTeam(input: CreateTeamInput) {
 		return { success: false, error: "Leader already has a team in this event" };
 	}
 
-	// Ensure members are not in another team
+	// Ensure members are valid and not in another team
 	if (finalMemberIds.length > 0) {
+		// 1. Check which users exist
+		const existingUsers = await db.user.findMany({
+			where: { id: { in: finalMemberIds } },
+			select: { id: true, name: true },
+		});
+
+		const existingUserIds = existingUsers.map((u) => u.id);
+		const invalidUserIds = finalMemberIds.filter(
+			(id) => !existingUserIds.includes(id),
+		);
+
+		if (invalidUserIds.length > 0) {
+			return {
+				success: false,
+				error: `The following user IDs are invalid: ${invalidUserIds.join(", ")}`,
+			};
+		}
+
+		// 2. Check if valid users are already in another team
 		const conflictingMembers = await db.team.findMany({
 			where: {
 				eventId,
-				Members: { some: { id: { in: finalMemberIds } } },
+				Members: { some: { id: { in: existingUserIds } } },
 			},
-			select: { id: true, name: true },
+			select: {
+				id: true,
+				name: true,
+				Members: { select: { id: true, name: true } },
+			},
 		});
+
 		if (conflictingMembers.length > 0) {
 			return {
 				success: false,
-				error: "Some members are already in another team for this event",
+				error:
+					"The following members are already in another team: " +
+					conflictingMembers.map((t) => t.name).join(", "),
 				conflicts: conflictingMembers,
 			};
 		}

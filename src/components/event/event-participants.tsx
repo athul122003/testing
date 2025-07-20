@@ -47,7 +47,7 @@ type Team = {
 };
 
 type EventParticipantsProps = {
-	editingEvent: any; // TODO: strongly type later
+	editingEvent: any;
 };
 
 export function EventParticipants({ editingEvent }: EventParticipantsProps) {
@@ -64,6 +64,8 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 	const [newIsConfirmed, setNewIsConfirmed] = useState(false);
 	const [page, setPage] = useState(1);
 	const pageSize = 10;
+	const isSoloEvent =
+		editingEvent.minTeamSize === 1 && editingEvent.maxTeamSize === 1;
 
 	useEffect(() => {
 		if (editingEvent?.id) {
@@ -75,11 +77,21 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 		if (selectedTeam) setTeamNameInput(selectedTeam.name);
 	}, [selectedTeam]);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Needed to reset pagination
+	useEffect(() => {
+		setPage(1);
+	}, [searchQuery]);
+
 	const filteredTeams = teams.filter((team) =>
 		team.name.toLowerCase().includes(searchQuery.toLowerCase()),
 	);
 
 	const totalPages = Math.ceil(filteredTeams.length / pageSize);
+
+	const paginatedTeams = filteredTeams.slice(
+		(page - 1) * pageSize,
+		page * pageSize,
+	);
 
 	// Update local teams state directly
 	function updateTeamInList(updatedTeam: Team) {
@@ -115,9 +127,14 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 	async function handleRemoveMember(teamId: string, userId: number) {
 		try {
 			await removeMemberFromTeam(teamId, userId);
+			if (!selectedTeam) {
+				toast.error("No team selected");
+				return;
+			}
+
 			const updatedTeam = {
-				...selectedTeam!,
-				members: selectedTeam!.members.filter((m) => m.id !== userId),
+				...selectedTeam,
+				members: selectedTeam.members.filter((m) => m.id !== userId),
 			};
 			updateTeamInList(updatedTeam);
 			toast.success("Member removed successfully");
@@ -173,6 +190,7 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 		const isSoloEvent =
 			editingEvent.minTeamSize === 1 && editingEvent.maxTeamSize === 1;
 
+		// --- Client-side validation ---
 		if (!newLeaderId || (!newTeamName && !isSoloEvent)) {
 			toast.error(
 				isSoloEvent
@@ -182,21 +200,61 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 			return;
 		}
 
+		// Parse leader ID
+		const leaderIdNum = Number(newLeaderId);
+		if (isNaN(leaderIdNum) || leaderIdNum <= 0) {
+			toast.error("Leader ID must be a valid positive number");
+			return;
+		}
+
+		// Parse member IDs
+		const memberIdsArray = newMemberIds
+			.split(",")
+			.map((id) => id.trim())
+			.filter((id) => id !== "")
+			.map((id) => Number(id))
+			.filter((id) => !isNaN(id) && id > 0);
+
+		// Remove duplicates
+		const uniqueMemberIds = Array.from(new Set(memberIdsArray));
+
+		// Solo event rule: no extra members allowed
+		if (isSoloEvent && uniqueMemberIds.length > 0) {
+			toast.error("Cannot add members for a solo event");
+			return;
+		}
+
+		// Leader cannot also be a member
+		if (uniqueMemberIds.includes(leaderIdNum)) {
+			toast.error("Leader cannot be added as a member");
+			return;
+		}
+
+		// Team event rule: min team size
+		const totalTeamSize = 1 + uniqueMemberIds.length; // leader + members'
+		if (!isSoloEvent) {
+			if (totalTeamSize <= editingEvent.minTeamSize - 1) {
+				toast.error(
+					`Team must have at least ${editingEvent.minTeamSize} members (including leader)`,
+				);
+				return;
+			}
+			if (totalTeamSize > editingEvent.maxTeamSize) {
+				toast.error(
+					`Team cannot have more than ${editingEvent.maxTeamSize} members (including leader)`,
+				);
+				return;
+			}
+		}
+
 		try {
 			setCreating(true);
-
-			const memberIdsArray = newMemberIds
-				.split(",")
-				.map((id) => id.trim())
-				.filter((id) => id !== "")
-				.map((id) => Number(id))
-				.filter((id) => !isNaN(id));
 
 			const result = await createTeam({
 				eventId: editingEvent.id,
 				teamName: newTeamName,
-				leaderId: Number(newLeaderId),
-				memberIds: memberIdsArray,
+				leaderId: leaderIdNum,
+				memberIds: uniqueMemberIds,
 				isConfirmed: newIsConfirmed,
 			});
 
@@ -316,7 +374,7 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 							</TableRow>
 						</TableHeader>
 						<TableBody>
-							{filteredTeams.map((team: Team) => (
+							{paginatedTeams.map((team: Team) => (
 								<TableRow
 									key={team.id}
 									className="hover:bg-gray-50 dark:hover:bg-slate-900"
@@ -512,22 +570,28 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 
 					<div className="space-y-4">
 						{/* Team Name */}
-						<div>
-							<Label htmlFor="new-team-name">Team Name</Label>
-							<Input
-								id="new-team-name"
-								placeholder="Enter team name"
-								value={newTeamName}
-								onChange={(e) => setNewTeamName(e.target.value)}
-							/>
-						</div>
+						{!isSoloEvent ? (
+							<div>
+								<Label htmlFor="new-team-name">Team Name</Label>
+								<Input
+									id="new-team-name"
+									placeholder="Enter team name"
+									value={newTeamName}
+									onChange={(e) => setNewTeamName(e.target.value)}
+								/>
+							</div>
+						) : null}
 
 						{/* Leader ID */}
 						<div>
-							<Label htmlFor="new-leader-id">Leader ID</Label>
+							<Label htmlFor="new-leader-id">
+								{isSoloEvent ? "Member ID" : "Leader ID"}
+							</Label>
 							<Input
 								id="new-leader-id"
-								placeholder="Enter leader user ID"
+								placeholder={
+									isSoloEvent ? "Enter member ID" : "Enter leader ID"
+								}
 								type="number"
 								value={newLeaderId}
 								onChange={(e) => setNewLeaderId(e.target.value)}
@@ -535,28 +599,36 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 						</div>
 
 						{/* Member IDs */}
-						<div>
-							<Label htmlFor="new-member-ids">Member IDs</Label>
-							<Input
-								id="new-member-ids"
-								placeholder="Comma-separated member IDs"
-								value={newMemberIds}
-								onChange={(e) => setNewMemberIds(e.target.value)}
-							/>
-						</div>
+						{!isSoloEvent ? (
+							<div>
+								<Label htmlFor="new-member-ids">Member IDs</Label>
+								<Input
+									id="new-member-ids"
+									placeholder="Comma-separated member IDs"
+									value={newMemberIds}
+									onChange={(e) => setNewMemberIds(e.target.value)}
+								/>
+							</div>
+						) : null}
 
-						<div>
-							<Label htmlFor="new-is-confirmed">Is Confirmed</Label>
-							<select
-								id="new-is-confirmed"
-								value={newIsConfirmed ? "true" : "false"}
-								onChange={(e) => setNewIsConfirmed(e.target.value === "true")}
-								className="w-full rounded-md border border-input bg-background p-2 text-sm"
-							>
-								<option value="false">False</option>
-								<option value="true">True</option>
-							</select>
-						</div>
+						{/* Is Confirmed */}
+
+						{!isSoloEvent ? (
+							<div>
+								<Label htmlFor="new-is-confirmed">Is Confirmed</Label>
+								<select
+									id="new-is-confirmed"
+									value={newIsConfirmed ? "true" : "false"}
+									onChange={(e) => setNewIsConfirmed(e.target.value === "true")}
+									className="w-full rounded-md border border-input bg-background p-2 text-sm"
+								>
+									<option value="false">False</option>
+									<option value="true">True</option>
+								</select>
+							</div>
+						) : null}
+
+						{/* Create Team Button */}
 
 						<Button
 							className="w-full"
