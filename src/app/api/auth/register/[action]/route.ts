@@ -3,9 +3,9 @@ import { z } from "zod";
 import { db } from "~/server/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "~/server/auth/auth";
+import { parseJwtFromAuthHeader } from "~/lib/utils";
 
 const registerInputSchema = z.object({
-	userId: z.number(),
 	reasonToJoin: z.string().optional(),
 	expectations: z.string().optional(),
 	contribution: z.string().optional(),
@@ -30,7 +30,17 @@ export async function POST(req: NextRequest) {
 					);
 				}
 
-				const { userId, reasonToJoin, expectations, contribution } = input.data;
+				const customHeader = req.headers.get("authorization");
+				const data = parseJwtFromAuthHeader(customHeader || "");
+				if (!data || !data.userId) {
+					return NextResponse.json(
+						{ success: false, error: "Invalid or missing authentication data" },
+						{ status: 401 },
+					);
+				}
+
+				const { reasonToJoin, expectations, contribution } = input.data;
+				const userId = data.userId;
 
 				await db.user.update({
 					where: { id: userId },

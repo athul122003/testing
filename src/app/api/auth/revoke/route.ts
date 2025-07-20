@@ -1,9 +1,19 @@
 import { NextResponse } from "next/server";
+import { parseJwtFromAuthHeader } from "~/lib/utils";
 import { db } from "~/server/db";
 
 export async function POST(req: Request) {
 	try {
-		const { userId } = await req.json();
+		const customHeader = req.headers.get("authorization");
+		const data = parseJwtFromAuthHeader(customHeader || "");
+		if (!data || !data.userId) {
+			return NextResponse.json(
+				{ success: false, error: "Invalid or missing authentication data" },
+				{ status: 401 },
+			);
+		}
+
+		const userId = data.userId;
 
 		if (!userId) {
 			return NextResponse.json({ message: "Missing userId" }, { status: 400 });
