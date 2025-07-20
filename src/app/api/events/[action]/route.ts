@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { server } from "~/actions/serverAction";
+import { parseJwtFromAuthHeader } from "~/lib/utils";
 
 export async function POST(req: NextRequest) {
 	try {
@@ -41,40 +42,77 @@ export async function POST(req: NextRequest) {
 			}
 
 			case "registerSolo": {
-				const { userId, eventId } = body as { userId: number; eventId: number };
+				const { eventId } = body as { eventId: number };
+				const customHeader = req.headers.get("authorization");
+				const data = parseJwtFromAuthHeader(customHeader || "");
+				if (!data || !data.userId) {
+					return NextResponse.json(
+						{ success: false, error: "Invalid or missing authentication data" },
+						{ status: 401 },
+					);
+				}
 
-				const result = await server.event.soloEventReg(userId, eventId);
+				const result = await server.event.soloEventReg(data.userId, eventId);
 				return NextResponse.json(result, {
 					status: result.success ? 200 : 400,
 				});
 			}
 
 			case "checkSolo": {
-				const { userId, eventId } = body as { userId: number; eventId: number };
-
-				const result = await server.event.checkSolo(userId, eventId);
+				const { eventId } = body as { eventId: number };
+				const customHeader = req.headers.get("authorization");
+				const data = parseJwtFromAuthHeader(customHeader || "");
+				if (!data || !data.userId) {
+					return NextResponse.json(
+						{ success: false, error: "Invalid or missing authentication data" },
+						{ status: 401 },
+					);
+				}
+				const result = await server.event.checkSolo(data.userId, eventId);
 				return NextResponse.json({ success: result.success, result });
 			}
 
 			case "createTeam": {
-				const { userId, eventId, teamName } = body as {
-					userId: number;
+				const { eventId, teamName } = body as {
 					eventId: number;
 					teamName: string;
 				};
 
-				const result = await server.event.createTeam(userId, eventId, teamName);
+				const customHeader = req.headers.get("authorization");
+				const data = parseJwtFromAuthHeader(customHeader || "");
+				if (!data || !data.userId) {
+					return NextResponse.json(
+						{ success: false, error: "Invalid or missing authentication data" },
+						{ status: 401 },
+					);
+				}
+
+				const result = await server.event.createTeam(
+					data.userId,
+					eventId,
+					teamName,
+				);
 				return NextResponse.json(result, {
 					status: result.success ? 200 : 400,
 				});
 			}
 
 			case "joinTeam": {
-				const { userId, teamId, eventId } = body as {
-					userId: number;
+				const { teamId, eventId } = body as {
 					teamId: string;
 					eventId: number;
 				};
+
+				const customHeader = req.headers.get("authorization");
+				const data = parseJwtFromAuthHeader(customHeader || "");
+				if (!data || !data.userId) {
+					return NextResponse.json(
+						{ success: false, error: "Invalid or missing authentication data" },
+						{ status: 401 },
+					);
+				}
+
+				const userId = data.userId;
 
 				if (!userId || !teamId) {
 					return NextResponse.json(
@@ -90,16 +128,35 @@ export async function POST(req: NextRequest) {
 			}
 
 			case "getTeam": {
-				const { userId, eventId } = body as { userId: number; eventId: number };
+				const { eventId } = body as { userId: number; eventId: number };
+				const customHeader = req.headers.get("authorization");
+				const data = parseJwtFromAuthHeader(customHeader || "");
+				if (!data || !data.userId) {
+					return NextResponse.json(
+						{ success: false, error: "Invalid or missing authentication data" },
+						{ status: 401 },
+					);
+				}
 
-				const result = await server.event.getTeam(userId, eventId);
+				const result = await server.event.getTeam(data.userId, eventId);
 				return NextResponse.json(result, {
 					status: result.success ? 200 : 400,
 				});
 			}
 
 			case "confirmTeam": {
-				const { userId, teamId } = body as { userId: number; teamId: string };
+				const { teamId } = body as { teamId: string };
+
+				const customHeader = req.headers.get("authorization");
+				const data = parseJwtFromAuthHeader(customHeader || "");
+				if (!data || !data.userId) {
+					return NextResponse.json(
+						{ success: false, error: "Invalid or missing authentication data" },
+						{ status: 401 },
+					);
+				}
+
+				const userId = data.userId;
 
 				if (!userId || !teamId) {
 					return NextResponse.json(
@@ -115,8 +172,16 @@ export async function POST(req: NextRequest) {
 			}
 
 			case "deleteTeam": {
-				const { userId, teamId } = body as { userId: number; teamId: string };
-
+				const { teamId } = body as { teamId: string };
+				const customHeader = req.headers.get("authorization");
+				const data = parseJwtFromAuthHeader(customHeader || "");
+				if (!data || !data.userId) {
+					return NextResponse.json(
+						{ success: false, error: "Invalid or missing authentication data" },
+						{ status: 401 },
+					);
+				}
+				const userId = data.userId;
 				if (!userId || !teamId) {
 					return NextResponse.json(
 						{ success: false, error: "Missing userId or teamId" },
