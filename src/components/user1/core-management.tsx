@@ -9,7 +9,7 @@ import {
 	Trash2,
 	X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -47,13 +47,30 @@ import {
 	TableHeader,
 	TableRow,
 } from "~/components/ui/table";
-import { getCoreMembers } from "~/actions/core";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogFooter,
+} from "~/components/ui/dialog";
 import {
 	CoreMemberType,
+	useAddToCoreMutation,
 	useCoreMembersQuery,
 } from "~/actions/tanstackHooks/core-queries";
+import { Label } from "~/components/ui/label";
 
 type CoreSortByType = "position" | "name" | "id" | "priority" | "year";
+type CoreType = "FACULTY_COORDINATOR" | "OFFICE_BEARER";
+
+// type CoreUsersType = {
+//   userId: number;
+//   name: string;
+//   email: string;
+//   position: string;
+//   year: string;
+// };
 
 export default function CoreManagement() {
 	//   const [coreLoading, setCoreLoading] = useState(true);
@@ -65,15 +82,14 @@ export default function CoreManagement() {
 	const [coreSortBy, setCoreSortBy] = useState<CoreSortByType>("position");
 	const [coreSortOrder, setCoreSortOrder] = useState<"asc" | "desc">("asc");
 	const [corePage, setCorePage] = useState(1);
-	const [selectedCoreUsers, setSelectedCoreUsers] = useState<
-		{
-			userId: number;
-			name: string;
-			email: string;
-			position: string;
-			year: string;
-		}[]
-	>([]);
+	const [selectedCoreUsers, setSelectedCoreUsers] = useState<CoreMemberType[]>(
+		[],
+	);
+	const [editCoreMember, setEditCoreMember] = useState<CoreMemberType | null>(
+		null,
+	);
+	const [showActionModal, setShowActionModal] = useState(false);
+	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 	//   const [corePositions, setCorePositions] = useState<
 	//     { id: string; name: string }[]
 	//   >([]);
@@ -167,6 +183,23 @@ export default function CoreManagement() {
 
 		return filtered;
 	}, [coreMembers, coreSearchTerm, coreSortBy, coreSortOrder]);
+
+	const { mutate: updateCoreMutation, isPending: isUpdatingCore } =
+		useAddToCoreMutation({
+			onSuccessCallback: () => {
+				setShowActionModal(false);
+			},
+		});
+
+	const handleSave = (event: React.FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		if (!editCoreMember) return;
+		const formData = new FormData(event.currentTarget);
+		formData.set("userIds", JSON.stringify([editCoreMember.userId]));
+		formData.set("coreId", editCoreMember.id || "");
+		updateCoreMutation(formData);
+	};
+
 	return (
 		<>
 			<Card className="bg-white dark:bg-black border border-gray-200 dark:border-slate-800 shadow-xl">
@@ -282,7 +315,11 @@ export default function CoreManagement() {
 										<TableBody>
 											{filteredMembers.map((member) => (
 												<TableRow
-													key={member.userId}
+													onClick={() => {
+														setEditCoreMember(member);
+														setShowActionModal(true);
+													}}
+													key={member.id}
 													className="hover:bg-gray-50 dark:hover:bg-slate-900"
 												>
 													<TableCell>
@@ -293,16 +330,7 @@ export default function CoreManagement() {
 															onCheckedChange={(checked) =>
 																setSelectedCoreUsers((prev) =>
 																	checked
-																		? [
-																				...prev,
-																				{
-																					userId: member.userId,
-																					name: member.User.name,
-																					email: member.User.email,
-																					position: member.position,
-																					year: member.year,
-																				},
-																			]
+																		? [...prev, member]
 																		: prev.filter(
 																				(u) => u.userId !== member.userId,
 																			),
@@ -439,6 +467,111 @@ export default function CoreManagement() {
 						</CardContent>
 					</>
 				)}
+
+				<Dialog open={showActionModal} onOpenChange={setShowActionModal}>
+					<DialogContent>
+						<DialogHeader>
+							<DialogTitle>Edit Member</DialogTitle>
+						</DialogHeader>
+						{editCoreMember && (
+							<form className="space-y-4" onSubmit={handleSave}>
+								<input
+									type="hidden"
+									name="userIds"
+									value={JSON.stringify([editCoreMember.userId])}
+								/>
+
+								<div className="space-y-1">
+									<Label>Name</Label>
+									<p className="text-sm">{editCoreMember.User.name}</p>
+								</div>
+
+								<div className="space-y-1">
+									<Label>Email</Label>
+									<p className="text-sm">{editCoreMember.User.email}</p>
+								</div>
+
+								<div className="space-y-2">
+									<Label htmlFor="position">Position</Label>
+									<Input
+										id="position"
+										name="position"
+										value={editCoreMember.position}
+										onChange={(e) =>
+											setEditCoreMember({
+												...editCoreMember,
+												position: e.target.value,
+											})
+										}
+									/>
+								</div>
+
+								<div className="space-y-2">
+									<Label htmlFor="type">Type</Label>
+									<select
+										id="type"
+										name="type"
+										value={editCoreMember.type}
+										onChange={(e) =>
+											setEditCoreMember({
+												...editCoreMember,
+												type: e.target.value as CoreType,
+											})
+										}
+										className="w-full border border-gray-300 rounded px-2 py-1"
+									>
+										<option value="FACULTY_COORDINATOR">
+											FACULTY COORDINATOR
+										</option>
+										<option value="OFFICE_BEARER">OFFICE BEARER</option>
+									</select>
+								</div>
+
+								<div className="space-y-2">
+									<Label htmlFor="year">Year</Label>
+									<Input
+										id="year"
+										name="year"
+										value={editCoreMember.year}
+										onChange={(e) =>
+											setEditCoreMember({
+												...editCoreMember,
+												year: e.target.value,
+											})
+										}
+									/>
+								</div>
+
+								<div className="space-y-2">
+									<Label htmlFor="priority">Priority</Label>
+									<Input
+										id="priority"
+										name="priority"
+										type="number"
+										value={editCoreMember.priority || ""}
+										onChange={(e) =>
+											setEditCoreMember({
+												...editCoreMember,
+												priority: Number(e.target.value),
+											})
+										}
+									/>
+								</div>
+
+								<DialogFooter className="pt-4">
+									<Button
+										variant="outline"
+										type="button"
+										onClick={() => setShowActionModal(false)}
+									>
+										Cancel
+									</Button>
+									<Button type="submit">Save</Button>
+								</DialogFooter>
+							</form>
+						)}
+					</DialogContent>
+				</Dialog>
 			</Card>
 		</>
 	);

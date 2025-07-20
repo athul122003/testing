@@ -49,11 +49,15 @@ export const useAddToCoreMutation = ({
 		mutationFn: addToCore,
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["coreMembers"] });
-			toast.success("Added to core successfully");
+			toast.success("Updated Core Successfully");
 			onSuccessCallback?.();
 		},
 		onError: (error) => {
-			toast.error("Failed to add to core");
+			toast.error(
+				`Failed to add to core: ${
+					error instanceof Error ? error.message : "Unknown error"
+				}`,
+			);
 			console.error("Error adding to core:", error);
 		},
 	});
