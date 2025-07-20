@@ -5,6 +5,7 @@ import prisma from "~/lib/prisma";
 
 export async function addToCore(formData: FormData) {
 	try {
+		const coreId = formData.get("coreId") as string | null;
 		const userIds = JSON.parse(formData.get("userIds") as string) as number[];
 		const year = formData.get("year") as string;
 		const position = formData.get("position") as string;
@@ -12,11 +13,28 @@ export async function addToCore(formData: FormData) {
 		const priorityValue = formData.get("priority");
 		const priority = priorityValue !== null ? Number(priorityValue) : undefined;
 
-		for (const userId of userIds) {
-			const existingCore = await prisma.core.findFirst({
-				where: { userId, year, type },
+		if (coreId) {
+			const userId = userIds[0];
+			const duplicate = await prisma.core.findFirst({
+				where: { userId, year, id: { not: coreId } },
 			});
-			if (!existingCore) {
+			if (duplicate) {
+				throw new Error("User already exists in core for this year and type");
+			}
+			await prisma.core.update({
+				where: { id: coreId },
+				data: { position, year, type, priority },
+			});
+		} else {
+			for (const userId of userIds) {
+				const duplicate = await prisma.core.findFirst({
+					where: { userId, year },
+				});
+
+				if (duplicate) {
+					throw new Error("User already exists in core for this year");
+				}
+
 				await prisma.core.create({
 					data: {
 						userId,
@@ -26,16 +44,9 @@ export async function addToCore(formData: FormData) {
 						type,
 					},
 				});
-			} else {
-				await prisma.core.update({
-					where: { id: existingCore.id },
-					data: {
-						position,
-						priority,
-					},
-				});
 			}
 		}
+
 		return { status: "success" };
 	} catch (error) {
 		console.error("Error in addToCore:", error);
@@ -43,21 +54,35 @@ export async function addToCore(formData: FormData) {
 	}
 }
 
-export async function getCoreMembers() {
+export async function getCoreMembers({
+	page = 1,
+	pageSize = 20,
+}: {
+	page?: number;
+	pageSize?: number;
+}) {
 	try {
-		const coreMembers = await prisma.core.findMany({
-			include: {
-				User: {
-					select: {
-						name: true,
-						email: true,
+		const skip = (page - 1) * pageSize;
+		const [coreMembers, totalCore] = await Promise.all([
+			prisma.core.findMany({
+				skip,
+				take: pageSize,
+				orderBy: { priority: "asc" },
+				include: {
+					User: {
+						select: {
+							name: true,
+							email: true,
+						},
 					},
 				},
-			},
-		});
-		return coreMembers;
+			}),
+			prisma.core.count(),
+		]);
+		const totalPages = Math.ceil(totalCore / pageSize);
+		return { coreMembers, totalCore, totalPages, page, pageSize };
 	} catch (error) {
 		console.error("Error in getCoreMembers:", error);
-		throw new Error("Failed to fetch core members");
+		throw new Error("Failed to fetch core members", { cause: error });
 	}
 }
