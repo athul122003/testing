@@ -67,7 +67,7 @@ export default function CoreManagement() {
 	const [corePage, setCorePage] = useState(1);
 	const [selectedCoreUsers, setSelectedCoreUsers] = useState<
 		{
-			id: string;
+			userId: number;
 			name: string;
 			email: string;
 			position: string;
@@ -78,8 +78,6 @@ export default function CoreManagement() {
 	//     { id: string; name: string }[]
 	//   >([]);
 	//   const [coreMembers, setCoreMembers] = useState<CoreMemberType[]>([]);
-	const totalPages = 1;
-
 	//   useEffect(() => {
 	//     const fetchCoreMembers = async () => {
 	//       const res = await getCoreMembers();
@@ -94,9 +92,17 @@ export default function CoreManagement() {
 	//     setCoreLoading(false);
 	//   }, []);
 
-	const { data: coreMembers, isLoading: coreLoading } = useCoreMembersQuery();
+	//core page data
+	const { data: corePageResponse, isLoading: coreLoading } =
+		useCoreMembersQuery({
+			page: corePage,
+			pageSize: 15,
+		});
+	const totalPages = corePageResponse?.totalPages || 1;
+	const coreMembers = corePageResponse?.coreMembers || [];
+
 	const filteredMembers = useMemo(() => {
-		let filtered: CoreMemberType[] = coreMembers || [];
+		let filtered: CoreMemberType[] = coreMembers;
 
 		//Filter by search term
 		if (coreSearchTerm.trim() !== "") {
@@ -276,13 +282,13 @@ export default function CoreManagement() {
 										<TableBody>
 											{filteredMembers.map((member) => (
 												<TableRow
-													key={member.id}
+													key={member.userId}
 													className="hover:bg-gray-50 dark:hover:bg-slate-900"
 												>
 													<TableCell>
 														<Checkbox
 															checked={selectedCoreUsers.some(
-																(u) => u.id === member.id,
+																(u) => u.userId === member.userId,
 															)}
 															onCheckedChange={(checked) =>
 																setSelectedCoreUsers((prev) =>
@@ -290,20 +296,22 @@ export default function CoreManagement() {
 																		? [
 																				...prev,
 																				{
-																					id: member.id,
+																					userId: member.userId,
 																					name: member.User.name,
 																					email: member.User.email,
 																					position: member.position,
 																					year: member.year,
 																				},
 																			]
-																		: prev.filter((u) => u.id !== member.id),
+																		: prev.filter(
+																				(u) => u.userId !== member.userId,
+																			),
 																)
 															}
 														/>
 													</TableCell>
 													<TableCell className="font-mono text-sm text-gray-500 dark:text-slate-400">
-														{member.id}
+														{member.userId}
 													</TableCell>
 													<TableCell>{member.User.name}</TableCell>
 													<TableCell>{member.User.email}</TableCell>

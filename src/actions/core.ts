@@ -43,19 +43,33 @@ export async function addToCore(formData: FormData) {
 	}
 }
 
-export async function getCoreMembers() {
+export async function getCoreMembers({
+	page = 1,
+	pageSize = 20,
+}: {
+	page?: number;
+	pageSize?: number;
+}) {
 	try {
-		const coreMembers = await prisma.core.findMany({
-			include: {
-				User: {
-					select: {
-						name: true,
-						email: true,
+		const skip = (page - 1) * pageSize;
+		const [coreMembers, totalCore] = await Promise.all([
+			prisma.core.findMany({
+				skip,
+				take: pageSize,
+				orderBy: { priority: "asc" },
+				include: {
+					User: {
+						select: {
+							name: true,
+							email: true,
+						},
 					},
 				},
-			},
-		});
-		return coreMembers;
+			}),
+			prisma.core.count(),
+		]);
+		const totalPages = Math.ceil(totalCore / pageSize);
+		return { coreMembers, totalCore, totalPages, page, pageSize };
 	} catch (error) {
 		console.error("Error in getCoreMembers:", error);
 		throw new Error("Failed to fetch core members");

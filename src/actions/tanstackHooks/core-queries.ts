@@ -17,10 +17,24 @@ export type CoreMemberType = {
 	position: string;
 };
 
-export const useCoreMembersQuery = () => {
-	return useQuery<CoreMemberType[]>({
-		queryKey: ["coreMembers"],
-		queryFn: getCoreMembers,
+export type CorePageResponse = {
+	coreMembers: CoreMemberType[];
+	totalPages: number;
+	totalCore: number;
+	page: number;
+	pageSize: number;
+};
+
+export const useCoreMembersQuery = ({
+	page,
+	pageSize,
+}: {
+	page: number;
+	pageSize: number;
+}) => {
+	return useQuery<CorePageResponse>({
+		queryKey: ["coreMembers", page, pageSize],
+		queryFn: () => getCoreMembers({ page, pageSize }),
 		placeholderData: (prev) => prev,
 		staleTime: 1000 * 60 * 5,
 	});
@@ -32,10 +46,9 @@ export const useAddToCoreMutation = ({
 	onSuccessCallback?: () => void;
 }) => {
 	return useMutation({
-		mutationFn: async (formData: FormData) => {
-			return await addToCore(formData);
-		},
+		mutationFn: addToCore,
 		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["coreMembers"] });
 			toast.success("Added to core successfully");
 			onSuccessCallback?.();
 		},
