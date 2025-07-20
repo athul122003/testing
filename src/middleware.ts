@@ -8,6 +8,7 @@ export function middleware(request: NextRequest) {
 		const allowedOrigins = [
 			"http://localhost:3000",
 			"https://flc-client-25.vercel.app",
+			"https://finiteloop.vercel.app",
 		]; // frontend
 		const origin = request.headers.get("origin");
 		if (origin && allowedOrigins.includes(origin)) {
