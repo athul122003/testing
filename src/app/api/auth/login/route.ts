@@ -1,6 +1,6 @@
-import type { Team } from "@prisma/client";
 import { getUserByEmail } from "~/lib/auth/auth-util";
 import { login } from "~/lib/auth/auth.service";
+import { getRegisteredEventCount } from "~/actions/teams";
 import { loginZ } from "~/zod/authZ";
 
 export async function POST(req: Request) {
@@ -44,8 +44,10 @@ export async function POST(req: Request) {
 		}
 
 		const attended = user.Attendance.length;
-		const registeredCount =
-			user?.TeamLeader.filter((team: Team) => team.isConfirmed).length ?? 0;
+		const registeredCount = await getRegisteredEventCount(user.id);
+		console.log(
+			`User ${user.id} has attended ${attended} events and registered for ${registeredCount} events.`,
+		);
 		const attendance =
 			attended === 0
 				? 0

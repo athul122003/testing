@@ -426,3 +426,20 @@ export async function createTeam(input: CreateTeamInput) {
 
 	return { success: true, data: transformedTeam };
 }
+
+export const getRegisteredEventCount = async (
+	userId: number,
+): Promise<number> => {
+	const teams = await db.team.findMany({
+		where: {
+			OR: [{ leaderId: userId }, { Members: { some: { id: userId } } }],
+			isConfirmed: true,
+		},
+		select: {
+			eventId: true,
+		},
+	});
+
+	const uniqueEventIds = new Set(teams.map((team) => team.eventId));
+	return uniqueEventIds.size;
+};
