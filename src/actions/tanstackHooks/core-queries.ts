@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { addToCore } from "../core";
+import { addToCore, deleteBulkCore } from "../core";
 import { queryClient } from "~/lib/reactQueryClient";
 import { getCoreMembers } from "../core";
 import { toast } from "sonner";
@@ -59,6 +59,29 @@ export const useAddToCoreMutation = ({
 				}`,
 			);
 			console.error("Error adding to core:", error);
+		},
+	});
+};
+
+export const useDeleteBulkCoreMutation = ({
+	onSuccessCallback,
+}: {
+	onSuccessCallback?: () => void;
+}) => {
+	return useMutation({
+		mutationFn: deleteBulkCore,
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["coreMembers"] });
+			toast.success("Deleted Core Successfully");
+			onSuccessCallback?.();
+		},
+		onError: (error) => {
+			toast.error(
+				`Failed to delete core: ${
+					error instanceof Error ? error.message : "Unknown error"
+				}`,
+			);
+			console.error("Error deleting core:", error);
 		},
 	});
 };
