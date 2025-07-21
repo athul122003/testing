@@ -1,5 +1,6 @@
-import { login } from "~/lib/auth/auth.service";
 import { getUserByEmail } from "~/lib/auth/auth-util";
+import { login } from "~/lib/auth/auth.service";
+import { getRegisteredEventCount } from "~/actions/teams";
 import { loginZ } from "~/zod/authZ";
 
 export async function POST(req: Request) {
@@ -43,9 +44,13 @@ export async function POST(req: Request) {
 		}
 
 		const attended = user.Attendance.length;
-		const eventsDone = 0;
+		const registeredCount = await getRegisteredEventCount(user.id);
 		const attendance =
-			eventsDone > 0 ? Math.floor((attended / eventsDone) * 100) : 0;
+			attended === 0
+				? 0
+				: registeredCount > 0
+					? Math.floor((attended / registeredCount) * 100)
+					: 0;
 
 		return new Response(
 			JSON.stringify({

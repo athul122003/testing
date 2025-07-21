@@ -1,3 +1,4 @@
+import type { Team } from "@prisma/client";
 import { getUserById } from "~/lib/auth/auth-util";
 import { refreshToken as refreshTokens } from "~/lib/auth/jwt";
 
@@ -24,9 +25,14 @@ export async function POST(req: Request) {
 		}
 
 		const attended = user.Attendance.length;
-		const eventsDone = 0;
+		const registeredCount =
+			user?.TeamLeader.filter((team: Team) => team.isConfirmed).length ?? 0;
 		const attendance =
-			eventsDone > 0 ? Math.floor((attended / eventsDone) * 100) : 0;
+			attended === 0
+				? 0
+				: registeredCount > 0
+					? Math.floor((attended / registeredCount) * 100)
+					: 0;
 
 		return new Response(
 			JSON.stringify({
