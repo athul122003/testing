@@ -86,3 +86,20 @@ export async function getCoreMembers({
 		throw new Error("Failed to fetch core members", { cause: error });
 	}
 }
+
+export async function deleteBulkCore(coreIds: string[]) {
+	try {
+		if (coreIds.length === 0) {
+			throw new Error("No core IDs provided for deletion");
+		}
+		const deletedResult = await prisma.core.deleteMany({
+			where: {
+				id: { in: coreIds },
+			},
+		});
+		return { status: "success", deletedCount: deletedResult.count };
+	} catch (error) {
+		console.error("Error in deleteBulkCore:", error);
+		throw new Error("Failed to delete core", { cause: error });
+	}
+}

@@ -58,8 +58,10 @@ import {
 	CoreMemberType,
 	useAddToCoreMutation,
 	useCoreMembersQuery,
+	useDeleteBulkCoreMutation,
 } from "~/actions/tanstackHooks/core-queries";
 import { Label } from "~/components/ui/label";
+import { deleteBulkCore } from "~/actions/core";
 
 type CoreSortByType = "position" | "name" | "id" | "priority" | "year";
 type CoreType = "FACULTY_COORDINATOR" | "OFFICE_BEARER";
@@ -82,9 +84,7 @@ export default function CoreManagement() {
 	const [coreSortBy, setCoreSortBy] = useState<CoreSortByType>("position");
 	const [coreSortOrder, setCoreSortOrder] = useState<"asc" | "desc">("asc");
 	const [corePage, setCorePage] = useState(1);
-	const [selectedCoreUsers, setSelectedCoreUsers] = useState<CoreMemberType[]>(
-		[],
-	);
+	const [selectedCore, setSelectedCore] = useState<CoreMemberType[]>([]);
 	const [editCoreMember, setEditCoreMember] = useState<CoreMemberType | null>(
 		null,
 	);
@@ -184,7 +184,7 @@ export default function CoreManagement() {
 		return filtered;
 	}, [coreMembers, coreSearchTerm, coreSortBy, coreSortOrder]);
 
-	const { mutate: updateCoreMutation, isPending: isUpdatingCore } =
+	const { mutate: updateCoreMutation, isPending: isSaving } =
 		useAddToCoreMutation({
 			onSuccessCallback: () => {
 				setShowActionModal(false);
@@ -198,6 +198,18 @@ export default function CoreManagement() {
 		formData.set("userIds", JSON.stringify([editCoreMember.userId]));
 		formData.set("coreId", editCoreMember.id || "");
 		updateCoreMutation(formData);
+	};
+
+	const { mutate: deleteBulkCoreMutation, isPending: isDeletingCore } =
+		useDeleteBulkCoreMutation({
+			onSuccessCallback: () => {
+				setShowDeleteConfirm(false);
+			},
+		});
+
+	const handleDeleteSelected = async () => {
+		deleteBulkCoreMutation(selectedCore.map((member) => member.id));
+		setSelectedCore([]);
 	};
 
 	return (
@@ -277,7 +289,7 @@ export default function CoreManagement() {
 											</SelectContent>
 										</Select>
 
-										{/* ↕️ Sort Direction */}
+										{/* Sort Direction */}
 										<Button
 											variant="outline"
 											onClick={() =>
@@ -293,6 +305,18 @@ export default function CoreManagement() {
 												<ArrowUpAZ className="h-4 w-4" />
 											)}
 										</Button>
+										{selectedCore.length > 0 && (
+											<div className="flex justify-end">
+												<Button
+													variant="destructive"
+													onClick={() => setShowDeleteConfirm(true)}
+													className="mb-2"
+												>
+													<Trash2 className="w-4 h-4 mr-2" />
+													Delete({selectedCore.length})
+												</Button>
+											</div>
+										)}
 									</div>
 								</div>
 							</div>
@@ -315,7 +339,18 @@ export default function CoreManagement() {
 										<TableBody>
 											{filteredMembers.map((member) => (
 												<TableRow
-													onClick={() => {
+													onClick={(e) => {
+														const target = e.target as HTMLElement;
+
+														//prevent opening dialog when checkbox or its label is clicked
+														if (
+															target.closest("button") || //for action buttons if we want to add in future
+															target.closest("input[type='checkbox']") ||
+															target.closest("label")
+														) {
+															return;
+														}
+
 														setEditCoreMember(member);
 														setShowActionModal(true);
 													}}
@@ -324,11 +359,11 @@ export default function CoreManagement() {
 												>
 													<TableCell>
 														<Checkbox
-															checked={selectedCoreUsers.some(
+															checked={selectedCore.some(
 																(u) => u.userId === member.userId,
 															)}
 															onCheckedChange={(checked) =>
-																setSelectedCoreUsers((prev) =>
+																setSelectedCore((prev) =>
 																	checked
 																		? [...prev, member]
 																		: prev.filter(
@@ -467,7 +502,6 @@ export default function CoreManagement() {
 						</CardContent>
 					</>
 				)}
-
 				<Dialog open={showActionModal} onOpenChange={setShowActionModal}>
 					<DialogContent>
 						<DialogHeader>
@@ -566,10 +600,41 @@ export default function CoreManagement() {
 									>
 										Cancel
 									</Button>
-									<Button type="submit">Save</Button>
+									<Button disabled={isSaving} type="submit">
+										Save
+									</Button>
 								</DialogFooter>
 							</form>
 						)}
+					</DialogContent>
+				</Dialog>
+
+				{/* delete dialog */}
+				<Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+					<DialogContent>
+						<DialogHeader>
+							<DialogTitle>Confirm Deletion</DialogTitle>
+						</DialogHeader>
+						<p className="text-sm text-gray-600 dark:text-slate-400">
+							Are you sure you want to delete {selectedCore.length} selected
+							{selectedCore.length === 1 ? " core" : " cores"}?
+						</p>
+
+						<DialogFooter className="pt-4">
+							<Button
+								variant="outline"
+								onClick={() => setShowDeleteConfirm(false)}
+							>
+								Cancel
+							</Button>
+							<Button
+								variant="destructive"
+								onClick={handleDeleteSelected}
+								disabled={isDeletingCore}
+							>
+								Delete
+							</Button>
+						</DialogFooter>
 					</DialogContent>
 				</Dialog>
 			</Card>
