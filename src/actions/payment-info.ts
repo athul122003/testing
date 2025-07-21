@@ -55,6 +55,7 @@ const getPaymentInfo = async ({
 								select: {
 									name: true,
 									id: true,
+									email: true,
 								},
 							},
 						},
