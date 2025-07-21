@@ -1,7 +1,7 @@
 "use client";
 
 import type { Blog } from "@prisma/client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BlogForm } from "~/components/blog/blog-form";
 import { BlogsPage } from "~/components/blog/blogs-page";
 import { DashboardContent } from "~/components/dashboard/dashboard-content";
@@ -23,10 +23,30 @@ import { useIsMobile } from "~/hooks/use-mobile";
 
 export function Dashboard() {
 	const { hasPerm } = useDashboardData();
-	const [activePage, setActivePage] = useState("dashboard");
+	const [activePage, setActivePage] = useState(() => {
+		const storedPage = sessionStorage.getItem("activePage");
+		const validPages = [
+			"dashboard",
+			"events",
+			"payments",
+			"blogs",
+			"gallery",
+			"users",
+			"settings",
+		];
+		if (storedPage && validPages.includes(storedPage)) {
+			return storedPage;
+		} else {
+			return "dashboard";
+		}
+	});
 	const [editingEvent, setEditingEvent] = useState(null);
 	const [editingBlog, setEditingBlog] = useState<Blog | null>(null);
 	const isMobile = useIsMobile();
+
+	useEffect(() => {
+		sessionStorage.setItem("activePage", activePage);
+	}, [activePage]);
 
 	const renderPage = () => {
 		switch (activePage) {

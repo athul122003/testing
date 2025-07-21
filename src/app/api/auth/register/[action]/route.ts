@@ -39,26 +39,124 @@ export async function POST(req: NextRequest) {
 					);
 				}
 
-				const { reasonToJoin, expectations, contribution } = input.data;
+				const { reasonToJoin, expectations, contribution, githubLink } =
+					input.data;
 				const userId = data.userId;
 
 				await db.user.update({
 					where: { id: userId },
 					data: {
-						memberSince: new Date(),
+						githubLink: githubLink || null,
 						reasonToJoin,
 						expectations,
 						contribution,
-						role: {
-							connect: { name: "MEMBER" },
-						},
 					},
 				});
 
 				return NextResponse.json(
-					{ message: "User details registered successfully" },
+					{ message: "User details saved successfully" },
 					{ status: 200 },
 				);
+			}
+
+			case "join-status": {
+				const customHeader = req.headers.get("authorization");
+				const data = parseJwtFromAuthHeader(customHeader || "");
+				if (!data || !data.userId) {
+					return NextResponse.json(
+						{ success: false, error: "Invalid or missing authentication data" },
+						{ status: 401 },
+					);
+				}
+				const userId = data.userId;
+				const user = await db.user.findUnique({
+					where: { id: userId },
+					select: {
+						id: true,
+						githubLink: true,
+						reasonToJoin: true,
+						expectations: true,
+						paymentId: true,
+						contribution: true,
+					},
+				});
+				if (!user) {
+					return NextResponse.json(
+						{ success: false, error: "User not found" },
+						{ status: 404 },
+					);
+				}
+				console.log(
+					user.contribution,
+					user.githubLink,
+					user.reasonToJoin,
+					user.expectations,
+					user.paymentId,
+				);
+				if (
+					(!user.githubLink ||
+						!user.reasonToJoin ||
+						!user.expectations ||
+						!user.contribution) &&
+					!user.paymentId
+				) {
+					return NextResponse.json(
+						{
+							success: false,
+							joinStatus: {
+								paymentStatus: false,
+								registered: false,
+							},
+							error: "User has not completed the registration form",
+						},
+						{ status: 400 },
+					);
+				} else if (
+					(!user.githubLink ||
+						!user.reasonToJoin ||
+						!user.expectations ||
+						!user.contribution) &&
+					user.paymentId
+				) {
+					return NextResponse.json(
+						{
+							success: true,
+							joinStatus: {
+								paymentStatus: true,
+								registered: false,
+							},
+						},
+						{ status: 200 },
+					);
+				} else if (
+					user.githubLink &&
+					user.reasonToJoin &&
+					user.expectations &&
+					user.contribution &&
+					!user.paymentId
+				) {
+					return NextResponse.json(
+						{
+							success: true,
+							joinStatus: {
+								paymentStatus: false,
+								registered: true,
+							},
+						},
+						{ status: 200 },
+					);
+				} else {
+					return NextResponse.json(
+						{
+							success: true,
+							joinStatus: {
+								paymentStatus: true,
+								registered: true,
+							},
+						},
+						{ status: 200 },
+					);
+				}
 			}
 
 			case "update-status": {

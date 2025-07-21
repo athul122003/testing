@@ -176,11 +176,6 @@ export async function savePayment(input: VerifyAndSavePaymentInput) {
 			razorpayPaymentId: input.razorpayPaymentId,
 			razorpaySignature: input.razorpaySignature,
 			...typeOfPayment,
-			User: {
-				connect: {
-					id: input.sessionUserId,
-				},
-			},
 		},
 	});
 

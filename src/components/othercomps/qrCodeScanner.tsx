@@ -3,12 +3,18 @@ import { useZxing } from "react-zxing";
 import { Loader2 } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+import { markAttendanceByScan } from "~/actions/teams";
+import { toast } from "sonner";
 
 type QRCodeScannerProps = {
 	eventId: number;
+	refreshTeams: () => void;
 };
 
-export const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ eventId }) => {
+export const QRCodeScanner: React.FC<QRCodeScannerProps> = ({
+	eventId,
+	refreshTeams,
+}) => {
 	const [result, setResult] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const { ref } = useZxing({
@@ -22,8 +28,17 @@ export const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ eventId }) => {
 		},
 	});
 
-	const handleMarkAttendance = () => {
+	const handleMarkAttendance = async () => {
 		if (result) {
+			try {
+				await markAttendanceByScan(eventId, result);
+				refreshTeams();
+				toast.success("Attendance marked successfully");
+			} catch (error) {
+				console.error("Error marking attendance:", error);
+				toast.error(`Failed to mark attendance: ${(error as Error).message}`);
+				return;
+			}
 			setResult(null);
 		} else {
 			alert("No QR Code scanned");
@@ -85,7 +100,7 @@ export const QRCodeScanner: React.FC<QRCodeScannerProps> = ({ eventId }) => {
 			</div>
 			<div className="flex flex-col items-center mt-4">
 				<Button
-					className="px-4 py-2 rounded-md bg-emerald-700 text-white font-semibold shadow hover:bg-emerald-800 transition-colors"
+					className="px-4 py-2 rounded-md bg-purple-700 text-white font-semibold shadow hover:bg-emerald-800 transition-colors"
 					disabled={!result}
 					onClick={() => {
 						if (result) {

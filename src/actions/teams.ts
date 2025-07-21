@@ -158,7 +158,7 @@ export async function markAttendance(eventId: number, userId: number) {
 
 export async function markAttendanceByScan(eventId: number, teamId: string) {
 	const team = await db.team.findUnique({
-		where: { id: teamId },
+		where: { id: teamId, eventId: eventId },
 		include: {
 			Members: {
 				select: {
@@ -181,6 +181,13 @@ export async function markAttendanceByScan(eventId: number, teamId: string) {
 	const uniqueUserIds = Array.from(new Set([...memberIds, leaderId]));
 
 	const errors: { userId: number; error: string }[] = [];
+
+	await db.team.update({
+		where: { id: teamId, eventId: eventId },
+		data: {
+			hasAttended: true,
+		},
+	});
 
 	await Promise.all(
 		uniqueUserIds.map(async (userId) => {

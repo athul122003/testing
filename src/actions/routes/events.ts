@@ -5,7 +5,7 @@ export async function getPublishedEvents() {
 	try {
 		const events = await db.event.findMany({
 			where: {
-				OR: [{ state: "PUBLISHED" }, { state: "LIVE" }, { state: "LIVE" }],
+				OR: [{ state: "PUBLISHED" }, { state: "LIVE" }, { state: "COMPLETED" }],
 			},
 			orderBy: { fromDate: "desc" },
 		});
@@ -595,7 +595,6 @@ export async function confirmTeam(userId: number, teamId: string) {
 			const hasPaid = await db.payment.findFirst({
 				where: {
 					Team: { id: teamId },
-					User: { id: userId },
 					paymentType: "EVENT",
 				},
 			});
@@ -677,6 +676,54 @@ export async function checkMaxTeamsReached(eventId: number) {
 		return {
 			success: false,
 			error: "Failed to check max teams",
+		};
+	}
+}
+
+export async function leaveTeam(userId: number, teamId: string) {
+	try {
+		const team = await db.team.findUnique({
+			where: { id: teamId },
+			include: {
+				Members: true,
+				Leader: true,
+			},
+		});
+		if (!team) {
+			return {
+				success: false,
+				error: "Team not found",
+			};
+		}
+		if (team.leaderId === userId) {
+			return {
+				success: false,
+				error: "Team leader cannot leave the team",
+			};
+		}
+		if (!team.Members.some((member) => member.id === userId)) {
+			return {
+				success: false,
+				error: "User is not a member of this team",
+			};
+		}
+		await db.team.update({
+			where: { id: teamId },
+			data: {
+				Members: {
+					disconnect: { id: userId },
+				},
+			},
+		});
+		return {
+			success: true,
+			message: "User successfully left the team",
+		};
+	} catch (error) {
+		console.error("leaveTeam Error:", error);
+		return {
+			success: false,
+			error: "Failed to leave team",
 		};
 	}
 }

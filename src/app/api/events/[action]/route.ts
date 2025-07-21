@@ -171,6 +171,29 @@ export async function POST(req: NextRequest) {
 				});
 			}
 
+			case "leaveTeam": {
+				const { teamId } = body as { teamId: string };
+				const customHeader = req.headers.get("authorization");
+				const data = parseJwtFromAuthHeader(customHeader || "");
+				if (!data || !data.userId) {
+					return NextResponse.json(
+						{ success: false, error: "Invalid or missing authentication data" },
+						{ status: 401 },
+					);
+				}
+				const userId = data.userId;
+				if (!userId || !teamId) {
+					return NextResponse.json(
+						{ success: false, error: "Missing userId or teamId" },
+						{ status: 400 },
+					);
+				}
+				const result = await server.event.leaveTeam(userId, teamId);
+				return NextResponse.json(result, {
+					status: result.success ? 200 : 400,
+				});
+			}
+
 			case "deleteTeam": {
 				const { teamId } = body as { teamId: string };
 				const customHeader = req.headers.get("authorization");

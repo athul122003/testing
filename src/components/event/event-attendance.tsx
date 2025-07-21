@@ -47,6 +47,7 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 	const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
 	const [memberAttendance, setMemberAttendance] = useState<number[]>([]);
 	const [search, setSearch] = useState("");
+	const [refreshing, setRefreshing] = useState(false);
 	const [loading, setLoading] = useState(false);
 
 	useEffect(() => {
@@ -127,18 +128,8 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 		}
 	}
 
-	function handleScan(teamId: string) {
-		const team = teams.find((t) => t.id === teamId);
-		if (!team) return toast.error("Team not found");
-		if (event.eventType === "SOLO") {
-			handleConfirmSolo(teamId);
-		} else {
-			setSelectedTeam(team);
-			setMemberAttendance([]);
-		}
-	}
-
 	async function refreshTeams() {
+		setRefreshing(true);
 		if (!event?.id) return;
 		const rawTeams = await getTeamsForEvent(event.id);
 		const teamsWithAttendance = await Promise.all(
@@ -162,6 +153,7 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 			}),
 		);
 		setTeams(teamsWithAttendance);
+		setRefreshing(false);
 	}
 
 	useEffect(() => {
@@ -171,20 +163,32 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 	return (
 		<div className="space-y-8 p-6 max-w-screen-xl mx-auto bg-white dark:bg-slate-900 rounded-lg shadow-lg">
 			<div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-				<h1 className="text-3xl font-bold text-slate-800 dark:text-white">
-					Event Attendance
-				</h1>
-				<Dialog>
-					<DialogTrigger asChild>
-						<Button variant="outline">Scan QR Code</Button>
-					</DialogTrigger>
-					<DialogContent>
-						<DialogHeader>
-							<DialogTitle>Scan Team QR Code</DialogTitle>
-						</DialogHeader>
-						<QRCodeScanner eventId={event?.id} />
-					</DialogContent>
-				</Dialog>
+				<div>
+					<h1 className="text-3xl font-bold text-slate-800 dark:text-white">
+						Event Attendance
+					</h1>
+				</div>
+				<div className="flex items-center gap-2">
+					<Button
+						variant="outline"
+						onClick={refreshTeams}
+						disabled={refreshing}
+					>
+						Refresh
+					</Button>
+
+					<Dialog>
+						<DialogTrigger asChild>
+							<Button variant="default">Scan QR Code</Button>
+						</DialogTrigger>
+						<DialogContent>
+							<DialogHeader>
+								<DialogTitle>Scan Team QR Code</DialogTitle>
+							</DialogHeader>
+							<QRCodeScanner eventId={event?.id} refreshTeams={refreshTeams} />
+						</DialogContent>
+					</Dialog>
+				</div>
 			</div>
 
 			<div className="flex flex-col md:flex-row gap-4 items-center">

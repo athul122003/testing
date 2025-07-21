@@ -49,14 +49,33 @@ const getPaymentInfo = async ({
 							email: true,
 						},
 					},
+					Team: {
+						select: {
+							Leader: {
+								select: {
+									name: true,
+									id: true,
+								},
+							},
+						},
+					},
 				},
 			}),
 			prisma.payment.count({
 				where: whereCondition,
 			}),
 		]);
+
+		// If User is empty, use Leader instead
+		const paymentsWithUserOrLeader = payments.map((payment) => {
+			if (!payment.User && payment.Team?.Leader) {
+				return { ...payment, User: payment.Team.Leader };
+			} else {
+				return { ...payment, User: payment.User };
+			}
+		});
 		const totalPages = Math.ceil(totalPayments / pageSize);
-		return { page, pageSize, totalPages, payments };
+		return { page, pageSize, totalPages, payments: paymentsWithUserOrLeader };
 	} catch (error) {
 		console.error("Failed to fetch payment info:", error);
 		throw new Error("Unable to fetch payment information.");
