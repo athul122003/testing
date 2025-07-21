@@ -45,9 +45,6 @@ export async function POST(req: Request) {
 
 		const attended = user.Attendance.length;
 		const registeredCount = await getRegisteredEventCount(user.id);
-		console.log(
-			`User ${user.id} has attended ${attended} events and registered for ${registeredCount} events.`,
-		);
 		const attendance =
 			attended === 0
 				? 0
