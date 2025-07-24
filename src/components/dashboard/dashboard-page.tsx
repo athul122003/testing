@@ -23,23 +23,25 @@ import { useIsMobile } from "~/hooks/use-mobile";
 
 export function Dashboard() {
 	const { hasPerm } = useDashboardData();
-	const [activePage, setActivePage] = useState(() => {
-		const storedPage = sessionStorage.getItem("activePage");
-		const validPages = [
-			"dashboard",
-			"events",
-			"payments",
-			"blogs",
-			"gallery",
-			"users",
-			"settings",
-		];
-		if (storedPage && validPages.includes(storedPage)) {
-			return storedPage;
-		} else {
-			return "dashboard";
+	const [activePage, setActivePage] = useState("dashboard");
+
+	useEffect(() => {
+		if (typeof window !== "undefined") {
+			const storedPage = sessionStorage.getItem("activePage");
+			const validPages = [
+				"dashboard",
+				"events",
+				"payments",
+				"blogs",
+				"gallery",
+				"users",
+				"settings",
+			];
+			if (storedPage && validPages.includes(storedPage)) {
+				setActivePage(storedPage);
+			}
 		}
-	});
+	}, []);
 	const [editingEvent, setEditingEvent] = useState(null);
 	const [editingBlog, setEditingBlog] = useState<Blog | null>(null);
 	const isMobile = useIsMobile();
