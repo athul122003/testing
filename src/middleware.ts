@@ -9,7 +9,8 @@ export function middleware(request: NextRequest) {
 			"http://localhost:3000",
 			"https://flc-client-25.vercel.app",
 			"https://finiteloop.vercel.app",
-		]; // frontend
+			"https://finiteloop.club",
+		];
 		const origin = request.headers.get("origin");
 		if (origin && allowedOrigins.includes(origin)) {
 			response.headers.set("Access-Control-Allow-Origin", origin);

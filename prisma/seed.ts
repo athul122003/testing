@@ -119,7 +119,6 @@ const main = async () => {
 				const userNumber = i;
 				const email = `${roleSlug}${userNumber}@example.com`;
 				const name = `${role.name} ${userNumber}`;
-				const slug = `${roleSlug}-${userNumber}`;
 				const usn = `USN${1000 + userIndex}`;
 				const hashedPassword = await bcrypt.hash("789789", saltRounds);
 
@@ -128,7 +127,6 @@ const main = async () => {
 					update: {},
 					create: {
 						name,
-						slug,
 						email,
 						usn,
 						emailVerified: new Date(),

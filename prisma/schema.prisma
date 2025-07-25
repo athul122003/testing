@@ -11,7 +11,6 @@ datasource db {
 model User {
   id            Int       @id @default(autoincrement())
   name          String
-  slug          String?   @unique //new
   email         String    @unique
   emailVerified DateTime?
   usn           String    @unique
@@ -31,7 +30,6 @@ model User {
   contribution String?
   githubLink   String?
 
-  // Relations
   branchId  String?
   Branch    Branch?    @relation(fields: [branchId], references: [id], onDelete: SetNull) //modified
   UserLink  UserLink[]
