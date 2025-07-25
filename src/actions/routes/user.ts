@@ -185,6 +185,35 @@ export const updateMultipleUserRoles = protectedAction(
 	{ actionName: "user.updateMultipleRoles" },
 );
 
+export const updateProfilePicture = async (
+	userId: number,
+	imageUrl: string,
+) => {
+	try {
+		const user = await db.user.findUnique({ where: { id: userId } });
+		if (!user) throw new Error("User not found");
+		const updatedUser = await db.user.update({
+			where: { id: userId },
+			data: { image: imageUrl },
+			select: {
+				id: true,
+				name: true,
+				image: true,
+			},
+		});
+		return {
+			success: true,
+			data: updatedUser,
+		};
+	} catch (error) {
+		console.error("Error updating profile picture:", error);
+		return {
+			success: false,
+			error: "Failed to update profile picture.",
+		};
+	}
+};
+
 export const updateUser = async (input: {
 	userId: number;
 	name?: string;
@@ -278,6 +307,7 @@ export const searchUserById = async (input: { userId: number }) => {
 			id: true,
 			name: true,
 			usn: true,
+			image: true,
 			Branch: {
 				select: {
 					id: true,

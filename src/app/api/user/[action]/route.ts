@@ -90,6 +90,33 @@ export async function PATCH(req: NextRequest) {
 				console.log("Update user result:", result);
 				return NextResponse.json(result);
 			}
+			case "updatepfp": {
+				const customHeader = req.headers.get("authorization");
+				const data = parseJwtFromAuthHeader(customHeader || "");
+				if (!data || !data.userId) {
+					return NextResponse.json(
+						{ success: false, error: "Invalid or missing authentication data" },
+						{ status: 401 },
+					);
+				}
+				const userId = data.userId;
+				const { imageUrl } = body;
+				if (!imageUrl) {
+					return NextResponse.json(
+						{ success: false, error: "Image URL is required" },
+						{ status: 400 },
+					);
+				}
+				const result = await server.user.updateProfilePicture(userId, imageUrl);
+				if (!result.success) {
+					return NextResponse.json(
+						{ success: false, error: result.error },
+						{ status: 500 },
+					);
+				}
+				return NextResponse.json(result);
+			}
+
 			default:
 				return NextResponse.json(
 					{ success: false, error: "Unknown action" },
