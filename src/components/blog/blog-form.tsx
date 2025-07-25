@@ -72,7 +72,7 @@ export function BlogForm({
 				content: editingBlog.content || "",
 				excerpt: editingBlog.description || "",
 				// tags: editingBlog.tags?.join(", ") || "",
-				featuredImage: editingBlog.image || "",
+				featuredImage: editingBlog.coverImage || "",
 				status: editingBlog.blogState as StatusType,
 			});
 		}

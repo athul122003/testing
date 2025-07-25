@@ -44,7 +44,6 @@ model User {
   Core              Core[]
   ActivityPoint     ActivityPoint[]
   Certificate       Certificate[]
-  QuizResponse      QuizResponse[]
   FeedbackResponse  FeedbackResponse[]
   RefreshToken      RefreshToken[]
   VerificationToken VerificationToken[]
@@ -145,7 +144,7 @@ model Event {
   id          Int     @id @default(autoincrement())
   name        String
   imgSrc      String?
-  description String?
+  description String? @db.Text
   venue       String?
 
   eventType EventType
@@ -317,15 +316,16 @@ model Certificate {
 
 // Blog
 model Blog {
-  id          String    @id @unique @default(cuid())
+  id          String      @id @unique @default(cuid())
   title       String
-  slug        String?   @unique //new
-  description String //corrected spelling
-  content     String
+  slug        String?     @unique //new
+  description String      @db.Text //corrected spelling 
+  content     String      @db.Text
   readTime    Int
   words       Int
-  image       String? //new: image url for the blog
-  blogState   BlogState @default(DRAFT)
+  coverImage  String? //new: cover image url for the blog
+  images      BlogImage[] //new: image url for the blog
+  blogState   BlogState   @default(DRAFT)
 
   userId Int
   User   User @relation(fields: [userId], references: [id])
@@ -337,38 +337,49 @@ model Blog {
   updatedAt DateTime @updatedAt
 }
 
-//Quiz
-model Quiz {
-  id        String    @id @default(cuid())
-  title     String
-  quizState QuizState @default(DRAFT)
-  timeLimit Int
-  maxPoints Int
-  questions Json[] // quizQuestionZ
-
-  QuizResponse QuizResponse[]
-
+model BlogImage {
+  id        String   @id
+  imageUrl  String
+  blogId    String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime
+  Blog      Blog     @relation(fields: [blogId], references: [id])
+
+  @@index([blogId])
 }
 
-model QuizResponse {
-  id      String @id @default(cuid())
-  score   Int    @default(0)
-  answers Json[] // quizAnswerZ
+// //Quiz
+// model Quiz {
+//   id        String    @id @default(cuid())
+//   title     String
+//   quizState QuizState @default(DRAFT)
+//   timeLimit Int
+//   maxPoints Int
+//   questions Json[] // quizQuestionZ
 
-  userId Int
-  User   User @relation(fields: [userId], references: [id])
+//   QuizResponse QuizResponse[]
 
-  quizId String
-  Quiz   Quiz   @relation(fields: [quizId], references: [id])
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+// }
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now())
+// model QuizResponse {
+//   id      String @id @default(cuid())
+//   score   Int    @default(0)
+//   answers Json[] // quizAnswerZ
 
-  @@unique([userId, quizId])
-  @@index([userId, quizId])
-}
+//   userId Int
+//   User   User @relation(fields: [userId], references: [id])
+
+//   quizId String
+//   Quiz   Quiz   @relation(fields: [quizId], references: [id])
+
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @default(now())
+
+//   @@unique([userId, quizId])
+//   @@index([userId, quizId])
+// }
 
 //Payment
 model Payment {
@@ -389,9 +400,9 @@ model Payment {
 }
 
 model Settings {
-  id          String @id @default(cuid())
+  id          String  @id @default(cuid())
   name        String
-  status       Boolean
+  status      Boolean
   description String?
 
   createdAt DateTime @default(now())
@@ -444,12 +455,12 @@ enum FeedbackState {
   COMPLETED
 }
 
-enum QuizState {
-  DRAFT
-  PUBLISHED
-  LIVE
-  COMPLETED
-}
+// enum QuizState {
+//   DRAFT
+//   PUBLISHED
+//   LIVE
+//   COMPLETED
+// }
 
 enum BlogState {
   DRAFT

@@ -129,7 +129,7 @@ export function BlogsPage({ setActivePage, setEditingBlog }: BlogsPageProps) {
 							<Image
 								width={400}
 								height={300}
-								src={blog.image || "/placeholder.svg"}
+								src={blog.coverImage || "/placeholder.svg"}
 								alt={blog.title}
 								className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
 							/>
@@ -204,7 +204,7 @@ export function BlogsPage({ setActivePage, setEditingBlog }: BlogsPageProps) {
 									<Image
 										width={400}
 										height={300}
-										src={selectedBlog.image || "/placeholder.svg"}
+										src={selectedBlog.coverImage || "/placeholder.svg"}
 										alt={selectedBlog.title}
 										className="w-full h-64 object-cover rounded-lg"
 									/>
