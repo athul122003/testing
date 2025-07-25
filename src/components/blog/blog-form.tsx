@@ -49,7 +49,8 @@ export function BlogForm({
 		status: "DRAFT",
 	});
 
-	const { mutate, isPending } = useBlogMutation({
+	const [isPending, setIsPending] = useState(false);
+	const { mutate } = useBlogMutation({
 		onSuccessCallback: () => {
 			setActivePage("blogs");
 			setEditingBlog(null);
@@ -82,7 +83,7 @@ export function BlogForm({
 			alert("You must be logged in to submit a blog.");
 			return;
 		}
-
+		setIsPending(true);
 		const userId = session.user.id as number;
 		let imageUrl = formData.featuredImage;
 
@@ -128,6 +129,7 @@ export function BlogForm({
 			blogData,
 			userId,
 		});
+		setIsPending(false);
 	};
 
 	const handleCancel = () => {
