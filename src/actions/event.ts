@@ -57,7 +57,6 @@ export async function createEventAction(values: CreateEventInput) {
 		const event = await db.event.create({
 			data: {
 				name: validated.name,
-				slug: validated.slug ?? undefined,
 				imgSrc: validated.imgSrc,
 				description: validated.description,
 				venue: validated.venue,
@@ -148,7 +147,6 @@ export async function editEventAction(
 			where: { id: eventId },
 			data: {
 				name: validated.name,
-				slug: validated.slug ?? undefined,
 				imgSrc: validated.imgSrc,
 				description: validated.description,
 				venue: validated.venue,

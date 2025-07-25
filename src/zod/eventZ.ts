@@ -3,7 +3,6 @@ import { z } from "zod";
 
 const createEventZ = z.object({
 	name: z.string().min(1, "Event name is required"),
-	slug: z.string().optional(), // Optional slug
 	imgSrc: z.string().optional(), // Optional image
 
 	description: z.string().optional(),
