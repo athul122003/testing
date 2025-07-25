@@ -1,14 +1,29 @@
 "use server";
-
 import { db } from "~/server/db";
 
 export async function getLeaderboardData() {
 	try {
-		const leaderboard = await db.user.findMany({
-			orderBy: {
-				totalActivityPoints: "desc",
+		const leaderboardRaw = await db.user.findMany({
+			orderBy: [{ totalActivityPoints: "desc" }, { id: "asc" }],
+			select: {
+				id: true,
+				name: true,
+				totalActivityPoints: true,
+				image: true,
 			},
 			take: 25,
+		});
+
+		let currentRank = 1;
+		let lastPoints: number | null = null;
+
+		const leaderboard = leaderboardRaw.map((user, index) => {
+			if (lastPoints !== null && user.totalActivityPoints !== lastPoints) {
+				currentRank = index + 1;
+			}
+			const userWithRank = { ...user, rank: currentRank };
+			lastPoints = user.totalActivityPoints;
+			return userWithRank;
 		});
 		return {
 			success: true,
@@ -26,7 +41,7 @@ export async function getRankOfUser(userId: number) {
 	try {
 		const user = await db.user.findUnique({
 			where: { id: userId },
-			select: { totalActivityPoints: true },
+			select: { totalActivityPoints: true, name: true, image: true },
 		});
 		if (!user) {
 			return { success: false, error: "User not found." };
@@ -40,8 +55,11 @@ export async function getRankOfUser(userId: number) {
 		});
 		return {
 			success: true,
+			id: userId,
+			name: user.name,
 			activityPoints: user.totalActivityPoints,
 			rank: rank + 1,
+			image: user.image || null,
 		};
 	} catch (error) {
 		console.error("getRankOfUser Error:", error);

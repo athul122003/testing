@@ -7,7 +7,6 @@ import {
 	publishBlog,
 	draftBlog,
 } from "~/actions/blog";
-import type { BlogForm } from "~/components/blog/blog-form";
 import { toast } from "sonner";
 
 export type BlogWithUser = Awaited<ReturnType<typeof getBlogs>>;
@@ -25,11 +24,11 @@ type BlogType = {
 };
 
 //fetch blogs query
-export function useBlogs() {
+export function useBlogs(userId?: string) {
 	return useQuery({
 		queryKey: ["blogs"],
-		queryFn: getBlogs,
-		staleTime: 30_000,
+		queryFn: () => getBlogs(userId),
+		staleTime: 1000 * 60 * 5,
 		placeholderData: (prev) => prev,
 	});
 }

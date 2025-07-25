@@ -1,5 +1,6 @@
 "use server";
 
+import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { hashPassword } from "~/lib/auth/auth-util";
 import { db } from "~/server/db";
@@ -77,4 +78,43 @@ export async function signUpAction(values: SignUpFormInput) {
 			error: "An unexpected error occurred during sign-up.",
 		};
 	}
+}
+
+export async function changePasswordAction(
+	currentPassword: string,
+	newPassword: string,
+	confirmPassword: string,
+	userId: number,
+) {
+	if (newPassword !== confirmPassword) {
+		return { success: false, error: "New passwords do not match." };
+	}
+
+	const user = await db.user.findUnique({
+		where: { id: userId },
+	});
+
+	if (!user) {
+		return { success: false, error: "User not found." };
+	}
+
+	const isCurrentPasswordValid = await bcrypt.compare(
+		currentPassword,
+		user.password,
+	);
+	if (!isCurrentPasswordValid) {
+		return { success: false, error: "Current password is incorrect." };
+	}
+
+	const hashedNewPassword = await hashPassword(newPassword);
+	if (!hashedNewPassword) {
+		return { success: false, error: "Failed to hash new password." };
+	}
+
+	await db.user.update({
+		where: { id: userId },
+		data: { password: hashedNewPassword },
+	});
+
+	return { success: true, message: "Password changed successfully." };
 }

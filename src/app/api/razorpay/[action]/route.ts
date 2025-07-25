@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { server } from "~/actions/serverAction";
+import { parseJwtFromAuthHeader } from "~/lib/utils";
 
 export async function POST(req: NextRequest) {
 	let body = null;
@@ -13,10 +14,34 @@ export async function POST(req: NextRequest) {
 
 	try {
 		switch (action) {
-			case "create-order":
-				return NextResponse.json(await server.payment.createOrder(body));
-			case "save-payment":
-				return NextResponse.json(await server.payment.savePayment(body));
+			case "create-order": {
+				const customHeader = req.headers.get("authorization");
+				const data = parseJwtFromAuthHeader(customHeader || "");
+				if (!data || !data.userId) {
+					return NextResponse.json(
+						{ success: false, error: "Invalid or missing authentication data" },
+						{ status: 401 },
+					);
+				}
+				const userId = data.userId;
+				return NextResponse.json(
+					await server.payment.createOrder({ ...body, sessionUserId: userId }),
+				);
+			}
+			case "save-payment": {
+				const customHeader = req.headers.get("authorization");
+				const data = parseJwtFromAuthHeader(customHeader || "");
+				if (!data || !data.userId) {
+					return NextResponse.json(
+						{ success: false, error: "Invalid or missing authentication data" },
+						{ status: 401 },
+					);
+				}
+				const userId = data.userId;
+				return NextResponse.json(
+					await server.payment.savePayment({ ...body, sessionUserId: userId }),
+				);
+			}
 			default:
 				return NextResponse.json(
 					{ success: false, error: "Unknown action" },

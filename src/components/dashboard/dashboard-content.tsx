@@ -10,6 +10,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { useDashboardData } from "~/providers/dashboardDataContext";
 import { ComponentLoading } from "../ui/loader";
+import { useEffect, useState } from "react";
 
 const stats = [
 	{
@@ -47,11 +48,21 @@ const recentEvents: any[] = [];
 const recentActivity: any[] = [];
 
 export function DashboardContent() {
-	const { summaryStatsQuery } = useDashboardData();
-	const { data: summaryStatsData, isLoading } = summaryStatsQuery;
+	const [isLoading, setIsLoading] = useState(true);
+	const { summaryStatsQuery, eventsQuery } = useDashboardData();
+	const { data: summaryStatsData, isLoading: summaryLoading } =
+		summaryStatsQuery;
 	const summaryStats = summaryStatsData ?? {
 		totalRevenue: 0,
 	};
+	const { data: eventsData, isLoading: eventsLoading } = eventsQuery;
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <no need of exhaustive dependencies>
+	useEffect(() => {
+		if (!summaryLoading && !eventsLoading) {
+			setIsLoading(false);
+		}
+	}, [summaryLoading, eventsLoading]);
 
 	stats.find((stat) => stat.id === "payments")!.value =
 		summaryStats.totalRevenue.toLocaleString("en-IN", {
@@ -59,6 +70,10 @@ export function DashboardContent() {
 			currency: "INR",
 			minimumFractionDigits: 0,
 		});
+
+	stats.find((stat) => stat.id === "events")!.value =
+		eventsData?.data.length.toString() || "0";
+
 	return (
 		<div className="space-y-8">
 			<div>
@@ -96,7 +111,7 @@ export function DashboardContent() {
 				))}
 			</div>
 
-			<div className="grid gap-6 lg:grid-cols-2">
+			{/* <div className="grid gap-6 lg:grid-cols-2">
 				<Card className="border-0 shadow-lg bg-white dark:bg-gray-900">
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
@@ -172,7 +187,7 @@ export function DashboardContent() {
 						</div>
 					</CardContent>
 				</Card>
-			</div>
+			</div> */}
 		</div>
 	);
 }

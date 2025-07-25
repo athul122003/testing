@@ -15,7 +15,6 @@ import Image from "next/image";
 import { useState } from "react";
 import { toast } from "sonner";
 import { deleteEventAction, publishEventAction } from "~/actions/event";
-import { useEvents } from "~/actions/tanstackHooks/events-queries";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
@@ -25,6 +24,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "~/components/ui/dialog";
+import { useDashboardData } from "~/providers/dashboardDataContext";
 import { ComponentLoading } from "../ui/component-loading";
 
 interface EventsPageProps {
@@ -40,7 +40,9 @@ export function EventsPage({
 	const [selectedEvent, setSelectedEvent] = useState(null);
 	const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-	const { data: eventsData, isLoading } = useEvents();
+	const { eventsQuery, refetchEvents } = useDashboardData();
+
+	const { data: eventsData, isLoading } = eventsQuery;
 
 	const events = eventsData?.data || [];
 
@@ -66,12 +68,11 @@ export function EventsPage({
 		const res = await deleteEventAction(eventId);
 		if (res.success) {
 			toast.success("Event deleted successfully.");
-			setEvents((prev) => prev.filter((e) => e.id !== eventId));
 			setIsDetailOpen(false);
+			refetchEvents();
 		} else {
 			toast.error(res.error || "Failed to delete event");
 		}
-		setEvents(events.filter((event) => event.id !== eventId));
 		setIsDetailOpen(false);
 	};
 
@@ -79,9 +80,7 @@ export function EventsPage({
 		const res = await publishEventAction(eventId);
 		if (res.success) {
 			toast.success(`Event "${res.event.name}" published`);
-			setEvents((prev) =>
-				prev.map((e) => (e.id === eventId ? { ...e, state: "PUBLISHED" } : e)),
-			);
+			refetchEvents();
 			setIsDetailOpen(false);
 		} else {
 			toast.error(res.error || "Failed to publish event");
@@ -91,6 +90,18 @@ export function EventsPage({
 	const handleEventClick = (event) => {
 		setSelectedEvent(event);
 		setIsDetailOpen(true);
+	};
+
+	const handleViewParticipants = (event: Event) => {
+		setEditingEvent(event);
+		setActivePage("event-participants");
+		setIsDetailOpen(false);
+	};
+
+	const handleAttendance = (event: Event) => {
+		setEditingEvent(event);
+		setActivePage("event-attendance");
+		setIsDetailOpen(false);
 	};
 
 	const getStateColor = (state: string) => {
@@ -113,13 +124,13 @@ export function EventsPage({
 	}
 
 	return (
-		<div className="space-y-8">
-			<div className="flex justify-between items-center">
+		<div className="space-y-6">
+			<div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
 				<div>
-					<h1 className="text-4xl font-bold text-gray-900 dark:text-slate-200 mb-2">
+					<h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-slate-200">
 						Events
 					</h1>
-					<p className="text-gray-600 dark:text-slate-400">
+					<p className="text-sm md:text-base text-gray-600 dark:text-slate-400">
 						Manage and organize your events
 					</p>
 				</div>
@@ -132,7 +143,7 @@ export function EventsPage({
 				</Button>
 			</div>
 
-			<div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
 				{events.map((event) => (
 					<Card
 						key={event.id}
@@ -143,15 +154,17 @@ export function EventsPage({
 							<Image
 								objectFit="cover"
 								priority
-								width={400}
-								height={300}
+								width={530}
+								height={635}
 								src={event.imgSrc || "/placeholder.svg"}
 								alt={event.name}
-								className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+								className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-300"
 							/>
 							<div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
 							<div
-								className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-medium ${getStateColor(event.state)}`}
+								className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-medium ${getStateColor(
+									event.state,
+								)}`}
 							>
 								{event.state}
 							</div>
@@ -161,10 +174,10 @@ export function EventsPage({
 								</div>
 							</div>
 						</div>
-						<CardContent className="p-6">
+						<CardContent className="p-4 sm:p-6">
 							<div className="space-y-4">
 								<div>
-									<h3 className="text-xl font-bold text-gray-900 dark:text-slate-200 mb-2">
+									<h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-200 mb-2">
 										{event.name}
 									</h3>
 									<p className="text-sm text-gray-600 dark:text-slate-400 line-clamp-2">
@@ -199,7 +212,7 @@ export function EventsPage({
 									</div>
 								</div>
 
-								<div className="flex gap-2">
+								<div className="flex gap-2 flex-wrap">
 									<Badge className="bg-gray-100 dark:bg-slate-900 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-800">
 										{event.eventType}
 									</Badge>
@@ -218,32 +231,33 @@ export function EventsPage({
 				))}
 			</div>
 
-			{/* Event Detail Modal */}
 			<Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-				<DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-black border border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+				<DialogContent className="max-w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-black border border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
 					<DialogHeader>
-						<DialogTitle className="text-2xl text-gray-900 dark:text-slate-200">
+						<DialogTitle className="text-xl sm:text-2xl text-gray-900 dark:text-slate-200">
 							{selectedEvent?.name}
 						</DialogTitle>
 					</DialogHeader>
 					{selectedEvent && (
 						<div className="space-y-6">
-							<div className="relative">
-								<Image
-									width={400}
-									height={300}
-									src={selectedEvent.imgSrc || "/placeholder.svg"}
-									alt={selectedEvent.name}
-									className="w-full h-64 object-cover rounded-lg"
-								/>
-								<div
-									className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-medium ${getStateColor(selectedEvent.state)}`}
-								>
-									{selectedEvent.state}
+							<div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start">
+								<div className="relative">
+									<Image
+										width={530}
+										height={635}
+										src={selectedEvent.imgSrc || "/placeholder.svg"}
+										alt={selectedEvent.name}
+										className="w-full aspect-square object-cover rounded-lg"
+									/>
+									<div
+										className={`absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-medium ${getStateColor(
+											selectedEvent.state,
+										)}`}
+									>
+										{selectedEvent.state}
+									</div>
 								</div>
-							</div>
 
-							<div className="grid grid-cols-2 gap-6">
 								<div className="space-y-4">
 									<div>
 										<h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200 mb-2">
@@ -277,85 +291,84 @@ export function EventsPage({
 										</div>
 									</div>
 								</div>
+							</div>
 
-								<div className="space-y-4">
-									<div>
-										<h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200 mb-3">
-											Registration Info
-										</h3>
-										<div className="space-y-2">
-											<div className="flex justify-between">
+							<div className="space-y-4">
+								<div>
+									<h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200 mb-3">
+										Registration Info
+									</h3>
+									<div className="space-y-2">
+										{[
+											["Max Teams", selectedEvent.maxTeams],
+											[
+												"Team Size",
+												`${selectedEvent.minTeamSize} - ${selectedEvent.maxTeamSize}`,
+											],
+											["Current Participants", selectedEvent.participants],
+											[
+												"Members Only",
+												selectedEvent.isMembersOnly ? "Yes" : "No",
+											],
+										].map(([label, value], i) => (
+											<div
+												className="flex justify-between"
+												key={`${i}-${label}`}
+											>
 												<span className="text-sm text-gray-600 dark:text-slate-400">
-													Max Teams:
+													{label}:
 												</span>
 												<span className="text-sm font-medium text-gray-900 dark:text-slate-200">
-													{selectedEvent.maxTeams}
+													{value}
 												</span>
 											</div>
-											<div className="flex justify-between">
-												<span className="text-sm text-gray-600 dark:text-slate-400">
-													Team Size:
-												</span>
-												<span className="text-sm font-medium text-gray-900 dark:text-slate-200">
-													{selectedEvent.minTeamSize} -{" "}
-													{selectedEvent.maxTeamSize}
-												</span>
-											</div>
-											<div className="flex justify-between">
-												<span className="text-sm text-gray-600 dark:text-slate-400">
-													Current Participants:
-												</span>
-												<span className="text-sm font-medium text-gray-900 dark:text-slate-200">
-													{selectedEvent.participants}
-												</span>
-											</div>
-											<div className="flex justify-between">
-												<span className="text-sm text-gray-600 dark:text-slate-400">
-													Members Only:
-												</span>
-												<span className="text-sm font-medium text-gray-900 dark:text-slate-200">
-													{selectedEvent.isMembersOnly ? "Yes" : "No"}
-												</span>
-											</div>
+										))}
+									</div>
+								</div>
+
+								<div>
+									<h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200 mb-3">
+										Pricing
+									</h3>
+									<div className="space-y-2">
+										<div className="flex justify-between">
+											<span className="text-sm text-gray-600 dark:text-slate-400">
+												FLC Members:
+											</span>
+											<span className="text-sm font-medium text-gray-900 dark:text-slate-200">
+												₹{selectedEvent.flcAmount}
+											</span>
+										</div>
+										<div className="flex justify-between">
+											<span className="text-sm text-gray-600 dark:text-slate-400">
+												Non-FLC:
+											</span>
+											<span className="text-sm font-medium text-gray-900 dark:text-slate-200">
+												₹{selectedEvent.nonFlcAmount}
+											</span>
 										</div>
 									</div>
+								</div>
 
-									<div>
-										<h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200 mb-3">
-											Pricing
-										</h3>
-										<div className="space-y-2">
-											<div className="flex justify-between">
-												<span className="text-sm text-gray-600 dark:text-slate-400">
-													FLC Members:
-												</span>
-												<span className="text-sm font-medium text-gray-900 dark:text-slate-200">
-													₹{selectedEvent.flcAmount}
-												</span>
-											</div>
-											<div className="flex justify-between">
-												<span className="text-sm text-gray-600 dark:text-slate-400">
-													Non-FLC:
-												</span>
-												<span className="text-sm font-medium text-gray-900 dark:text-slate-200">
-													₹{selectedEvent.nonFlcAmount}
-												</span>
-											</div>
-										</div>
-									</div>
-
-									<div className="flex gap-2">
-										<Badge className="bg-gray-100 dark:bg-slate-900 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-800">
-											{selectedEvent.eventType}
-										</Badge>
-										<Badge className="bg-gray-100 dark:bg-slate-900 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-800">
-											{selectedEvent.category}
-										</Badge>
-									</div>
+								<div className="flex gap-2 flex-wrap">
+									<Badge className="bg-gray-100 dark:bg-slate-900 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-800">
+										{selectedEvent.eventType}
+									</Badge>
+									<Badge className="bg-gray-100 dark:bg-slate-900 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-800">
+										{selectedEvent.category}
+									</Badge>
 								</div>
 							</div>
 
-							<div className="flex justify-end space-x-3 pt-4 border-t border-gray-200 dark:border-slate-800">
+							<div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200 dark:border-slate-800">
+								<Button
+									type="button"
+									onClick={() => handleViewParticipants(selectedEvent)}
+									className="bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-200 border border-gray-300 dark:border-slate-800"
+								>
+									View Participants
+								</Button>
+
 								{selectedEvent.state === "DRAFT" && (
 									<Button
 										onClick={() => handlePublishEvent(selectedEvent.id)}
@@ -364,6 +377,17 @@ export function EventsPage({
 										Publish Event
 									</Button>
 								)}
+
+								{(selectedEvent.state === "LIVE" ||
+									selectedEvent.state === "PUBLISHED") && (
+									<Button
+										onClick={() => handleAttendance(selectedEvent)}
+										className="bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800 text-green-700 dark:text-green-200 border border-green-300 dark:border-green-800"
+									>
+										Mark Attendance
+									</Button>
+								)}
+
 								<Button
 									onClick={() => handleEditEvent(selectedEvent)}
 									className="bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-200 border border-gray-300 dark:border-slate-800"

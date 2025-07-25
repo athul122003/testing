@@ -1,5 +1,6 @@
-import { login } from "~/lib/auth/auth.service";
 import { getUserByEmail } from "~/lib/auth/auth-util";
+import { login } from "~/lib/auth/auth.service";
+import { getRegisteredEventCount } from "~/actions/teams";
 import { loginZ } from "~/zod/authZ";
 
 export async function POST(req: Request) {
@@ -42,6 +43,15 @@ export async function POST(req: Request) {
 			});
 		}
 
+		const attended = user.Attendance.length;
+		const registeredCount = await getRegisteredEventCount(user.id);
+		const attendance =
+			attended === 0
+				? 0
+				: registeredCount > 0
+					? Math.floor((attended / registeredCount) * 100)
+					: 0;
+
 		return new Response(
 			JSON.stringify({
 				user: {
@@ -50,10 +60,18 @@ export async function POST(req: Request) {
 					email: user.email,
 					role: user.role.name,
 					phone: user.phone,
+					usn: user.usn,
+					branch: user.Branch?.name,
+					year: user.year,
+					bio: user.bio,
+					activityPoints: user.totalActivityPoints,
+					userLinks: user.UserLink,
+					attendance,
+					image: user.image || null,
 				},
 				accessToken,
 				refreshToken,
-				accessTokenExpiry: Math.floor(Date.now() / 1000) + 60 * 15, // 15 min expiry
+				accessTokenExpiry: Math.floor(Date.now() / 1000) + 60 * 60 * 24, // 1 day
 			}),
 			{ status: 200, headers: { "Content-Type": "application/json" } },
 		);

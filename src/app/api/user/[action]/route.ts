@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { server } from "~/actions/serverAction";
+import { parseJwtFromAuthHeader } from "~/lib/utils";
 
 export async function POST(req: NextRequest) {
 	try {
@@ -12,8 +13,44 @@ export async function POST(req: NextRequest) {
 					success: true,
 					...(await server.user.searchUser(body)),
 				});
+			case "searchbyId": {
+				const slug = parseInt(body.userId, 10);
+				return NextResponse.json({
+					success: true,
+					...(await server.user.searchUserById({ userId: slug })),
+				});
+			}
 			case "updateUserRole":
 				return NextResponse.json(await server.user.updateUserRole(body));
+			case "addUserLink": {
+				const customHeader = req.headers.get("authorization");
+				const data = parseJwtFromAuthHeader(customHeader || "");
+				if (!data || !data.userId) {
+					return NextResponse.json(
+						{ success: false, error: "Invalid or missing authentication data" },
+						{ status: 401 },
+					);
+				}
+				const userId = data.userId;
+				return NextResponse.json({
+					success: true,
+					...(await server.user.addUserLink({ ...body, userId: userId })),
+				});
+			}
+			case "removeUserLink": {
+				const customHeader = req.headers.get("authorization");
+				const data = parseJwtFromAuthHeader(customHeader || "");
+				if (!data || !data.userId) {
+					return NextResponse.json(
+						{ success: false, error: "Invalid or missing authentication data" },
+						{ status: 401 },
+					);
+				}
+				const userId = data.userId;
+				return NextResponse.json({
+					...(await server.user.removeUserLink({ ...body, userId: userId })),
+				});
+			}
 			default:
 				return NextResponse.json(
 					{ success: false, error: "Unknown action" },
@@ -22,6 +59,45 @@ export async function POST(req: NextRequest) {
 		}
 	} catch (error) {
 		console.error("Route error:", error);
+		return NextResponse.json(
+			{ success: false, error: (error as Error).message },
+			{ status: 500 },
+		);
+	}
+}
+
+export async function PATCH(req: NextRequest) {
+	try {
+		const action = req.nextUrl.pathname.split("/").pop();
+		const body = await req.json();
+
+		console.log("PATCH action:", body);
+		switch (action) {
+			case "update-user": {
+				const customHeader = req.headers.get("authorization");
+				const data = parseJwtFromAuthHeader(customHeader || "");
+				if (!data || !data.userId) {
+					return NextResponse.json(
+						{ success: false, error: "Invalid or missing authentication data" },
+						{ status: 401 },
+					);
+				}
+				const userId = data.userId;
+				const result = await server.user.updateUser({
+					...body,
+					userId: userId,
+				});
+				console.log("Update user result:", result);
+				return NextResponse.json(result);
+			}
+			default:
+				return NextResponse.json(
+					{ success: false, error: "Unknown action" },
+					{ status: 400 },
+				);
+		}
+	} catch (error) {
+		console.error("PATCH error:", error);
 		return NextResponse.json(
 			{ success: false, error: (error as Error).message },
 			{ status: 500 },

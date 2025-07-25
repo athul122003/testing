@@ -33,7 +33,6 @@ const verifyAndSavePaymentSchema = z.discriminatedUnion("paymentType", [
 	z.object({
 		paymentType: z.literal(PaymentType.MEMBERSHIP),
 		paymentName: z.string(),
-		amount: z.number(),
 		razorpayOrderId: z.string(),
 		razorpayPaymentId: z.string(),
 		razorpaySignature: z.string(),
@@ -76,6 +75,22 @@ export async function createOrder(input: CreateOrderInput) {
 
 		if (!team) {
 			throw new Error("Team not found", { cause: "NOT_FOUND" });
+		}
+
+		if (team.Event.deadline && new Date(team.Event.deadline) < new Date()) {
+			throw new Error("Event registration deadline has passed", {
+				cause: "BAD_REQUEST",
+			});
+		}
+		const totalTeams = await db.team.count({
+			where: {
+				Event: { id: team.Event.id },
+			},
+		});
+		if (totalTeams >= team.Event.maxTeams) {
+			throw new Error("Maximum number of teams reached for this event", {
+				cause: "BAD_REQUEST",
+			});
 		}
 		if (team.paymentId) {
 			// TODO [RAHUL] Confirm if there are unique teams being created and cannot use same team again
@@ -177,12 +192,6 @@ export async function savePayment(input: VerifyAndSavePaymentInput) {
 			razorpayPaymentId: input.razorpayPaymentId,
 			razorpaySignature: input.razorpaySignature,
 			...typeOfPayment,
-			User: {
-				connect: {
-					id: input.sessionUserId,
-				},
-			},
-			amount: input.amount,
 		},
 	});
 

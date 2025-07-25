@@ -54,8 +54,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { api } from "~/lib/api";
 import { useDashboardData } from "~/providers/dashboardDataContext";
 import { permissionKeys as perm } from "~/actions/middleware/routePermissions";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+	DialogDescription,
+} from "~/components/ui/dialog";
+import { useAddToCoreMutation } from "~/actions/tanstackHooks/core-queries";
+import CoreManagement from "./core-management";
+// import { addToCore } from "~/actions/core";
 
 export function UsersPage() {
+	const [isCoreModalOpen, setIsCoreModalOpen] = useState(false);
+
 	/*
   const [roles, setRoles] = useState([]);
   
@@ -107,7 +119,33 @@ export function UsersPage() {
   }, []);
 
 */
-	// Fetch roles and permissions from the API
+	//addToCore mutation
+	const { mutate: addToCore, isPending: addToCorePending } =
+		useAddToCoreMutation({
+			onSuccessCallback: () => {
+				setIsCoreModalOpen(false);
+			},
+		});
+	//handleCore Submit
+	const handleCoreSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+		e.preventDefault();
+		const formData = new FormData(e.currentTarget);
+		addToCore(formData);
+	};
+
+	// const handleCoreSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+	// 	event.preventDefault();
+	// 	const formData = new FormData(event.currentTarget);
+	// 	const res = await addToCore(formData);
+	// 	if (res.status === "success") {
+	// 		toast.success("Added to core successfully");
+	// 	} else {
+	// 		toast.error("Failed to add to core");
+	// 		console.error("Error adding to core:", res);
+	// 	}
+	// 	setIsCoreModalOpen(false);
+	// };
+	// // Fetch roles and permissions from the API
 
 	const {
 		hasPerm,
@@ -252,7 +290,6 @@ export function UsersPage() {
 		setEditingRoleId(null);
 	};
 
-	//User management section
 	const [searchTerm, setSearchTerm] = useState("");
 	const [page, setPage] = useState(1);
 	const [roleSortOrder, setRoleSortOrder] = useState<"asc" | "desc">("asc");
@@ -327,24 +364,42 @@ export function UsersPage() {
 	return (
 		<div className="space-y-8">
 			<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-				<TabsList className="grid w-auto grid-cols-2 bg-white dark:bg-black border border-gray-300 dark:border-slate-800">
+				<TabsList
+					className="flex overflow-x-auto bg-white dark:bg-black border border-gray-300 dark:border-slate-800 rounded-lg"
+					style={{ scrollbarWidth: "none" }}
+				>
 					{canManagePerm && (
 						<TabsTrigger
 							value="permissions"
-							className="data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-900 data-[state=active]:text-gray-900 dark:data-[state=active]:text-slate-200 data-[state=active]:border-2 data-[state=active]:border-gray-300 dark:data-[state=active]:border-slate-700 data-[state=active]:rounded-md text-gray-700 dark:text-slate-200"
+							className="flex-1 min-w-[120px] text-center data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-900 data-[state=active]:text-gray-900 dark:data-[state=active]:text-slate-200 data-[state=active]:border-2 data-[state=active]:border-gray-300 dark:data-[state=active]:border-slate-700 data-[state=active]:rounded-md text-gray-700 dark:text-slate-200"
 						>
-							Role&Permissions
+							Role & Permissions
 						</TabsTrigger>
 					)}
 					{canManageUser && (
 						<TabsTrigger
 							value="userManagement"
-							className="data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-900 data-[state=active]:text-gray-900 dark:data-[state=active]:text-slate-200 data-[state=active]:border-2 data-[state=active]:border-gray-300 dark:data-[state=active]:border-slate-700 data-[state=active]:rounded-md text-gray-700 dark:text-slate-200"
+							className="flex-1 min-w-[120px] text-center data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-900 data-[state=active]:text-gray-900 dark:data-[state=active]:text-slate-200 data-[state=active]:border-2 data-[state=active]:border-gray-300 dark:data-[state=active]:border-slate-700 data-[state=active]:rounded-md text-gray-700 dark:text-slate-200"
 						>
 							User Management
 						</TabsTrigger>
 					)}
+					{canManageUser && (
+						<TabsTrigger
+							value="coreManagement"
+							className="flex-1 min-w-[120px] text-center data-[state=active]:bg-gray-100 dark:data-[state=active]:bg-slate-900 data-[state=active]:text-gray-900 dark:data-[state=active]:text-slate-200 data-[state=active]:border-2 data-[state=active]:border-gray-300 dark:data-[state=active]:border-slate-700 data-[state=active]:rounded-md text-gray-700 dark:text-slate-200"
+						>
+							Core Management
+						</TabsTrigger>
+					)}
 				</TabsList>
+
+				{canManageUser && (
+					<TabsContent value="coreManagement">
+						<CoreManagement />
+					</TabsContent>
+				)}
+
 				{canManagePerm && (
 					<TabsContent value="permissions">
 						<Card className="bg-white dark:bg-black border border-gray-200 dark:border-slate-800 shadow-xl">
@@ -385,7 +440,6 @@ export function UsersPage() {
 										</div>
 										<Separator className="bg-gray-200 dark:bg-slate-800" />
 
-										{/* 🔍 Search input */}
 										<div className="flex justify-end">
 											<Input
 												placeholder="Search roles..."
@@ -398,7 +452,6 @@ export function UsersPage() {
 											/>
 										</div>
 
-										{/* 🧩 Paginated Roles */}
 										<div className="grid gap-4 md:grid-cols-2">
 											{paginatedRoles.map((role) => {
 												const isEditing = editingRoleId === role.id;
@@ -528,7 +581,6 @@ export function UsersPage() {
 											})}
 										</div>
 
-										{/* 🔁 Pagination Controls */}
 										{totalRolePages > 1 && (
 											<div className="mt-6 flex justify-center">
 												<Pagination className="mt-6">
@@ -547,7 +599,6 @@ export function UsersPage() {
 															/>
 														</PaginationItem>
 
-														{/* ⏺ Page Numbers */}
 														{(() => {
 															const pages = [];
 															const maxVisible = 3;
@@ -559,14 +610,17 @@ export function UsersPage() {
 																	<PaginationLink
 																		isActive={rolePage === 1}
 																		onClick={() => setRolePage(1)}
-																		className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${rolePage === 1 ? "bg-gray-100 dark:bg-slate-800" : ""}`}
+																		className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${
+																			rolePage === 1
+																				? "bg-gray-100 dark:bg-slate-800"
+																				: ""
+																		}`}
 																	>
 																		1
 																	</PaginationLink>
 																</PaginationItem>,
 															);
 
-															// Left Ellipsis
 															if (rolePage > maxVisible) {
 																pages.push(
 																	<PaginationItem key="left-ellipsis">
@@ -577,7 +631,6 @@ export function UsersPage() {
 																);
 															}
 
-															// Pages around current page
 															const start = Math.max(2, rolePage - 1);
 															const end = Math.min(total - 1, rolePage + 1);
 
@@ -587,7 +640,11 @@ export function UsersPage() {
 																		<PaginationLink
 																			isActive={rolePage === i}
 																			onClick={() => setRolePage(i)}
-																			className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${rolePage === i ? "bg-gray-100 dark:bg-slate-800" : ""}`}
+																			className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${
+																				rolePage === i
+																					? "bg-gray-100 dark:bg-slate-800"
+																					: ""
+																			}`}
 																		>
 																			{i}
 																		</PaginationLink>
@@ -595,7 +652,6 @@ export function UsersPage() {
 																);
 															}
 
-															// Right Ellipsis
 															if (rolePage < total - 2) {
 																pages.push(
 																	<PaginationItem key="right-ellipsis">
@@ -606,14 +662,17 @@ export function UsersPage() {
 																);
 															}
 
-															// Always show last
 															if (total > 1) {
 																pages.push(
 																	<PaginationItem key={total}>
 																		<PaginationLink
 																			isActive={rolePage === total}
 																			onClick={() => setRolePage(total)}
-																			className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${rolePage === total ? "bg-gray-100 dark:bg-slate-800" : ""}`}
+																			className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${
+																				rolePage === total
+																					? "bg-gray-100 dark:bg-slate-800"
+																					: ""
+																			}`}
 																		>
 																			{total}
 																		</PaginationLink>
@@ -624,7 +683,6 @@ export function UsersPage() {
 															return pages;
 														})()}
 
-														{/* ▶ Next */}
 														<PaginationItem>
 															<PaginationNext
 																onClick={() =>
@@ -655,120 +713,117 @@ export function UsersPage() {
 								<ComponentLoading message="Loading Page..." />
 							) : (
 								<>
-									<CardHeader>
-										<CardTitle className="text-gray-900 dark:text-slate-200">
+									<CardHeader className="px-4 sm:px-6">
+										<CardTitle className="text-xl sm:text-2xl text-gray-900 dark:text-slate-200">
 											User Management
 										</CardTitle>
-										<CardDescription className="text-gray-600 dark:text-slate-400">
+										<CardDescription className="text-sm sm:text-base text-gray-600 dark:text-slate-400">
 											Manage user Roles.
 										</CardDescription>
 									</CardHeader>
-									<CardContent className="grid gap-4">
-										<div className="grid gap-2">
-											<div className="flex justify-between items-center mb-4">
-												<div className="flex items-center gap-4 flex-wrap">
-													{/*Search Input */}
-													<div className="relative">
-														<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-slate-400" />
-														<Input
-															placeholder="Search by name, ID, USN, or email..."
-															value={searchTerm}
-															onChange={(e) => setSearchTerm(e.target.value)}
-															className="pl-10 w-80 bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-400"
-														/>
-													</div>
+									<CardContent className="px-4 sm:px-6 space-y-6">
+										<div className="space-y-4">
+											<div className="relative w-full">
+												<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-slate-400" />
+												<Input
+													placeholder="Search by name, ID, or email..."
+													value={searchTerm}
+													onChange={(e) => setSearchTerm(e.target.value)}
+													className="pl-10 w-full bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-400"
+												/>
+											</div>
 
-													{/*Role Filter Dropdown */}
-													<Select
-														value={selectedRole ?? "all"}
-														onValueChange={(val) =>
-															setSelectedRole(val === "all" ? null : val)
-														}
-													>
-														<SelectTrigger className="w-52 bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200">
-															<SelectValue placeholder="All Roles" />
-														</SelectTrigger>
-														<SelectContent className="bg-white dark:bg-black border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-															<SelectItem value="all">All Roles</SelectItem>
-															{roles.map((role) => (
-																<SelectItem key={role.id} value={role.name}>
-																	{role.name}
-																</SelectItem>
-															))}
-														</SelectContent>
-													</Select>
-													<Select
-														value={sortBy}
-														onValueChange={(val) =>
-															setSortBy(val as "role" | "name" | "id")
-														}
-													>
-														<SelectTrigger className="w-40 bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200">
-															<SelectValue placeholder="Sort by..." />
-														</SelectTrigger>
-														<SelectContent className="bg-white dark:bg-black border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-															<SelectItem value="role">Sort by Role</SelectItem>
-															<SelectItem value="name">Sort by Name</SelectItem>
-															<SelectItem value="id">Sort by ID</SelectItem>
-														</SelectContent>
-													</Select>
-													{/* ↕️ Sorting Buttons */}
-													<div className="flex gap-2">
-														<Button
-															variant="outline"
-															onClick={() =>
-																setRoleSortOrder((prev) =>
-																	prev === "asc" ? "desc" : "asc",
-																)
-															}
-															className="flex items-center gap-2 bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
-														>
-															{roleSortOrder === "asc" ? (
-																<ArrowDownAZ className="h-4 w-4" />
-															) : (
-																<ArrowUpAZ className="h-4 w-4" />
-															)}
-														</Button>
-													</div>
-												</div>
+											<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+												<Select
+													value={selectedRole ?? "all"}
+													onValueChange={(val) =>
+														setSelectedRole(val === "all" ? null : val)
+													}
+												>
+													<SelectTrigger className="w-full bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200">
+														<SelectValue placeholder="All Roles" />
+													</SelectTrigger>
+													<SelectContent className="bg-white dark:bg-black border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+														<SelectItem value="all">All Roles</SelectItem>
+														{roles.map((role) => (
+															<SelectItem key={role.id} value={role.name}>
+																{role.name}
+															</SelectItem>
+														))}
+													</SelectContent>
+												</Select>
+
+												<Select
+													value={sortBy}
+													onValueChange={(val) =>
+														setSortBy(val as "role" | "name" | "id")
+													}
+												>
+													<SelectTrigger className="w-full bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200">
+														<SelectValue placeholder="Sort by..." />
+													</SelectTrigger>
+													<SelectContent className="bg-white dark:bg-black border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+														<SelectItem value="role">Sort by Role</SelectItem>
+														<SelectItem value="name">Sort by Name</SelectItem>
+														<SelectItem value="id">Sort by ID</SelectItem>
+													</SelectContent>
+												</Select>
+
+												<Button
+													variant="outline"
+													onClick={() =>
+														setRoleSortOrder((prev) =>
+															prev === "asc" ? "desc" : "asc",
+														)
+													}
+													className="w-full justify-center bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
+												>
+													{roleSortOrder === "asc" ? (
+														<ArrowDownAZ className="h-4 w-4 mr-2" />
+													) : (
+														<ArrowUpAZ className="h-4 w-4 mr-2" />
+													)}
+													<span className="hidden sm:inline">
+														{roleSortOrder === "asc" ? "A-Z" : "Z-A"}
+													</span>
+													<span className="sm:hidden">Sort</span>
+												</Button>
 											</div>
 										</div>
 
 										<Separator className="bg-gray-200 dark:bg-slate-800" />
-										<div className="grid gap-2">
-											{/* 🔸 Selected Users Summary */}
-											{userLoading ? (
-												<ComponentLoading message="Loading Selected Users..." />
-											) : (
-												<div className="space-y-4">
-													{/* 🔸 Selected Users Banner */}
-													{selectedUsers.length > 0 && (
-														<div className="rounded bg-gray-100 dark:bg-slate-900 p-4">
-															<div className="flex justify-between items-center mb-2 gap-4 flex-wrap">
-																<span className="font-medium text-orange-600 dark:text-orange-300">
-																	Selected Users: {selectedUsers.length}
-																</span>
 
-																<div className="flex items-center gap-2">
-																	<Select
-																		value={bulkSelectedRole || ""}
-																		onValueChange={(newRole) =>
-																			setBulkSelectedRole(newRole)
-																		}
-																	>
-																		<SelectTrigger className="w-52 bg-white dark:bg-black border-gray-300 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-																			<SelectValue placeholder="Set Role for All" />
-																		</SelectTrigger>
-																		<SelectContent className="bg-white dark:bg-black border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-																			{roles.map((r) => (
-																				<SelectItem key={r.id} value={r.name}>
-																					{r.name}
-																				</SelectItem>
-																			))}
-																		</SelectContent>
-																	</Select>
+										{userLoading ? (
+											<ComponentLoading message="Loading Selected Users..." />
+										) : (
+											<div className="space-y-6">
+												{selectedUsers.length > 0 && (
+													<div className="rounded bg-gray-100 dark:bg-slate-900 p-4">
+														<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+															<span className="font-medium text-orange-600 dark:text-orange-300 text-sm sm:text-base">
+																Selected Users: {selectedUsers.length}
+															</span>
 
-																	{/* ✅ Save Button */}
+															<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+																<Select
+																	value={bulkSelectedRole || ""}
+																	onValueChange={(newRole) =>
+																		setBulkSelectedRole(newRole)
+																	}
+																>
+																	<SelectTrigger className="w-full sm:w-52 bg-white dark:bg-black border-gray-300 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+																		<SelectValue placeholder="Set Role for All" />
+																	</SelectTrigger>
+																	<SelectContent className="bg-white dark:bg-black border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+																		{roles.map((r) => (
+																			<SelectItem key={r.id} value={r.name}>
+																				{r.name}
+																			</SelectItem>
+																		))}
+																	</SelectContent>
+																</Select>
+
+																<div className="flex gap-2 justify-end sm:justify-start">
 																	<Button
 																		variant="ghost"
 																		size="icon"
@@ -782,7 +837,7 @@ export function UsersPage() {
 																					),
 																					roleName: bulkSelectedRole,
 																				});
-																				setBulkSelectedRole(null); // Reset selection
+																				setBulkSelectedRole(null);
 																			}
 																		}}
 																		className="hover:bg-gray-200 dark:hover:bg-slate-800"
@@ -790,7 +845,6 @@ export function UsersPage() {
 																		<Check className="h-4 w-4 text-green-500 dark:text-green-400" />
 																	</Button>
 
-																	{/* ❌ Cancel Button */}
 																	<Button
 																		variant="ghost"
 																		size="icon"
@@ -802,193 +856,215 @@ export function UsersPage() {
 																	>
 																		<X className="h-4 w-4 text-red-500 dark:text-red-400" />
 																	</Button>
+
+																	<Button
+																		variant="outline"
+																		size="sm"
+																		onClick={() => setIsCoreModalOpen(true)}
+																		className="hover:bg-gray-200 dark:hover:bg-slate-800 text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400 whitespace-nowrap"
+																	>
+																		Add to Core
+																	</Button>
 																</div>
 															</div>
+														</div>
 
-															<div className="grid grid-cols-2 gap-2">
-																{selectedUsers.map((user) => (
-																	<div
-																		key={user.id}
-																		className="bg-white dark:bg-black px-3 py-2 rounded shadow flex justify-between items-center border border-gray-200 dark:border-slate-800"
-																	>
-																		<div>
-																			<p className="text-sm font-medium text-gray-900 dark:text-slate-200">
-																				{user.name}
-																			</p>
-																			<p className="text-xs text-gray-500 dark:text-slate-400">
-																				{user.email}
-																			</p>
-																		</div>
-																		<Button
-																			variant="ghost"
-																			size="icon"
-																			onClick={() =>
-																				setSelectedUsers((prev) =>
-																					prev.filter((u) => u.id !== user.id),
-																				)
-																			}
-																			className="hover:bg-gray-100 dark:hover:bg-slate-900"
-																		>
-																			<X className="h-4 w-4 text-gray-500 dark:text-slate-400" />
-																		</Button>
+														<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+															{selectedUsers.map((user) => (
+																<div
+																	key={user.id}
+																	className="bg-white dark:bg-black px-3 py-2 rounded shadow flex justify-between items-center border border-gray-200 dark:border-slate-800"
+																>
+																	<div className="min-w-0 flex-1">
+																		<p className="text-sm font-medium text-gray-900 dark:text-slate-200 truncate">
+																			{user.name}
+																		</p>
+																		<p className="text-xs text-gray-500 dark:text-slate-400 truncate">
+																			{user.email}
+																		</p>
 																	</div>
-																))}
+																	<Button
+																		variant="ghost"
+																		size="icon"
+																		onClick={() =>
+																			setSelectedUsers((prev) =>
+																				prev.filter((u) => u.id !== user.id),
+																			)
+																		}
+																		className="hover:bg-gray-100 dark:hover:bg-slate-900 flex-shrink-0"
+																	>
+																		<X className="h-4 w-4 text-gray-500 dark:text-slate-400" />
+																	</Button>
+																</div>
+															))}
+														</div>
+													</div>
+												)}
+
+												{users?.data?.length ? (
+													<>
+														<div className="w-full overflow-x-auto">
+															<div className="min-w-full">
+																<Table className="w-full bg-white dark:bg-black text-gray-900 dark:text-slate-200">
+																	<TableHeader>
+																		<TableRow className="bg-gray-50 dark:bg-slate-900">
+																			<TableHead className="w-12 bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800">
+																				<span className="sr-only">Select</span>
+																			</TableHead>
+																			<TableHead className="min-w-[80px] bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+																				ID
+																			</TableHead>
+																			<TableHead className="min-w-[120px] bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+																				Name
+																			</TableHead>
+																			<TableHead className="min-w-[180px] bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+																				Email
+																			</TableHead>
+																			<TableHead className="min-w-[200px] bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+																				Role
+																			</TableHead>
+																		</TableRow>
+																	</TableHeader>
+																	<TableBody>
+																		{users.data.map((user) => (
+																			<TableRow
+																				key={user.id}
+																				className="hover:bg-gray-50 dark:hover:bg-slate-900"
+																			>
+																				<TableCell className="w-12">
+																					<Checkbox
+																						checked={selectedUsers.some(
+																							(u) => u.id === user.id,
+																						)}
+																						onCheckedChange={(checked) => {
+																							setSelectedUsers((prev) =>
+																								checked
+																									? [...prev, user]
+																									: prev.filter(
+																											(u) => u.id !== user.id,
+																										),
+																							);
+																						}}
+																					/>
+																				</TableCell>
+
+																				<TableCell className="font-mono text-sm text-gray-500 dark:text-slate-400">
+																					<div className="truncate max-w-[80px]">
+																						{user.id}
+																					</div>
+																				</TableCell>
+
+																				<TableCell className="text-gray-900 dark:text-slate-200">
+																					<div className="truncate max-w-[120px]">
+																						{user.name}
+																					</div>
+																				</TableCell>
+
+																				<TableCell className="text-gray-500 dark:text-slate-400">
+																					<div className="truncate max-w-[180px]">
+																						{user.email}
+																					</div>
+																				</TableCell>
+
+																				<TableCell>
+																					{editingRoles[user.id] ? (
+																						<div className="flex gap-2 items-center min-w-[200px]">
+																							<Select
+																								value={
+																									editingRoles[user.id].current
+																								}
+																								onValueChange={(val) =>
+																									setEditingRoles((prev) => ({
+																										...prev,
+																										[user.id]: {
+																											...prev[user.id],
+																											current: val,
+																										},
+																									}))
+																								}
+																							>
+																								<SelectTrigger className="w-32 bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200">
+																									<SelectValue />
+																								</SelectTrigger>
+																								<SelectContent className="bg-white dark:bg-black border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+																									{roles.map((r) => (
+																										<SelectItem
+																											key={r.id}
+																											value={r.name}
+																										>
+																											{r.name}
+																										</SelectItem>
+																									))}
+																								</SelectContent>
+																							</Select>
+																							<Button
+																								size="icon"
+																								variant="ghost"
+																								onClick={() => {
+																									toast.loading(
+																										"Updating role...",
+																									);
+																									singleUpdate.mutate({
+																										userId: user.id,
+																										roleName:
+																											editingRoles[user.id]
+																												.current,
+																									});
+																								}}
+																								className="hover:bg-gray-100 dark:hover:bg-slate-900 flex-shrink-0"
+																							>
+																								<Check className="text-green-500 dark:text-green-400 h-4 w-4" />
+																							</Button>
+																							<Button
+																								size="icon"
+																								variant="ghost"
+																								onClick={() =>
+																									setEditingRoles((prev) => {
+																										const copy = { ...prev };
+																										delete copy[user.id];
+																										return copy;
+																									})
+																								}
+																								className="hover:bg-gray-100 dark:hover:bg-slate-900 flex-shrink-0"
+																							>
+																								<X className="text-red-500 dark:text-red-400 h-4 w-4" />
+																							</Button>
+																						</div>
+																					) : (
+																						<div className="flex justify-between items-center min-w-[200px]">
+																							<Badge className="bg-gray-100 dark:bg-slate-900 text-gray-700 dark:text-slate-200 hover:bg-gray-200 dark:hover:bg-slate-800 truncate max-w-[140px]">
+																								{user.role.name}
+																							</Badge>
+																							<Button
+																								variant="ghost"
+																								size="sm"
+																								onClick={() =>
+																									setEditingRoles((prev) => ({
+																										...prev,
+																										[user.id]: {
+																											prev: user.role.name,
+																											current: user.role.name,
+																										},
+																									}))
+																								}
+																								className="hover:bg-gray-100 dark:hover:bg-slate-900 flex-shrink-0"
+																							>
+																								<Edit className="h-4 w-4" />
+																							</Button>
+																						</div>
+																					)}
+																				</TableCell>
+																			</TableRow>
+																		))}
+																	</TableBody>
+																</Table>
 															</div>
 														</div>
-													)}
 
-													{/* 🔍 User Table */}
-													{users?.data?.length ? (
-														<>
-															<Table className="bg-white dark:bg-black text-gray-900 dark:text-slate-200">
-																<TableHeader>
-																	<TableRow className="bg-gray-50 dark:bg-slate-900">
-																		<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800" />
-																		<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-																			ID
-																		</TableHead>
-																		<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-																			Name
-																		</TableHead>
-																		<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-																			Email
-																		</TableHead>
-																		<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-																			Role
-																		</TableHead>
-																	</TableRow>
-																</TableHeader>
-																<TableBody>
-																	{users.data.map((user) => (
-																		<TableRow
-																			key={user.id}
-																			className="hover:bg-gray-50 dark:hover:bg-slate-900"
-																		>
-																			<TableCell>
-																				<Checkbox
-																					checked={selectedUsers.some(
-																						(u) => u.id === user.id,
-																					)}
-																					onCheckedChange={(checked) => {
-																						setSelectedUsers((prev) =>
-																							checked
-																								? [...prev, user]
-																								: prev.filter(
-																										(u) => u.id !== user.id,
-																									),
-																						);
-																					}}
-																				/>
-																			</TableCell>
-
-																			<TableCell className="font-mono text-sm text-gray-500 dark:text-slate-400">
-																				{user.id}
-																			</TableCell>
-
-																			<TableCell className="text-gray-900 dark:text-slate-200">
-																				{user.name}
-																			</TableCell>
-																			<TableCell className="text-gray-500 dark:text-slate-400">
-																				{user.email}
-																			</TableCell>
-																			<TableCell>
-																				{editingRoles[user.id] ? (
-																					<div className="flex gap-2 items-center">
-																						<Select
-																							value={
-																								editingRoles[user.id].current
-																							}
-																							onValueChange={(val) =>
-																								setEditingRoles((prev) => ({
-																									...prev,
-																									[user.id]: {
-																										...prev[user.id],
-																										current: val,
-																									},
-																								}))
-																							}
-																						>
-																							<SelectTrigger className="w-32 bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200">
-																								<SelectValue />
-																							</SelectTrigger>
-																							<SelectContent className="bg-white dark:bg-black border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-																								{roles.map((r) => (
-																									<SelectItem
-																										key={r.id}
-																										value={r.name}
-																									>
-																										{r.name}
-																									</SelectItem>
-																								))}
-																							</SelectContent>
-																						</Select>
-																						<Button
-																							size="icon"
-																							variant="ghost"
-																							onClick={() => {
-																								toast.loading(
-																									"Updating role...",
-																								);
-																								singleUpdate.mutate({
-																									userId: user.id,
-																									roleName:
-																										editingRoles[user.id]
-																											.current,
-																								});
-																							}}
-																							className="hover:bg-gray-100 dark:hover:bg-slate-900"
-																						>
-																							<Check className="text-green-500 dark:text-green-400 h-4 w-4" />
-																						</Button>
-																						<Button
-																							size="icon"
-																							variant="ghost"
-																							onClick={() =>
-																								setEditingRoles((prev) => {
-																									const copy = { ...prev };
-																									delete copy[user.id];
-																									return copy;
-																								})
-																							}
-																							className="hover:bg-gray-100 dark:hover:bg-slate-900"
-																						>
-																							<X className="text-red-500 dark:text-red-400 h-4 w-4" />
-																						</Button>
-																					</div>
-																				) : (
-																					<div className="flex justify-between items-center">
-																						<Badge className="bg-gray-100 dark:bg-slate-900 text-gray-700 dark:text-slate-200 hover:bg-gray-200 dark:hover:bg-slate-800">
-																							{user.role.name}
-																						</Badge>
-																						<Button
-																							variant="ghost"
-																							size="sm"
-																							onClick={() =>
-																								setEditingRoles((prev) => ({
-																									...prev,
-																									[user.id]: {
-																										prev: user.role.name,
-																										current: user.role.name,
-																									},
-																								}))
-																							}
-																							className="hover:bg-gray-100 dark:hover:bg-slate-900"
-																						>
-																							<Edit className="h-4 w-4" />
-																						</Button>
-																					</div>
-																				)}
-																			</TableCell>
-																		</TableRow>
-																	))}
-																</TableBody>
-															</Table>
-
-															{/* 📃 Pagination */}
-															{users.totalPages > 1 && (
+														{users.totalPages > 1 && (
+															<div className="flex justify-center">
 																<Pagination className="mt-6">
-																	<PaginationContent>
-																		{/* ◀ Previous */}
+																	<PaginationContent className="flex-wrap gap-1">
 																		<PaginationItem>
 																			<PaginationPrevious
 																				onClick={() =>
@@ -1002,84 +1078,113 @@ export function UsersPage() {
 																			/>
 																		</PaginationItem>
 
-																		{/* ⏺ Page Numbers */}
 																		{(() => {
 																			const pages = [];
 																			const total = users.totalPages;
-																			const maxVisible = 3;
+																			const maxVisible =
+																				window.innerWidth < 640 ? 2 : 3;
 
-																			// Always show first
-																			pages.push(
-																				<PaginationItem key={1}>
-																					<PaginationLink
-																						isActive={page === 1}
-																						onClick={() => setPage(1)}
-																						className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${page === 1 ? "bg-gray-100 dark:bg-slate-800" : ""}`}
-																					>
-																						1
-																					</PaginationLink>
-																				</PaginationItem>,
-																			);
-
-																			// Ellipsis before current chunk
-																			if (page > maxVisible) {
+																			if (total <= 5) {
+																				for (let i = 1; i <= total; i++) {
+																					pages.push(
+																						<PaginationItem key={i}>
+																							<PaginationLink
+																								isActive={page === i}
+																								onClick={() => setPage(i)}
+																								className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${
+																									page === i
+																										? "bg-gray-100 dark:bg-slate-800"
+																										: ""
+																								}`}
+																							>
+																								{i}
+																							</PaginationLink>
+																						</PaginationItem>,
+																					);
+																				}
+																			} else {
 																				pages.push(
-																					<PaginationItem key="left-ellipsis">
-																						<span className="px-2 text-gray-500 dark:text-slate-400">
-																							...
-																						</span>
-																					</PaginationItem>,
-																				);
-																			}
-
-																			// Pages around current page
-																			const start = Math.max(2, page - 1);
-																			const end = Math.min(total - 1, page + 1);
-
-																			for (let i = start; i <= end; i++) {
-																				pages.push(
-																					<PaginationItem key={i}>
+																					<PaginationItem key={1}>
 																						<PaginationLink
-																							isActive={page === i}
-																							onClick={() => setPage(i)}
-																							className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${page === i ? "bg-gray-100 dark:bg-slate-800" : ""}`}
+																							isActive={page === 1}
+																							onClick={() => setPage(1)}
+																							className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${
+																								page === 1
+																									? "bg-gray-100 dark:bg-slate-800"
+																									: ""
+																							}`}
 																						>
-																							{i}
+																							1
 																						</PaginationLink>
 																					</PaginationItem>,
 																				);
-																			}
 
-																			// Ellipsis after current chunk
-																			if (page < total - 2) {
-																				pages.push(
-																					<PaginationItem key="right-ellipsis">
-																						<span className="px-2 text-gray-500 dark:text-slate-400">
-																							...
-																						</span>
-																					</PaginationItem>,
-																				);
-																			}
+																				if (page > maxVisible) {
+																					pages.push(
+																						<PaginationItem key="left-ellipsis">
+																							<span className="px-2 text-gray-500 dark:text-slate-400">
+																								...
+																							</span>
+																						</PaginationItem>,
+																					);
+																				}
 
-																			// Always show last
-																			if (total > 1) {
-																				pages.push(
-																					<PaginationItem key={total}>
-																						<PaginationLink
-																							isActive={page === total}
-																							onClick={() => setPage(total)}
-																							className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${page === total ? "bg-gray-100 dark:bg-slate-800" : ""}`}
-																						>
-																							{total}
-																						</PaginationLink>
-																					</PaginationItem>,
+																				const start = Math.max(2, page - 1);
+																				const end = Math.min(
+																					total - 1,
+																					page + 1,
 																				);
+
+																				for (let i = start; i <= end; i++) {
+																					pages.push(
+																						<PaginationItem key={i}>
+																							<PaginationLink
+																								isActive={page === i}
+																								onClick={() => setPage(i)}
+																								className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${
+																									page === i
+																										? "bg-gray-100 dark:bg-slate-800"
+																										: ""
+																								}`}
+																							>
+																								{i}
+																							</PaginationLink>
+																						</PaginationItem>,
+																					);
+																				}
+
+																				if (page < total - 2) {
+																					pages.push(
+																						<PaginationItem key="right-ellipsis">
+																							<span className="px-2 text-gray-500 dark:text-slate-400">
+																								...
+																							</span>
+																						</PaginationItem>,
+																					);
+																				}
+
+																				if (total > 1) {
+																					pages.push(
+																						<PaginationItem key={total}>
+																							<PaginationLink
+																								isActive={page === total}
+																								onClick={() => setPage(total)}
+																								className={`cursor-pointer bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${
+																									page === total
+																										? "bg-gray-100 dark:bg-slate-800"
+																										: ""
+																								}`}
+																							>
+																								{total}
+																							</PaginationLink>
+																						</PaginationItem>,
+																					);
+																				}
 																			}
 
 																			return pages;
 																		})()}
 
-																		{/* ▶ Next */}
 																		<PaginationItem>
 																			<PaginationNext
 																				onClick={() =>
@@ -1095,18 +1200,18 @@ export function UsersPage() {
 																		</PaginationItem>
 																	</PaginationContent>
 																</Pagination>
-															)}
-														</>
-													) : (
-														!userLoading && (
-															<div className="text-center py-8 text-gray-500 dark:text-slate-400">
-																No users found.
 															</div>
-														)
-													)}
-												</div>
-											)}
-										</div>
+														)}
+													</>
+												) : (
+													!userLoading && (
+														<div className="text-center py-8 text-gray-500 dark:text-slate-400">
+															No users found.
+														</div>
+													)
+												)}
+											</div>
+										)}
 									</CardContent>
 								</>
 							)}
@@ -1114,6 +1219,105 @@ export function UsersPage() {
 					</TabsContent>
 				)}
 			</Tabs>
+			{isCoreModalOpen && (
+				<Dialog open={isCoreModalOpen} onOpenChange={setIsCoreModalOpen}>
+					<DialogContent className="max-w-md bg-white dark:bg-black text-gray-900 dark:text-slate-200">
+						<DialogHeader>
+							<DialogTitle>Add to Core Team</DialogTitle>
+							<DialogDescription>
+								Assign position and type for the selected users.
+							</DialogDescription>
+						</DialogHeader>
+
+						<form onSubmit={handleCoreSubmit}>
+							<input
+								type="hidden"
+								name="userIds"
+								value={JSON.stringify(selectedUsers.map((u) => u.id))}
+							/>
+
+							<div className="grid gap-4 mt-4">
+								<div className="grid gap-1">
+									<label htmlFor="position" className="text-sm font-medium">
+										Position
+									</label>
+									<Input
+										id="position"
+										name="position"
+										required
+										placeholder="eg. Technical Head"
+									/>
+								</div>
+
+								<div className="grid gap-1">
+									<label htmlFor="type" className="text-sm font-medium">
+										Type
+									</label>
+									<Select name="type" required>
+										<SelectTrigger className="w-full bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700">
+											<SelectValue placeholder="Select Type" />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value="OFFICE_BEARER">
+												Office Bearer
+											</SelectItem>
+											<SelectItem value="FACULTY_COORDINATOR">
+												Faculty Coordinator
+											</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+
+								<div className="grid gap-1">
+									<label htmlFor="year" className="text-sm font-medium">
+										Year
+									</label>
+									<Select name="year" required>
+										<SelectTrigger className="w-full bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700">
+											<SelectValue placeholder="Select Year" />
+										</SelectTrigger>
+										<SelectContent>
+											{Array.from({ length: 6 }, (_, i) => {
+												const year = String(new Date().getFullYear() - i);
+												return (
+													<SelectItem key={year} value={year}>
+														{year}
+													</SelectItem>
+												);
+											})}
+										</SelectContent>
+									</Select>
+								</div>
+								<div className="grid gap-1">
+									<label htmlFor="priority" className="text-sm font-medium">
+										Priority
+									</label>
+									<Input
+										id="priority"
+										name="priority"
+										type="number"
+										required
+										placeholder="eg. 1"
+									/>
+								</div>
+							</div>
+
+							<div className="mt-6 flex justify-end gap-2">
+								<Button
+									type="button"
+									variant="ghost"
+									onClick={() => setIsCoreModalOpen(false)}
+								>
+									Cancel
+								</Button>
+								<Button type="submit" disabled={addToCorePending}>
+									Confirm
+								</Button>
+							</div>
+						</form>
+					</DialogContent>
+				</Dialog>
+			)}
 		</div>
 	);
 }

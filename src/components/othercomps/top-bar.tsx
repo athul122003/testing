@@ -1,12 +1,14 @@
 "use client";
 
-import { Moon, Search, Sun, User } from "lucide-react";
+import { Menu, Moon, Search, Sun, User } from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
+import { toast } from "sonner";
+import { permissionKeys } from "~/actions/middleware/routePermissions";
 import { Avatar, AvatarFallback } from "~/components/ui/avatar";
 import { Button } from "~/components/ui/button";
 import { Dialog, DialogContent } from "~/components/ui/dialog";
-import { signOut, useSession } from "next-auth/react";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -14,8 +16,16 @@ import {
 	DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { Input } from "~/components/ui/input";
+import {
+	Sheet,
+	SheetContent,
+	SheetHeader,
+	SheetTitle,
+	SheetTrigger,
+} from "~/components/ui/sheet";
 import { DashboardBreadCrumb } from "../customcomps/dashboardBreadCrumb";
-import { permissionKeys } from "~/actions/middleware/routePermissions";
+import { useIsMobile } from "~/hooks/use-mobile";
+import { useDashboardData } from "~/providers/dashboardDataContext";
 
 interface TopBarProps {
 	activePage: string;
@@ -31,12 +41,16 @@ const navigationMap: Record<string, { title: string }> = {
 	users: { title: "Users" },
 	"blog-form": { title: "Blog Form" },
 	"event-form": { title: "Event Form" },
+	"event-participants": { title: "Event Participants" },
+	"event-attendance": { title: "Event Attendance" },
 };
-import { useDashboardData } from "~/providers/dashboardDataContext";
 
 export function TopBar({ activePage, setActivePage }: TopBarProps) {
 	const { data: session } = useSession();
 	const { user, role, hasPerm } = useDashboardData();
+	const isMobile = useIsMobile();
+	const [isHamburgerOpen, setIsHamburgerOpen] = useState(false);
+
 	const searchItems = [
 		{ title: "Dashboard", category: "Pages", id: "dashboard" },
 		{ title: "Events", category: "Pages", id: "events" },
@@ -48,7 +62,7 @@ export function TopBar({ activePage, setActivePage }: TopBarProps) {
 			permissionKeys.MANAGE_ROLE_PERMISSIONS,
 		)
 			? [{ title: "Users", category: "Pages", id: "users" }]
-			: []), //  Only show if permission exists
+			: []),
 		{ title: "Settings", category: "Pages", id: "settings" },
 	];
 
@@ -71,6 +85,12 @@ export function TopBar({ activePage, setActivePage }: TopBarProps) {
 		if (activePage === "blog-form") {
 			items.unshift({ title: "Blogs" });
 		}
+		if (activePage === "event-participants") {
+			items.unshift({ title: "Events" });
+		}
+		if (activePage === "event-attendance") {
+			items.unshift({ title: "Events" });
+		}
 		return items;
 	};
 
@@ -87,6 +107,188 @@ export function TopBar({ activePage, setActivePage }: TopBarProps) {
 	const toggleTheme = () => {
 		setTheme(theme === "dark" ? "light" : "dark");
 	};
+
+	if (isMobile) {
+		return (
+			<>
+				<header className="h-16 border-b border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-black/80 backdrop-blur-sm">
+					<div className="flex items-center justify-between h-full px-4">
+						<div className="flex-1">
+							<h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
+								{navigationMap[activePage]?.title || "Dashboard"}
+							</h1>
+						</div>
+
+						<Sheet open={isHamburgerOpen} onOpenChange={setIsHamburgerOpen}>
+							<SheetTrigger asChild>
+								<Button
+									variant="ghost"
+									size="icon"
+									className="h-9 w-9 text-gray-600 dark:text-gray-400"
+								>
+									<Menu className="h-5 w-5" />
+								</Button>
+							</SheetTrigger>
+							<SheetContent
+								side="right"
+								className="bg-white dark:bg-black border-gray-200 dark:border-gray-800 w-80"
+							>
+								<SheetHeader>
+									<SheetTitle className="text-gray-900 dark:text-gray-100">
+										Menu
+									</SheetTitle>
+								</SheetHeader>
+								<div className="space-y-6 py-6">
+									{/* Search */}
+									<div className="space-y-2">
+										<h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+											Quick Search
+										</h3>
+										<div className="relative">
+											<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+											<Input
+												placeholder="Search everything..."
+												className="pl-10 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
+												onClick={() => {
+													setSearchOpen(true);
+													setIsHamburgerOpen(false);
+												}}
+												readOnly
+											/>
+										</div>
+									</div>
+
+									<div className="space-y-2">
+										<h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+											Appearance
+										</h3>
+										<Button
+											variant="outline"
+											onClick={toggleTheme}
+											className="w-full justify-start gap-3 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
+										>
+											<Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+											<Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+											Toggle theme
+										</Button>
+									</div>
+
+									<div className="space-y-2">
+										<h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+											Account
+										</h3>
+										<div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 space-y-2">
+											<div className="flex items-center gap-3">
+												<Avatar className="h-8 w-8">
+													<AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+														<User className="h-4 w-4" />
+													</AvatarFallback>
+												</Avatar>
+												<div className="flex-1 min-w-0">
+													<p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+														{user?.name ? user.name : `ID: ${user?.id}`}
+													</p>
+													<p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+														{user?.email}
+													</p>
+													<p className="text-xs text-gray-500 dark:text-gray-400">
+														{role}
+													</p>
+												</div>
+											</div>
+											<div className="space-y-1">
+												<Button
+													variant="ghost"
+													size="sm"
+													className="w-full justify-start text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+												>
+													Profile Settings
+												</Button>
+												<Button
+													variant="ghost"
+													size="sm"
+													className="w-full justify-start text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+												>
+													Account
+												</Button>
+												<Button
+													variant="ghost"
+													size="sm"
+													onClick={async () => {
+														try {
+															const res = await fetch("/api/auth/revoke", {
+																method: "POST",
+																headers: {
+																	"Content-Type": "application/json",
+																},
+																body: JSON.stringify({
+																	userId: session?.user.id,
+																}),
+															});
+
+															if (!res.ok) {
+																throw new Error(
+																	"Failed to revoke refresh tokens",
+																);
+															}
+
+															toast.success("Signed out successfully!");
+															await signOut({ callbackUrl: "/auth/login" });
+														} catch (err) {
+															console.error("Sign out failed:", err);
+															toast.error("Error signing out");
+														}
+													}}
+													className="w-full justify-start text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+												>
+													Sign Out
+												</Button>
+											</div>
+										</div>
+									</div>
+								</div>
+							</SheetContent>
+						</Sheet>
+					</div>
+				</header>
+
+				<Dialog open={searchOpen} onOpenChange={setSearchOpen}>
+					<DialogContent className="max-w-sm bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-100">
+						<div className="space-y-4">
+							<div className="relative">
+								<Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+								<Input
+									placeholder="Search pages..."
+									className="pl-10 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100"
+									value={searchTerm}
+									onChange={(e) => setSearchTerm(e.target.value)}
+									autoFocus
+								/>
+							</div>
+							<div className="space-y-2 max-h-60 overflow-y-auto">
+								{filteredItems.length > 0 ? (
+									filteredItems.map((item) => (
+										<button
+											key={item.title}
+											type="button"
+											className="w-full text-left p-3 hover:bg-gray-100 dark:hover:bg-gray-800 bg-gray-50 dark:bg-gray-900 rounded cursor-pointer text-gray-900 dark:text-gray-100"
+											onClick={() => handleSelect(item.id)}
+										>
+											{item.title}
+										</button>
+									))
+								) : (
+									<div className="p-3 text-gray-500 text-center">
+										No results found
+									</div>
+								)}
+							</div>
+						</div>
+					</DialogContent>
+				</Dialog>
+			</>
+		);
+	}
 
 	return (
 		<>
@@ -113,10 +315,7 @@ export function TopBar({ activePage, setActivePage }: TopBarProps) {
 						<Button
 							variant="ghost"
 							size="icon"
-							onClick={() => {
-								console.log("Toggling theme", theme);
-								toggleTheme();
-							}}
+							onClick={toggleTheme}
 							className="h-9 w-9 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
 						>
 							<Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
@@ -133,11 +332,14 @@ export function TopBar({ activePage, setActivePage }: TopBarProps) {
 									</Avatar>
 									<div className="text-left">
 										<p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-											{`${user?.name} || ID: ${user?.id}`}
+											{user?.name ? user.name : `ID: ${user?.id}`}
 										</p>
-
 										<p className="text-xs text-gray-500 dark:text-gray-400">
-											{user?.email} || {role}
+											{user?.email}
+											{user?.email && role ? (
+												<span className="mx-1">·</span>
+											) : null}
+											{role}
 										</p>
 									</div>
 								</div>
@@ -158,17 +360,23 @@ export function TopBar({ activePage, setActivePage }: TopBarProps) {
 								<DropdownMenuItem
 									onClick={async () => {
 										try {
-											await fetch(`/api/auth/signout`, {
+											const res = await fetch("/api/auth/revoke", {
 												method: "POST",
 												headers: {
 													"Content-Type": "application/json",
 												},
 												body: JSON.stringify({ userId: session?.user.id }),
-												credentials: "include",
 											});
-											signOut({ redirect: false });
+
+											if (!res.ok) {
+												throw new Error("Failed to revoke refresh tokens");
+											}
+
+											toast.success("Signed out successfully!");
+											await signOut({ callbackUrl: "/auth/login" });
 										} catch (err) {
-											console.error("Error signing out:", err);
+											console.error("Sign out failed:", err);
+											toast.error("Error signing out");
 										}
 									}}
 									className="text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800"

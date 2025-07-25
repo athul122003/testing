@@ -1,6 +1,11 @@
 // prisma/seed.ts
 
-import { PaymentType, PrismaClient } from "@prisma/client";
+import {
+	PaymentType,
+	PrismaClient,
+	EventType,
+	EventCategory,
+} from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const db = new PrismaClient();
@@ -180,8 +185,150 @@ const main = async () => {
 		}
 
 		console.log("28 payments seeded");
+
+		const settings = [
+			{
+				name: "registrationsOpen",
+				status: true,
+				description: "Club Registrations Open",
+			},
+			{
+				name: "maintenanceMode",
+				status: false,
+				description: "Maintenance Mode",
+			},
+		];
+
+		for (const setting of settings) {
+			await db.settings.upsert({
+				where: { name: setting.name },
+				update: {
+					status: setting.status,
+					description: setting.description,
+				},
+				create: setting,
+			});
+		}
+
+		console.log("🌱 Settings seeded successfully!");
+
+		const now = new Date();
+
+		const events = await db.$transaction([
+			db.event.create({
+				data: {
+					name: "Solo Coding Challenge",
+					eventType: EventType.SOLO,
+					category: EventCategory.WORKSHOP,
+					maxTeamSize: 1,
+					minTeamSize: 1,
+					isMembersOnly: false,
+					state: "PUBLISHED",
+					fromDate: new Date(now.getTime() + 7 * 86400000),
+					toDate: new Date(now.getTime() + 8 * 86400000),
+					deadline: new Date(now.getTime() + 6 * 86400000),
+					description: "A solo coding event.",
+					isLegacy: false,
+				},
+			}),
+			db.event.create({
+				data: {
+					name: "Team Hackathon",
+					eventType: EventType.TEAM,
+					category: EventCategory.HACKATHON,
+					maxTeamSize: 4,
+					minTeamSize: 2,
+					isMembersOnly: false,
+					state: "PUBLISHED",
+					fromDate: new Date(now.getTime() + 14 * 86400000),
+					toDate: new Date(now.getTime() + 15 * 86400000),
+					deadline: new Date(now.getTime() + 13 * 86400000),
+					description: "A team-based hackathon.",
+					isLegacy: false,
+				},
+			}),
+			db.event.create({
+				data: {
+					name: "Unconfirmed Event 1",
+					eventType: EventType.SOLO,
+					category: EventCategory.SPECIAL,
+					maxTeamSize: 1,
+					minTeamSize: 1,
+					isMembersOnly: false,
+					state: "DRAFT",
+					fromDate: new Date(now.getTime() + 21 * 86400000),
+					toDate: new Date(now.getTime() + 22 * 86400000),
+					deadline: new Date(now.getTime() + 20 * 86400000),
+					description: "Unconfirmed event.",
+					isLegacy: false,
+				},
+			}),
+			db.event.create({
+				data: {
+					name: "Unconfirmed Event 2",
+					eventType: EventType.TEAM,
+					category: EventCategory.COMPETITION,
+					maxTeamSize: 3,
+					minTeamSize: 2,
+					isMembersOnly: false,
+					state: "DRAFT",
+					fromDate: new Date(now.getTime() + 28 * 86400000),
+					toDate: new Date(now.getTime() + 29 * 86400000),
+					deadline: new Date(now.getTime() + 27 * 86400000),
+					description: "Another unconfirmed event.",
+					isLegacy: false,
+				},
+			}),
+		]);
+
+		console.log("Events seeded");
+
+		const soloEvent = events[0];
+		const teamEvent = events[1];
+
+		if (allUsers.length < 10) {
+			throw new Error("Not enough users to seed events.");
+		}
+
+		// Step 3: Populate SOLO event registrations
+		for (let i = 0; i < 5; i++) {
+			const user = allUsers[i];
+			await db.team.create({
+				data: {
+					name: user.name,
+					isConfirmed: true,
+					eventId: soloEvent.id,
+					leaderId: user.id,
+					Members: {
+						connect: [],
+					},
+				},
+			});
+		}
+
+		let userIndex1 = 5;
+		for (let i = 0; i < 4; i++) {
+			const teamMembers = allUsers.slice(userIndex1, userIndex1 + 3); // Up to 3 members per team
+			const leader = teamMembers[0];
+			userIndex1 += 3;
+
+			await db.team.create({
+				data: {
+					name: `Team ${i + 1}`,
+					isConfirmed: Math.random() > 0.5, // Random confirmed/unconfirmed
+					eventId: teamEvent.id,
+					leaderId: leader.id,
+					Members: {
+						connect: teamMembers.map((m) => ({ id: m.id })),
+					},
+				},
+			});
+		}
+
+		console.log("Teams seeded for events");
+
 		console.log(
-			"Seed complete: 5 roles, 5 permissions, 35 users, 28 payments, and branches seeded.",
+			"Seed complete: 5 roles, 5 permissions, 35 users, 28 payments, 2 settings, 4 events and branches seeded.",
 		);
 	} catch (err) {
 		console.error("Seed error:", err);

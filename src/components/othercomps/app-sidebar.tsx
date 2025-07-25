@@ -5,12 +5,12 @@ import {
 	Calendar,
 	CreditCard,
 	FileText,
-	ImageIcon,
 	LayoutDashboard,
 	Settings,
 	Users,
 } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef } from "react";
+import { permissionKeys } from "~/actions/middleware/routePermissions";
 import {
 	Sidebar,
 	SidebarContent,
@@ -19,9 +19,8 @@ import {
 	SidebarMenuItem,
 	SidebarRail,
 } from "~/components/ui/sidebar";
-import * as ToolTip from "../ui/tooltip";
 import { useDashboardData } from "~/providers/dashboardDataContext";
-import { permissionKeys } from "~/actions/middleware/routePermissions";
+import * as ToolTip from "../ui/tooltip";
 
 interface AppSidebarProps {
 	activePage: string;
@@ -40,7 +39,7 @@ export function AppSidebar({ activePage, setActivePage }: AppSidebarProps) {
 		{ title: "", icon: LayoutDashboard, id: "dashboard" },
 		{ title: "", icon: Calendar, id: "events" },
 		{ title: "", icon: FileText, id: "blogs" },
-		{ title: "", icon: ImageIcon, id: "gallery" },
+		// { title: "", icon: ImageIcon, id: "gallery" },
 		{ title: "", icon: CreditCard, id: "payments" },
 		...(hasPerm(
 			permissionKeys.MANAGE_USER_ROLES,

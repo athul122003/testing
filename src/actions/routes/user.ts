@@ -21,6 +21,12 @@ const updateRoleSchema = z.object({
 	roleName: z.string(),
 });
 
+const addUserLinkSchema = z.object({
+	userId: z.number(),
+	linkName: z.string().min(1),
+	url: z.string().url(),
+});
+
 // --- Protected Actions ---
 
 export const searchUser = protectedAction(
@@ -178,3 +184,128 @@ export const updateMultipleUserRoles = protectedAction(
 	},
 	{ actionName: "user.updateMultipleRoles" },
 );
+
+export const updateUser = async (input: {
+	userId: number;
+	name?: string;
+	usn?: string;
+	branch?: string;
+	year?: string;
+	bio?: string;
+}) => {
+	const { userId, name, usn, branch, year, bio } = input;
+
+	const data: Prisma.UserUpdateInput = {};
+	if (name !== undefined) data.name = name;
+	if (usn !== undefined) data.usn = usn;
+	if (branch !== undefined) {
+		const branchRecord = await db.branch.findUnique({ where: { id: branch } });
+		if (!branchRecord) {
+			throw new Error("Branch not found");
+		}
+		data.Branch = { connect: { id: branch } };
+	}
+	if (year !== undefined) data.year = year;
+	if (bio !== undefined) data.bio = bio;
+
+	const updatedUser = await db.user.update({
+		where: { id: userId },
+		data,
+		select: {
+			id: true,
+			name: true,
+			email: true,
+			usn: true,
+			year: true,
+			bio: true,
+		},
+	});
+
+	return updatedUser;
+};
+
+export const addUserLink = async (input: unknown) => {
+	const { userId, linkName, url } = addUserLinkSchema.parse(input);
+
+	const user = await db.user.findUnique({ where: { id: userId } });
+	if (!user) throw new Error("User not found");
+
+	const newLink = await db.userLink.create({
+		data: {
+			linkName,
+			url,
+			userId,
+		},
+		select: {
+			id: true,
+			linkName: true,
+			url: true,
+			createdAt: true,
+			updatedAt: true,
+		},
+	});
+
+	return newLink;
+};
+
+export const removeUserLink = async (input: {
+	userId: number;
+	linkName: string;
+}) => {
+	const { userId, linkName } = input;
+
+	const user = await db.user.findUnique({ where: { id: userId } });
+	if (!user) throw new Error("User not found");
+
+	const link = await db.userLink.findFirst({
+		where: { userId, linkName },
+	});
+	if (!link) throw new Error("Link not found");
+
+	await db.userLink.delete({
+		where: { id: link.id },
+	});
+
+	return { success: true };
+};
+
+export const searchUserById = async (input: { userId: number }) => {
+	const { userId } = input;
+
+	const user = await db.user.findUnique({
+		where: { id: userId },
+		select: {
+			id: true,
+			name: true,
+			usn: true,
+			Branch: {
+				select: {
+					id: true,
+					name: true,
+				},
+			},
+			totalActivityPoints: true,
+			UserLink: {
+				select: {
+					id: true,
+					linkName: true,
+					url: true,
+				},
+			},
+			year: true,
+			bio: true,
+			memberSince: true,
+			email: true,
+			role: {
+				select: {
+					id: true,
+					name: true,
+				},
+			},
+		},
+	});
+
+	if (!user) throw new Error("User not found");
+
+	return user;
+};
