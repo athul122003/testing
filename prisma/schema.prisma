@@ -324,7 +324,6 @@ model Blog {
   readTime    Int
   words       Int
   coverImage  String? //new: cover image url for the blog
-  images      BlogImage[] //new: image url for the blog
   blogState   BlogState   @default(DRAFT)
 
   userId Int
@@ -335,17 +334,6 @@ model Blog {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-}
-
-model BlogImage {
-  id        String   @id
-  imageUrl  String
-  blogId    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime
-  Blog      Blog     @relation(fields: [blogId], references: [id])
-
-  @@index([blogId])
 }
 
 // //Quiz
