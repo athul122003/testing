@@ -55,7 +55,7 @@ export function TopBar({ activePage, setActivePage }: TopBarProps) {
 		{ title: "Dashboard", category: "Pages", id: "dashboard" },
 		{ title: "Events", category: "Pages", id: "events" },
 		{ title: "Blogs", category: "Pages", id: "blogs" },
-		{ title: "Gallery", category: "Pages", id: "gallery" },
+		// { title: "Gallery", category: "Pages", id: "gallery" },
 		{ title: "Payments", category: "Pages", id: "payments" },
 		...(hasPerm(
 			permissionKeys.MANAGE_USER_ROLES,
