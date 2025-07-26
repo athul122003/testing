@@ -568,7 +568,7 @@ export function AddOrganisersSection({ eventId }: { eventId: number }) {
 		setSearchResult(null);
 
 		const res = await api.user.searchUserByUsn({
-			usn: usn.trim().toUpperCase(),
+			usn: usn.trim().toLowerCase(),
 		});
 
 		if (!res.success || !res.data) {

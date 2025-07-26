@@ -344,8 +344,13 @@ export const searchUserByUsn = protectedAction(
 	async (_session, input: { usn: string }) => {
 		const { usn } = input;
 
-		const user = await db.user.findUnique({
-			where: { usn },
+		const user = await db.user.findFirst({
+			where: {
+				usn: {
+					equals: usn,
+					mode: "insensitive",
+				},
+			},
 			select: {
 				id: true,
 				name: true,
