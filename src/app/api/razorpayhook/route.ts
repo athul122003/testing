@@ -27,10 +27,12 @@ export const POST = async (req: Request) => {
 		const paymentId = data.payload.payment.entity.id;
 		const paymentSignature = data.payload.payment.entity.signature;
 		const orderId = data.payload.payment.entity.order_id;
-		const amount = data.payload.payment.entity.amount;
+		const amount = parseInt(data.payload.payment.entity.amount) / 100;
 		const paymentType = data.payload.payment.entity.notes?.paymentType;
 		const paymentName = data.payload.payment.entity.notes?.paymentName;
-		const sessionUserId = data.payload.payment.entity.notes?.sessionUserId;
+		const sessionUserId = parseInt(
+			data.payload.payment.entity.notes?.sessionUserId,
+		);
 		const teamId = data.payload.payment.entity.notes?.teamId;
 
 		try {
