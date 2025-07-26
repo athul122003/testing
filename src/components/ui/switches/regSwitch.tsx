@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import styled from "styled-components";
+import { toggleRegistration } from "~/actions/others";
 
 const RegisterSwitch = () => {
 	const [status, setStatus] = useState(false);
@@ -27,15 +29,14 @@ const RegisterSwitch = () => {
 	}, []);
 
 	const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-		const newStatus = e.target.checked;
-		setStatus(newStatus);
-		await fetch("/api/auth/register/update-status", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({ value: newStatus }),
-		});
+		try {
+			console.log("Switch changed:", e.target.checked);
+			const newStatus = e.target.checked;
+			await toggleRegistration(newStatus);
+			setStatus(newStatus);
+		} catch (error) {
+			toast.error("Failed to toggle registration status");
+		}
 	};
 
 	if (loading) {

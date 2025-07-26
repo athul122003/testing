@@ -10,10 +10,12 @@ import { Separator } from "~/components/ui/separator";
 import { useDashboardData } from "~/providers/dashboardDataContext";
 import MaintainenceSwitch from "../ui/switches/maintainenceSwitch";
 import NukeSwitch from "../ui/switches/nukeSwitch";
+import { permissionKeys as perm } from "~/actions/middleware/routePermissions";
 import RegisterSwitch from "../ui/switches/regSwitch";
+import { AccessDenied } from "../othercomps/access-denied";
 
 export function SettingsPage() {
-	const { user } = useDashboardData();
+	const { user, hasPerm } = useDashboardData();
 	const [currPass, setCurrPass] = useState("");
 	const [newPass, setNewPass] = useState("");
 	const [confirmPass, setConfirmPass] = useState("");
@@ -57,6 +59,19 @@ export function SettingsPage() {
 		}
 	};
 
+	const canManageSettings = hasPerm(perm.MANAGE_SETTINGS);
+
+	if (!canManageSettings) {
+		return (
+			<div className="flex flex-col items-center justify-center h-[60vh]">
+				<AccessDenied />
+				<p className="text-gray-500 dark:text-slate-400 text-center max-w-xs">
+					You do not have permission to manage settings.
+				</p>
+			</div>
+		);
+	}
+
 	return (
 		<div className="space-y-8">
 			<div>
@@ -84,7 +99,7 @@ export function SettingsPage() {
 								</Label>
 								<RegisterSwitch />
 							</div>
-							<div className="border-4 border-black dark:border-white min-h-80 rounded-xl flex flex-col justify-between items-center p-4">
+							{/* <div className="border-4 border-black dark:border-white min-h-80 rounded-xl flex flex-col justify-between items-center p-4">
 								<Label
 									htmlFor="maintainence_mode"
 									className="text-xl font-bold self-center"
@@ -92,7 +107,7 @@ export function SettingsPage() {
 									Maintainence Mode
 								</Label>
 								<MaintainenceSwitch />
-							</div>
+							</div> */}
 							<div className="border-4 border-black dark:border-white min-h-80 rounded-xl flex flex-col justify-between items-center p-4">
 								<Label
 									htmlFor="nuke_switch"

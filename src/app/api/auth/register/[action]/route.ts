@@ -158,55 +158,11 @@ export async function POST(req: NextRequest) {
 					);
 				}
 			}
-
-			case "update-status": {
-				const session = await getServerSession(authOptions);
-
-				if (!session || !session.user) {
-					return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-				}
-
-				if (session.user.role.name !== "ADMIN") {
-					return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-				}
-
-				const updateSchema = z.object({
-					value: z.boolean(),
-				});
-
-				const result = updateSchema.safeParse(body);
-
-				if (!result.success) {
-					return NextResponse.json(
-						{ message: "Validation failed", issues: result.error.issues },
-						{ status: 400 },
-					);
-				}
-
-				const { value } = result.data;
-
-				const setting = await db.settings.findUnique({
-					where: { name: "registrationsOpen" },
-				});
-
-				if (!setting) {
-					return NextResponse.json(
-						{ success: false, message: `Setting '${name}' not found` },
-						{ status: 404 },
-					);
-				}
-
-				const updated = await db.settings.update({
-					where: { name: "registrationsOpen" },
-					data: { status: value },
-				});
-
-				return NextResponse.json({
-					success: true,
-					message: `Setting registrationsOpen updated to ${value}`,
-					status: updated.status,
-				});
-			}
+			default:
+				return NextResponse.json(
+					{ message: "Invalid action" },
+					{ status: 400 },
+				);
 		}
 	} catch (error) {
 		console.error("API /api/auth error:", error);

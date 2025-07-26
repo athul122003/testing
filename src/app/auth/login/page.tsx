@@ -161,7 +161,7 @@ const LoginForm: FunctionComponent<Props> = ({ className }) => {
 				/>
 				<div className="!mt-2 flex justify-between text-sm">
 					<Link
-						href="/send-reset-email"
+						href={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/auth/forgot`}
 						className="text-muted-foreground text-white underline dark:text-white "
 					>
 						Forgot password
@@ -178,7 +178,11 @@ const LoginForm: FunctionComponent<Props> = ({ className }) => {
 					<p className="mb-4  mt-4 text-center text-base text-white dark:text-white">
 						Don&#39;t have an account?&nbsp;
 						<strong className="underline">
-							<Link href="/signup">Signup </Link>
+							<Link
+								href={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/auth/signup`}
+							>
+								Signup{" "}
+							</Link>
 						</strong>
 					</p>
 				</div>

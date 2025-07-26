@@ -11,6 +11,7 @@ import {
 	Users,
 } from "lucide-react";
 import Image from "next/image";
+import { permissionKeys as perm } from "~/actions/middleware/routePermissions";
 import { useState } from "react";
 import { ExtendedEvent, toggleEventStatus } from "~/actions/event";
 import { toast } from "sonner";
@@ -34,6 +35,7 @@ import {
 	SelectValue,
 } from "~/components/ui/select";
 import { Event } from "@prisma/client";
+import { AccessDenied } from "../othercomps/access-denied";
 
 interface EventsPageProps {
 	setActivePage: (page: string) => void;
@@ -51,8 +53,8 @@ export function EventsPage({
 	const [statusModalOpen, setStatusModalOpen] = useState(false);
 	const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-	const { eventsQuery, refetchEvents } = useDashboardData();
-
+	const { hasPerm, eventsQuery, refetchEvents } = useDashboardData();
+	const canManageEvents = hasPerm(perm.MANAGE_EVENTS);
 	const { data: eventsData, isLoading } = eventsQuery;
 
 	const events = eventsData?.data || [];
@@ -163,6 +165,17 @@ export function EventsPage({
 				return "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400";
 		}
 	};
+
+	if (!canManageEvents) {
+		return (
+			<div className="flex flex-col items-center justify-center h-[60vh]">
+				<AccessDenied />
+				<p className="text-gray-500 dark:text-slate-400 text-center max-w-xs">
+					You do not have permission to manage events.
+				</p>
+			</div>
+		);
+	}
 
 	if (isLoading) {
 		return <ComponentLoading message="Loading Events" />;

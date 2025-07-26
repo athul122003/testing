@@ -17,6 +17,7 @@ import type {
 } from "~/actions/tanstackHooks/payment-queries";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
+import { permissionKeys as perm } from "~/actions/middleware/routePermissions";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import {
 	DropdownMenu,
@@ -45,6 +46,7 @@ import { formatCurrency } from "~/lib/formatCurrency";
 import { formatDateTime } from "~/lib/formatDateTime";
 import { useDashboardData } from "~/providers/dashboardDataContext";
 import { ComponentLoading } from "../ui/component-loading";
+import { AccessDenied } from "../othercomps/access-denied";
 
 type PaymentStatus = "success" | "failed" | "pending";
 
@@ -65,8 +67,9 @@ export function PaymentsPage() {
 	});
 
 	const pageSize = 20;
-	const { paymentsQuery, setPaymentParams, summaryStatsQuery } =
+	const { hasPerm, paymentsQuery, setPaymentParams, summaryStatsQuery } =
 		useDashboardData();
+	const canManagePayments = hasPerm(perm.MANAGE_PAYMENTS);
 	const {
 		data: paymentsData,
 		isLoading,
@@ -186,6 +189,17 @@ export function PaymentsPage() {
 			console.error("Error exporting all payments:", error);
 		}
 	};
+
+	if (!canManagePayments) {
+		return (
+			<div className="flex flex-col items-center justify-center h-[60vh]">
+				<AccessDenied />
+				<p className="text-gray-500 dark:text-slate-400 text-center max-w-xs">
+					You do not have permission to manage payments.
+				</p>
+			</div>
+		);
+	}
 
 	if (isLoading) {
 		return <ComponentLoading message="Loading Payments" />;

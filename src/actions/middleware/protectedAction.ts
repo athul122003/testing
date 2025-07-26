@@ -60,9 +60,7 @@ export function protectedAction<Args extends unknown[], Result>(
 			try {
 				const requiredPermissions = routePermissionMap[actionName] ?? [];
 				if (!hasPermission(session, requiredPermissions)) {
-					throw new Error(
-						`Forbidden: Missing permission(s): ${requiredPermissions.join(", ")}`,
-					);
+					throw new Error(`Forbidden: Missing permission(s)`);
 				}
 			} catch (err) {
 				console.error("Error checking permissions:", err);

@@ -233,10 +233,10 @@ export function TopBar({ activePage, setActivePage }: TopBarProps) {
 															}
 
 															toast.success("Signed out successfully!");
-															await signOut({ callbackUrl: "/auth/login" });
 														} catch (err) {
 															console.error("Sign out failed:", err);
-															toast.error("Error signing out");
+														} finally {
+															await signOut({ callbackUrl: "/auth/login" });
 														}
 													}}
 													className="w-full justify-start text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -371,12 +371,11 @@ export function TopBar({ activePage, setActivePage }: TopBarProps) {
 											if (!res.ok) {
 												throw new Error("Failed to revoke refresh tokens");
 											}
-
 											toast.success("Signed out successfully!");
-											await signOut({ callbackUrl: "/auth/login" });
 										} catch (err) {
 											console.error("Sign out failed:", err);
-											toast.error("Error signing out");
+										} finally {
+											await signOut({ callbackUrl: "/auth/login" });
 										}
 									}}
 									className="text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800"

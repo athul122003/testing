@@ -40,7 +40,7 @@ const main = async () => {
 			"MANAGE_ROLE_PERMISSIONS",
 			"MANAGE_EVENTS",
 			"MANAGE_PAYMENTS",
-			"MANAGE_TEAMS",
+			"MANAGE_CORE",
 			"ISSUE_CERTIFICATE",
 		];
 

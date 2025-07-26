@@ -19,6 +19,7 @@ const stats = [
 		value: "0",
 		icon: Calendar,
 		color: "from-blue-500 to-blue-600",
+		perm: "MANAGE_EVENTS",
 	},
 	{
 		id: "blogs",
@@ -26,6 +27,7 @@ const stats = [
 		value: "0",
 		icon: FileText,
 		color: "from-green-500 to-green-600",
+		perm: "MANAGE_BLOGS",
 	},
 	{
 		id: "gallery",
@@ -33,6 +35,7 @@ const stats = [
 		value: "0",
 		icon: ImageIcon,
 		color: "from-purple-500 to-purple-600",
+		perm: "MANAGE_GALLERY",
 	},
 	{
 		id: "payments",
@@ -40,6 +43,7 @@ const stats = [
 		value: "0",
 		icon: IndianRupeeIcon,
 		color: "from-yellow-500 to-yellow-600",
+		perm: "MANAGE_PAYMENTS",
 	},
 ];
 
@@ -49,7 +53,7 @@ const recentActivity: any[] = [];
 
 export function DashboardContent() {
 	const [isLoading, setIsLoading] = useState(true);
-	const { summaryStatsQuery, eventsQuery } = useDashboardData();
+	const { summaryStatsQuery, eventsQuery, hasPerm } = useDashboardData();
 	const { data: summaryStatsData, isLoading: summaryLoading } =
 		summaryStatsQuery;
 	const summaryStats = summaryStatsData ?? {
@@ -104,7 +108,27 @@ export function DashboardContent() {
 						</CardHeader>
 						<CardContent>
 							<div className="text-2xl font-bold text-gray-900 dark:text-white">
-								{isLoading ? <ComponentLoading size="sm" /> : stat.value}
+								{isLoading ? (
+									<ComponentLoading size="sm" />
+								) : hasPerm(stat.perm) ? (
+									stat.value
+								) : (
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										className="h-12 w-12 text-gray-400 dark:text-slate-500"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+										strokeWidth={2}
+									>
+										<title>Access Denied Icon</title>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											d="M16 11V7a4 4 0 10-8 0v4M5 11h14a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2z"
+										/>
+									</svg>
+								)}
 							</div>
 						</CardContent>
 					</Card>

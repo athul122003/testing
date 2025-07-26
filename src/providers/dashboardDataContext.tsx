@@ -104,15 +104,19 @@ export const DashboardDataProvider = ({
 				}
 			: undefined;
 
-	const hasPerm = (...perms: string[]) =>
-		perms.some((perm) => permissions.includes(perm));
-
+	const hasPerm = (...perms: string[]) => {
+		if (role === "ADMIN") return true;
+		return perms.some((perm) => permissions.includes(perm));
+	};
 	const canManageUsers = hasPerm("MANAGE_USER_ROLES");
 	const canManageRoles = hasPerm(
 		"MANAGE_USER_ROLES",
 		"MANAGE_ROLE_PERMISSIONS",
 	);
 	const canManagePermissions = hasPerm("MANAGE_ROLE_PERMISSIONS");
+
+	const canManageEvents = hasPerm("MANAGE_EVENTS");
+	const canManagePayments = hasPerm("MANAGE_PAYMENTS");
 
 	const [paymentArgs, setPaymentArgs] = useState<{
 		page: number;
@@ -181,6 +185,7 @@ export const DashboardDataProvider = ({
 			}),
 		staleTime: 30_000,
 		placeholderData: (prev) => prev,
+		enabled: canManagePayments,
 	});
 
 	const summaryStatsQuery = useQuery<SummaryStats>({
@@ -188,6 +193,7 @@ export const DashboardDataProvider = ({
 		queryFn: getSummaryStats,
 		staleTime: 30_000,
 		placeholderData: (prev) => prev,
+		enabled: canManagePayments,
 	});
 
 	const rolesQuery = useQuery({
@@ -235,6 +241,7 @@ export const DashboardDataProvider = ({
 		queryFn: getAllEvents,
 		refetchOnWindowFocus: false,
 		staleTime: 30_000,
+		enabled: canManageEvents,
 	});
 
 	const value: DashboardDataContextType = {

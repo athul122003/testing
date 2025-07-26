@@ -1,5 +1,6 @@
 "use server";
 import { db } from "~/server/db";
+import { protectedAction } from "./middleware/protectedAction";
 
 interface CreateTeamInput {
 	eventId: number;
@@ -52,16 +53,19 @@ export async function deleteTeam(teamId: string) {
 	});
 }
 
-export async function removeMemberFromTeam(teamId: string, userId: number) {
-	await db.team.update({
-		where: { id: teamId },
-		data: {
-			Members: {
-				disconnect: { id: userId },
+export const removeMemberFromTeam = protectedAction(
+	async (teamId: string, userId: number) => {
+		await db.team.update({
+			where: { id: teamId },
+			data: {
+				Members: {
+					disconnect: { id: userId },
+				},
 			},
-		},
-	});
-}
+		});
+	},
+	{ actionName: "event.ALLPERM" },
+);
 
 export async function updateTeamName(teamId: string, newName: string) {
 	await db.team.update({
@@ -136,96 +140,102 @@ export async function addMemberToTeam(teamId: string, userId: number) {
 	return updatedTeam?.Members || [];
 }
 
-export async function markAttendance(eventId: number, userId: number) {
-	const attendance = await db.attendance.upsert({
-		where: {
-			userId_eventId: {
-				userId,
-				eventId,
-			},
-		},
-		update: {
-			hasAttended: true,
-		},
-		create: {
-			eventId,
-			userId,
-			hasAttended: true,
-		},
-	});
-	return attendance;
-}
-
-export async function markAttendanceByScan(eventId: number, teamId: string) {
-	const team = await db.team.findUnique({
-		where: { id: teamId, eventId: eventId },
-		include: {
-			Members: {
-				select: {
-					id: true,
-				},
-			},
-			Leader: {
-				select: {
-					id: true,
-				},
-			},
-		},
-	});
-	if (!team) {
-		throw new Error("Team not found");
-	}
-
-	const memberIds = team.Members.map((member) => member.id);
-	const leaderId = team.Leader?.id;
-	const uniqueUserIds = Array.from(new Set([...memberIds, leaderId]));
-
-	const errors: { userId: number; error: string }[] = [];
-
-	await db.team.update({
-		where: { id: teamId, eventId: eventId },
-		data: {
-			hasAttended: true,
-		},
-	});
-
-	await Promise.all(
-		uniqueUserIds.map(async (userId) => {
-			const existing = await db.attendance.findUnique({
-				where: {
-					userId_eventId: {
-						userId,
-						eventId,
-					},
-				},
-			});
-			if (existing?.hasAttended) {
-				errors.push({ userId, error: "Attendance already marked" });
-				return;
-			}
-			await db.attendance.upsert({
-				where: {
-					userId_eventId: {
-						userId,
-						eventId,
-					},
-				},
-				update: {
-					hasAttended: true,
-				},
-				create: {
-					eventId,
+export const markAttendance = protectedAction(
+	async (eventId: number, userId: number) => {
+		const attendance = await db.attendance.upsert({
+			where: {
+				userId_eventId: {
 					userId,
-					hasAttended: true,
+					eventId,
 				},
-			});
-		}),
-	);
+			},
+			update: {
+				hasAttended: true,
+			},
+			create: {
+				eventId,
+				userId,
+				hasAttended: true,
+			},
+		});
+		return attendance;
+	},
+	{ actionName: "event.ALLPERM" },
+);
 
-	if (errors.length > 0) {
-		throw errors;
-	}
-}
+export const markAttendanceByScan = protectedAction(
+	async (eventId: number, teamId: string) => {
+		const team = await db.team.findUnique({
+			where: { id: teamId, eventId: eventId },
+			include: {
+				Members: {
+					select: {
+						id: true,
+					},
+				},
+				Leader: {
+					select: {
+						id: true,
+					},
+				},
+			},
+		});
+		if (!team) {
+			throw new Error("Team not found");
+		}
+
+		const memberIds = team.Members.map((member) => member.id);
+		const leaderId = team.Leader?.id;
+		const uniqueUserIds = Array.from(new Set([...memberIds, leaderId]));
+
+		const errors: { userId: number; error: string }[] = [];
+
+		await db.team.update({
+			where: { id: teamId, eventId: eventId },
+			data: {
+				hasAttended: true,
+			},
+		});
+
+		await Promise.all(
+			uniqueUserIds.map(async (userId) => {
+				const existing = await db.attendance.findUnique({
+					where: {
+						userId_eventId: {
+							userId,
+							eventId,
+						},
+					},
+				});
+				if (existing?.hasAttended) {
+					errors.push({ userId, error: "Attendance already marked" });
+					return;
+				}
+				await db.attendance.upsert({
+					where: {
+						userId_eventId: {
+							userId,
+							eventId,
+						},
+					},
+					update: {
+						hasAttended: true,
+					},
+					create: {
+						eventId,
+						userId,
+						hasAttended: true,
+					},
+				});
+			}),
+		);
+
+		if (errors.length > 0) {
+			throw errors;
+		}
+	},
+	{ actionName: "event.ALLPERM" },
+);
 
 export async function hasAttended(
 	eventId: number,
@@ -244,49 +254,55 @@ export async function hasAttended(
 	});
 	return attendance?.hasAttended ?? false;
 }
-export async function confirmTeam(teamId: string) {
-	const team = await db.team.findUnique({
-		where: { id: teamId },
-		select: { id: true, isConfirmed: true },
-	});
+export const confirmTeam = protectedAction(
+	async (teamId: string) => {
+		const team = await db.team.findUnique({
+			where: { id: teamId },
+			select: { id: true, isConfirmed: true },
+		});
 
-	if (!team) {
-		throw new Error("Team not found");
-	}
+		if (!team) {
+			throw new Error("Team not found");
+		}
 
-	if (team.isConfirmed) {
-		return { success: false, message: "Team is already confirmed" };
-	}
+		if (team.isConfirmed) {
+			return { success: false, message: "Team is already confirmed" };
+		}
 
-	const updatedTeam = await db.team.update({
-		where: { id: teamId },
-		data: { isConfirmed: true },
-	});
+		const updatedTeam = await db.team.update({
+			where: { id: teamId },
+			data: { isConfirmed: true },
+		});
 
-	return { success: true, data: updatedTeam };
-}
+		return { success: true, data: updatedTeam };
+	},
+	{ actionName: "event.ALLPERM" },
+);
 
-export async function unConfirmTeam(teamId: string) {
-	const team = await db.team.findUnique({
-		where: { id: teamId },
-		select: { id: true, isConfirmed: true },
-	});
+export const unConfirmTeam = protectedAction(
+	async (teamId: string) => {
+		const team = await db.team.findUnique({
+			where: { id: teamId },
+			select: { id: true, isConfirmed: true },
+		});
 
-	if (!team) {
-		throw new Error("Team not found");
-	}
+		if (!team) {
+			throw new Error("Team not found");
+		}
 
-	if (!team.isConfirmed) {
-		return { success: false, message: "Team is already not confirmed" };
-	}
+		if (!team.isConfirmed) {
+			return { success: false, message: "Team is already not confirmed" };
+		}
 
-	const updatedTeam = await db.team.update({
-		where: { id: teamId },
-		data: { isConfirmed: false },
-	});
+		const updatedTeam = await db.team.update({
+			where: { id: teamId },
+			data: { isConfirmed: false },
+		});
 
-	return { success: true, data: updatedTeam };
-}
+		return { success: true, data: updatedTeam };
+	},
+	{ actionName: "event.ALLPERM" },
+);
 
 export async function createTeam(input: CreateTeamInput) {
 	const { eventId, teamName, leaderId, memberIds, isConfirmed = false } = input;

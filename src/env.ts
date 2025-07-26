@@ -8,6 +8,9 @@ const envSchema = z.object({
 	DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
 	AUTH_SECRET: z.string().min(1, "AUTH_SECRET is required"),
 	RAZORPAY_API_KEY_ID: z.string().min(1, "RAZORPAY_API_KEY_ID is required"),
+	NEXT_PUBLIC_FRONTEND_URL: z
+		.string()
+		.url("NEXT_PUBLIC_FRONTEND_URL must be a valid URL"),
 	RAZORPAY_SECRET: z.string().min(1, "RAZORPAY_SECRET is required"),
 	SMTP_GMAIL: z.string().email("SMTP_GMAIL must be a valid email"),
 	SMTP_PASSWORD: z.string().min(1, "SMTP_PASSWORD is required"),

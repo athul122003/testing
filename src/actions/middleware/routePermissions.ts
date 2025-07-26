@@ -15,7 +15,7 @@
 
 // 	MANAGE_EVENTS: [],
 // 	MANAGE_PAYMENTS: [],
-// 	MANAGE_TEAMS: [],
+// 	MANAGE_CORE: [],
 // 	ISSUE_CERTIFICATE: [],
 // } as const;
 
@@ -24,7 +24,7 @@
 //   MANAGE_ROLE_PERMISSIONS: "MANAGE_ROLE_PERMISSIONS",
 //   MANAGE_EVENTS: "MANAGE_EVENTS",
 //   MANAGE_PAYMENTS: "MANAGE_PAYMENTS",
-//   MANAGE_TEAMS: "MANAGE_TEAMS",
+//   MANAGE_CORE: "MANAGE_CORE",
 //   ISSUE_CERTIFICATE: "ISSUE_CERTIFICATE",
 // } as const;
 
@@ -42,8 +42,9 @@ export const permissionKeys = {
 	MANAGE_ROLE_PERMISSIONS: "MANAGE_ROLE_PERMISSIONS",
 	MANAGE_EVENTS: "MANAGE_EVENTS",
 	MANAGE_PAYMENTS: "MANAGE_PAYMENTS",
-	MANAGE_TEAMS: "MANAGE_TEAMS",
+	MANAGE_CORE: "MANAGE_CORE",
 	ISSUE_CERTIFICATE: "ISSUE_CERTIFICATE",
+	MANAGE_SETTINGS: "MANAGE_SETTINGS",
 } as const;
 
 // ✅ Define corresponding route arrays (in same order)
@@ -60,16 +61,19 @@ export const permissionRoutes = [
 	["role.getAll", "role.create", "role.delete", "role.updateRolePermissions"],
 
 	// MANAGE_EVENTS
-	[],
+	["event.ALLPERM"],
 
 	// MANAGE_PAYMENTS
-	[],
+	["payment.ALLPERM"],
 
-	// MANAGE_TEAMS
+	// MANAGE_CORE
 	[],
 
 	// ISSUE_CERTIFICATE
 	[],
+
+	// MANAGE_SETTINGS
+	["settings.ALLPERM"],
 ] as const;
 
 // Convert keys object to array for iteration
