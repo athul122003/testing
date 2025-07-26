@@ -61,7 +61,13 @@ export const permissionRoutes = [
 	["role.getAll", "role.create", "role.delete", "role.updateRolePermissions"],
 
 	// MANAGE_EVENTS
-	["event.ALLPERM"],
+	[
+		"event.ALLPERM",
+		"user.searchByUsn",
+		"event.organiser.getAll",
+		"event.organiser.remove",
+		"event.organiser.add",
+	],
 
 	// MANAGE_PAYMENTS
 	["payment.ALLPERM"],
