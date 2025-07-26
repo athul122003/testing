@@ -70,7 +70,7 @@ async function registerConfirmSoloEvent(userId: number, eventId: number) {
 				eventId,
 				leaderId: userId,
 				Members: {
-					connect: [],
+					connect: [{ id: userId }],
 				},
 			},
 		});
@@ -112,7 +112,7 @@ async function registerSoloEvent(userId: number, eventId: number) {
 			eventId,
 			leaderId: userId,
 			Members: {
-				connect: [],
+				connect: [{ id: userId }],
 			},
 		},
 	});
@@ -168,12 +168,16 @@ export async function soloEventReg(userId: number, eventId: number) {
 			error: "Registration for this event has closed",
 		};
 	}
+	const memberRole = await db.role.findUnique({
+		where: { name: "MEMBER" },
+		select: { id: true },
+	});
 	if (event.isMembersOnly) {
 		const userInfo = await db.user.findUnique({
 			where: { id: userId },
 			select: { id: true, name: true, roleId: true },
 		});
-		if (!userInfo || userInfo.roleId !== "MEMBER") {
+		if (!userInfo || userInfo.roleId !== memberRole?.id) {
 			return {
 				success: false,
 				error: "Only FLC members can register for this event",
@@ -333,12 +337,14 @@ export async function createTeam(
 			};
 		}
 
-		// Create the team
 		const team = await db.team.create({
 			data: {
 				name: teamName,
 				eventId,
 				leaderId: userId,
+				Members: {
+					connect: [{ id: userId }],
+				},
 			},
 		});
 
@@ -487,10 +493,6 @@ export async function joinTeam(
 			message: "User successfully joined the team",
 			members: updatedTeam
 				? [
-						{
-							id: updatedTeam.Leader.id,
-							name: updatedTeam.Leader.name,
-						},
 						...updatedTeam.Members.map((m) => ({
 							id: m.id,
 							name: m.name,
@@ -537,13 +539,10 @@ export async function getTeam(userId: number, eventId: number) {
 		data: {
 			teamName: team.name,
 			teamId: team.id,
+			leaderId: team.leaderId,
 			isConfirmed: team.isConfirmed,
 			isLeader: team.leaderId === userId,
 			members: [
-				{
-					id: team.Leader.id,
-					name: team.Leader.name,
-				},
 				...team.Members.map((m) => ({
 					id: m.id,
 					name: m.name,

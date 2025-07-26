@@ -42,6 +42,7 @@ type Member = {
 type Team = {
 	id: string;
 	name: string;
+	leaderId?: number;
 	isConfirmed: boolean;
 	leaderName?: string;
 	members: Member[];
@@ -527,23 +528,25 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 							<div>
 								<Label>Members</Label>
 								<ul className="space-y-2 mt-2">
-									{selectedTeam.members.map((member) => (
-										<li
-											key={member.id}
-											className="flex justify-between items-center"
-										>
-											<span>{member.name}</span>
-											<Button
-												variant="outline"
-												size="sm"
-												onClick={() =>
-													handleRemoveMember(selectedTeam.id, member.id)
-												}
+									{selectedTeam.members
+										.filter((member) => member.id !== selectedTeam.leaderId)
+										.map((member) => (
+											<li
+												key={member.id}
+												className="flex justify-between items-center"
 											>
-												Remove
-											</Button>
-										</li>
-									))}
+												<span>{member.name}</span>
+												<Button
+													variant="outline"
+													size="sm"
+													onClick={() =>
+														handleRemoveMember(selectedTeam.id, member.id)
+													}
+												>
+													Remove
+												</Button>
+											</li>
+										))}
 								</ul>
 							</div>
 
