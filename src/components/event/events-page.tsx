@@ -53,7 +53,8 @@ export function EventsPage({
 	const [statusModalOpen, setStatusModalOpen] = useState(false);
 	const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-	const { hasPerm, eventsQuery, refetchEvents } = useDashboardData();
+	const { hasPerm, eventsQuery, refetchEvents, isOrganiser } =
+		useDashboardData();
 	const canManageEvents = hasPerm(perm.MANAGE_EVENTS);
 	const { data: eventsData, isLoading } = eventsQuery;
 
@@ -165,8 +166,8 @@ export function EventsPage({
 				return "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400";
 		}
 	};
-
-	if (!canManageEvents) {
+	console.log("organiser status:", isOrganiser);
+	if (!canManageEvents && !isOrganiser) {
 		return (
 			<div className="flex flex-col items-center justify-center h-[60vh]">
 				<AccessDenied />

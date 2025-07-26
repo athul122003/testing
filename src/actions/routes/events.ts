@@ -803,7 +803,7 @@ export async function deleteTeam(userId: number, teamId: string) {
 
 // GET ORGANISERS
 export const getOrganisers = protectedAction(
-	async (_session, eventId: number) => {
+	async (eventId: number) => {
 		const organisers = await db.organiser.findMany({
 			where: { eventId },
 			include: {
@@ -822,7 +822,7 @@ export const getOrganisers = protectedAction(
 
 // ADD ORGANISERS
 export const addOrganisers = protectedAction(
-	async (_session, input: { eventId: number; userIds: number[] }) => {
+	async (input: { eventId: number; userIds: number[] }) => {
 		try {
 			await db.organiser.createMany({
 				data: input.userIds.map((userId) => ({
@@ -845,7 +845,7 @@ export const addOrganisers = protectedAction(
 
 // REMOVE ORGANISER
 export const removeOrganiser = protectedAction(
-	async (_session, input: { eventId: number; userId: number }) => {
+	async (input: { eventId: number; userId: number }) => {
 		await db.organiser.deleteMany({
 			where: {
 				eventId: input.eventId,
@@ -855,4 +855,45 @@ export const removeOrganiser = protectedAction(
 		return { success: true };
 	},
 	{ actionName: "event.organiser.remove" },
+);
+
+export const getOrganisedEvents = protectedAction(
+	async (input: { userId: number }) => {
+		const { userId } = input;
+
+		try {
+			// 1️⃣ Fetch all events where this user is listed as an organiser
+			const events = await db.event.findMany({
+				where: {
+					Organiser: {
+						some: { userId },
+					},
+				},
+				orderBy: { fromDate: "asc" },
+				include: {
+					Team: {
+						select: { id: true, isConfirmed: true },
+					},
+				},
+			});
+
+			// 2️⃣ Compute confirmedTeams just like in getAllEvents
+			const formattedEvents = events.map((event) => ({
+				...event,
+				confirmedTeams: event.Team.filter((team) => team.isConfirmed).length,
+			}));
+
+			return {
+				success: true,
+				data: formattedEvents,
+			};
+		} catch (error) {
+			console.error("getOrganisedEvents Error:", error);
+			return {
+				success: false,
+				error: "Failed to fetch organised events.",
+				data: [],
+			};
+		}
+	},
 );
