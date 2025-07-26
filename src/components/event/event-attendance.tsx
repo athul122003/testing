@@ -57,12 +57,7 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 			const teamsWithAttendance = await Promise.all(
 				rawTeams.map(async (team: Team) => {
 					// Include leader as a member for attendance
-					const allMembers = [
-						...(team.leaderId && team.leaderName
-							? [{ id: team.leaderId, name: team.leaderName }]
-							: []),
-						...team.members,
-					];
+					const allMembers = [...team.members];
 					console.log("All members for team:", allMembers);
 					const membersWithAttendance = await Promise.all(
 						allMembers.map(async (member) => {
@@ -134,12 +129,7 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 		const rawTeams = await getTeamsForEvent(event.id);
 		const teamsWithAttendance = await Promise.all(
 			rawTeams.map(async (team: Team) => {
-				const allMembers = [
-					...(team.leaderId && team.leaderName
-						? [{ id: team.leaderId, name: team.leaderName }]
-						: []),
-					...team.members,
-				];
+				const allMembers = [...team.members];
 				const membersWithAttendance = await Promise.all(
 					allMembers.map(async (member) => {
 						const attended = await hasAttended(event.id, member.id);

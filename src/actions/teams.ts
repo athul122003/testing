@@ -185,8 +185,7 @@ export const markAttendanceByScan = protectedAction(
 		}
 
 		const memberIds = team.Members.map((member) => member.id);
-		const leaderId = team.Leader?.id;
-		const uniqueUserIds = Array.from(new Set([...memberIds, leaderId]));
+		const uniqueUserIds = Array.from(new Set([...memberIds]));
 
 		const errors: { userId: number; error: string }[] = [];
 
@@ -448,7 +447,7 @@ export async function createTeam(input: CreateTeamInput) {
 			leaderId,
 			isConfirmed,
 			Members: {
-				connect: finalMemberIds.map((id) => ({ id })),
+				connect: [leaderId, ...finalMemberIds].map((id) => ({ id })),
 			},
 		},
 		include: { Leader: true, Members: true },

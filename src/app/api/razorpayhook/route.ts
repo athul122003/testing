@@ -1,0 +1,61 @@
+import { api } from "~/lib/api";
+import { verifyRazorpaySignature } from "~/lib/razorpay";
+
+export const POST = async (req: Request) => {
+	const rawBody = await req.text();
+	const signature = req.headers.get("x-razorpay-signature");
+
+	const secret = process.env.RAZORPAY_WEBHOOK_SECRET!;
+
+	const isAuthentic = verifyRazorpaySignature(rawBody, signature, secret);
+
+	if (!isAuthentic) {
+		console.error("Invalid signature for Razorpay webhook");
+		return new Response(
+			JSON.stringify({ success: false, error: "Invalid signature" }),
+			{
+				status: 400,
+				headers: { "Content-Type": "application/json" },
+			},
+		);
+	}
+
+	const data = JSON.parse(rawBody);
+
+	if (data.event === "payment.captured") {
+		console.log("Payment captured event received:", data.payload);
+		const paymentId = data.payload.payment.entity.id;
+		const paymentSignature = data.payload.payment.entity.signature;
+		const orderId = data.payload.payment.entity.order_id;
+		const amount = parseInt(data.payload.payment.entity.amount) / 100;
+		const paymentType = data.payload.payment.entity.notes?.paymentType;
+		const paymentName = data.payload.payment.entity.notes?.paymentName;
+		const sessionUserId = parseInt(
+			data.payload.payment.entity.notes?.sessionUserId,
+		);
+		const teamId = data.payload.payment.entity.notes?.teamId;
+
+		try {
+			await api.payment.webhookCapture(
+				paymentId,
+				paymentSignature,
+				orderId,
+				amount,
+				paymentType,
+				paymentName,
+				sessionUserId,
+				teamId,
+			);
+			console.log("Payment captured successfully:", paymentId);
+		} catch (error) {
+			console.error("Error capturing payment:", error);
+			return new Response(
+				JSON.stringify({ success: false, error: "Failed to capture payment" }),
+				{
+					status: 500,
+					headers: { "Content-Type": "application/json" },
+				},
+			);
+		}
+	}
+};

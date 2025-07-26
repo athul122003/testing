@@ -297,7 +297,7 @@ const main = async () => {
 					eventId: soloEvent.id,
 					leaderId: user.id,
 					Members: {
-						connect: [],
+						connect: [{ id: user.id }],
 					},
 				},
 			});
@@ -316,7 +316,12 @@ const main = async () => {
 					eventId: teamEvent.id,
 					leaderId: leader.id,
 					Members: {
-						connect: teamMembers.map((m) => ({ id: m.id })),
+						connect: [
+							{ id: leader.id },
+							...teamMembers
+								.filter((m) => m.id !== leader.id)
+								.map((m) => ({ id: m.id })),
+						],
 					},
 				},
 			});
