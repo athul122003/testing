@@ -219,3 +219,76 @@ export async function savePayment(input: VerifyAndSavePaymentInput) {
 		paymentRazorpayId: payment.razorpayPaymentId,
 	};
 }
+
+export async function webhookCapture(
+	paymentId: string,
+	paymentSignature: string,
+	orderId: string,
+	amount: number,
+	paymentType: string,
+	paymentName: string,
+	sessionUserId: number,
+	teamId?: string,
+) {
+	const typeOfPayment =
+		paymentType === PaymentType.EVENT
+			? {
+					amount: amount,
+					Team: {
+						connect: {
+							id: teamId,
+						},
+					},
+				}
+			: {
+					amount: amount,
+					User: {
+						connect: {
+							id: sessionUserId,
+						},
+					},
+				};
+
+	const payment = await db.payment.findFirst({
+		where: {
+			razorpayPaymentId: paymentId,
+		},
+	});
+
+	if (payment) {
+		console.log("Payment already exists, skipping capture");
+		return;
+	}
+
+	await db.payment.create({
+		data: {
+			paymentType: paymentType as PaymentType,
+			paymentName: paymentName,
+			razorpayOrderId: orderId,
+			razorpayPaymentId: paymentId,
+			razorpaySignature: "webhook_capture", // Placeholder, not used in this context
+			...typeOfPayment,
+		},
+	});
+
+	if (paymentType === PaymentType.MEMBERSHIP) {
+		const memberRole = await db.role.findUnique({
+			where: { name: "MEMBER" },
+			select: { id: true },
+		});
+		if (!memberRole) {
+			throw new Error("Member role not found", { cause: "NOT_FOUND" });
+		}
+		await db.user.update({
+			where: { id: sessionUserId },
+			data: {
+				roleId: memberRole?.id,
+				memberSince: new Date(),
+			},
+		});
+	} else if (paymentType === PaymentType.EVENT && teamId) {
+		await confirmTeam(sessionUserId, teamId);
+	}
+
+	console.log("Payment captured successfully");
+}
