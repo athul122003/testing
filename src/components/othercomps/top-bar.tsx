@@ -200,20 +200,6 @@ export function TopBar({ activePage, setActivePage }: TopBarProps) {
 												<Button
 													variant="ghost"
 													size="sm"
-													className="w-full justify-start text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
-												>
-													Profile Settings
-												</Button>
-												<Button
-													variant="ghost"
-													size="sm"
-													className="w-full justify-start text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
-												>
-													Account
-												</Button>
-												<Button
-													variant="ghost"
-													size="sm"
 													onClick={async () => {
 														try {
 															const res = await fetch("/api/auth/revoke", {
@@ -348,15 +334,6 @@ export function TopBar({ activePage, setActivePage }: TopBarProps) {
 								align="end"
 								className="w-56 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800"
 							>
-								<DropdownMenuItem className="text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800">
-									Profile Settings
-								</DropdownMenuItem>
-								<DropdownMenuItem className="text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800">
-									Account
-								</DropdownMenuItem>
-								<DropdownMenuItem className="text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800">
-									Preferences
-								</DropdownMenuItem>
 								<DropdownMenuItem
 									onClick={async () => {
 										try {
