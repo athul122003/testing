@@ -49,7 +49,7 @@ const createOrUpdateBlog = async (blogData: BlogType, userId: number) => {
 					blogState: blogData.status,
 					readTime: blogData.readTime ?? 0,
 					words: blogData.words ?? 0,
-					image: blogData.featuredImage ?? null,
+					coverImage: blogData.featuredImage ?? null,
 				},
 			});
 
@@ -66,7 +66,7 @@ const createOrUpdateBlog = async (blogData: BlogType, userId: number) => {
 					reviewState: "PENDING",
 					readTime: blogData.readTime ?? 0,
 					words: blogData.words ?? 0,
-					image: blogData.featuredImage ?? null,
+					coverImage: blogData.featuredImage ?? null,
 					feedback: "",
 				},
 			});
@@ -181,7 +181,7 @@ export async function updateBlogById(
 					blogState: blogData.status,
 					readTime: blogData.readTime ?? 0,
 					words: blogData.words ?? 0,
-					image: blogData.featuredImage ?? null,
+					coverImage: blogData.featuredImage ?? null,
 				},
 			});
 
@@ -237,7 +237,7 @@ export async function createBlog(blogData: BlogType, userId: string) {
 				reviewState: "PENDING",
 				readTime: blogData.readTime ?? 0,
 				words: blogData.words ?? 0,
-				image: blogData.featuredImage ?? null,
+				coverImage: blogData.featuredImage ?? null,
 				feedback: "",
 			},
 		});
