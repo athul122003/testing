@@ -1,21 +1,47 @@
 "use server";
 import { db } from "~/server/db";
 
-export async function getPublishedEvents() {
+export async function getAllEvents() {
 	try {
 		const events = await db.event.findMany({
 			where: {
 				OR: [{ state: "PUBLISHED" }, { state: "LIVE" }, { state: "COMPLETED" }],
 			},
 			orderBy: { fromDate: "desc" },
+			include: {
+				Organiser: {
+					include: {
+						User: {
+							select: {
+								id: true,
+								name: true,
+								email: true,
+								phone: true,
+							},
+						},
+					},
+				},
+			},
 		});
+
+		const filteredEvents = events.map((event) => ({
+			...event,
+			Organiser: Array.isArray(event.Organiser)
+				? event.Organiser.map((org) => ({
+						name: org.User?.name ?? null,
+						email: org.User?.email ?? null,
+						phone: org.User?.phone ?? null,
+						eventId: org.eventId,
+					}))
+				: [],
+		}));
 
 		return {
 			success: true,
-			data: events,
+			data: filteredEvents,
 		};
 	} catch (error) {
-		console.error("getPublishedEvents Error:", error);
+		console.error("getAllEvents Error:", error);
 		return {
 			success: false,
 			error: "Failed to fetch published events.",

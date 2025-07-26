@@ -30,6 +30,7 @@ import {
 	addMemberToTeam,
 	confirmTeam,
 	createTeam,
+	unConfirmTeam,
 } from "~/actions/teams";
 import { toast } from "sonner";
 
@@ -183,6 +184,28 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 			toast.success("Team confirmed successfully");
 		} catch (err: any) {
 			toast.error(err.message || "Failed to confirm team");
+		}
+	}
+
+	async function handleUnConfirmTeam(teamId: string) {
+		try {
+			const result = await unConfirmTeam(teamId);
+			if (!result.success) {
+				toast.error(result.message);
+				return;
+			}
+
+			// Update states
+			setSelectedTeam((prev) => prev && { ...prev, isConfirmed: false });
+			setTeams((prev) =>
+				prev.map((team) =>
+					team.id === teamId ? { ...team, isConfirmed: false } : team,
+				),
+			);
+
+			toast.success("Team unconfirmed successfully");
+		} catch (err: any) {
+			toast.error(err.message || "Failed to unconfirm team");
 		}
 	}
 
@@ -527,7 +550,7 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 							{/* Add Member */}
 							<div className="flex items-center space-x-2">
 								<Input
-									placeholder="Add new member"
+									placeholder="Enter member ID to add"
 									value={addingMemberId}
 									onChange={(e) => setAddingMemberId(e.target.value)}
 								/>
@@ -544,9 +567,13 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 									Confirm Team
 								</Button>
 							) : (
-								<div className="flex justify-center items-center text-green-600 font-semibold">
-									Team is Confirmed
-								</div>
+								<Button
+									className="w-full"
+									variant="secondary"
+									onClick={() => handleUnConfirmTeam(selectedTeam.id)}
+								>
+									Unconfirm Team
+								</Button>
 							)}
 
 							{/* Delete Team */}

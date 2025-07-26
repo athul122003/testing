@@ -8,6 +8,10 @@ import { createEventZ } from "~/zod/eventZ";
 export type CreateEventInput = z.infer<typeof createEventZ>;
 export type EventsQuery = Awaited<ReturnType<typeof getAllEvents>>;
 
+export interface ExtendedEvent extends Event {
+	confirmedTeams: number;
+}
+
 export async function createEventAction(values: CreateEventInput) {
 	try {
 		const validated = createEventZ.parse(values);
@@ -89,6 +93,43 @@ export async function createEventAction(values: CreateEventInput) {
 		return {
 			success: false,
 			error: "An unexpected error occurred while creating event.",
+		};
+	}
+}
+
+export async function toggleEventStatus(eventId: number) {
+	try {
+		const event = await db.event.findUnique({
+			where: { id: eventId },
+			select: { id: true, state: true },
+		});
+		if (!event) {
+			return { success: false, error: "Event not found" };
+		}
+		let newState: EventState;
+		switch (event.state) {
+			case EventState.DRAFT:
+				newState = EventState.PUBLISHED;
+				break;
+			case EventState.PUBLISHED:
+				newState = EventState.LIVE;
+				break;
+			case EventState.LIVE:
+				newState = EventState.COMPLETED;
+				break;
+			default:
+				return { success: false, error: "Invalid event state" };
+		}
+		const updatedEvent = await db.event.update({
+			where: { id: eventId },
+			data: { state: newState },
+		});
+		return { success: true, event: updatedEvent };
+	} catch (error) {
+		console.error("toggleEventStatus Error:", error);
+		return {
+			success: false,
+			error: "Failed to toggle event status.",
 		};
 	}
 }
@@ -202,7 +243,7 @@ export async function publishEventAction(eventId: number) {
 export async function getAllEvents(): Promise<
 	| {
 			success: true;
-			data: Event[];
+			data: ExtendedEvent[];
 			error?: undefined;
 	  }
 	| {
@@ -214,11 +255,21 @@ export async function getAllEvents(): Promise<
 	try {
 		const events = await db.event.findMany({
 			orderBy: { fromDate: "asc" },
+			include: {
+				Team: {
+					select: { id: true, isConfirmed: true },
+				},
+			},
 		});
+
+		const formattedEvents = events.map((event) => ({
+			...event,
+			confirmedTeams: event.Team.filter((team) => team.isConfirmed).length,
+		}));
 
 		return {
 			success: true,
-			data: events,
+			data: formattedEvents,
 		};
 	} catch (error) {
 		console.error("getAllEvents Error:", error);

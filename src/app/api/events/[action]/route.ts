@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 			}
 
 			case "getAll": {
-				const events = await server.event.getPublishedEvents();
+				const events = await server.event.getAllEvents();
 				return NextResponse.json(events);
 			}
 

@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 "use client";
 
 import {
@@ -7,12 +5,14 @@ import {
 	Clock,
 	DollarSign,
 	Eye,
+	IndianRupee,
 	MapPin,
 	Plus,
 	Users,
 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
+import { ExtendedEvent, toggleEventStatus } from "~/actions/event";
 import { toast } from "sonner";
 import { deleteEventAction, publishEventAction } from "~/actions/event";
 import { Badge } from "~/components/ui/badge";
@@ -26,10 +26,17 @@ import {
 } from "~/components/ui/dialog";
 import { useDashboardData } from "~/providers/dashboardDataContext";
 import { ComponentLoading } from "../ui/component-loading";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "~/components/ui/select";
+import { Event } from "@prisma/client";
 
 interface EventsPageProps {
 	setActivePage: (page: string) => void;
-	// biome-ignore lint/suspicious/noExplicitAny: FIX THIS LATER
 	setEditingEvent: (event: any) => void;
 }
 
@@ -37,7 +44,11 @@ export function EventsPage({
 	setActivePage,
 	setEditingEvent,
 }: EventsPageProps) {
-	const [selectedEvent, setSelectedEvent] = useState(null);
+	const [selectedEvent, setSelectedEvent] = useState<ExtendedEvent | null>(
+		null,
+	);
+	const [selectedYear, setSelectedYear] = useState("ALL");
+	const [statusModalOpen, setStatusModalOpen] = useState(false);
 	const [isDetailOpen, setIsDetailOpen] = useState(false);
 
 	const { eventsQuery, refetchEvents } = useDashboardData();
@@ -46,9 +57,39 @@ export function EventsPage({
 
 	const events = eventsData?.data || [];
 
+	const years = Array.from(
+		new Set(events.map((event) => new Date(event.fromDate).getFullYear())),
+	).sort((a, b) => b - a);
+
+	const filteredEvents =
+		selectedYear === "ALL"
+			? events
+			: events.filter(
+					(event) =>
+						new Date(event.fromDate).getFullYear() === Number(selectedYear),
+				);
+
 	const handleCreateEvent = () => {
 		setEditingEvent(null);
 		setActivePage("event-form");
+	};
+
+	const handleToggleEventStatus = async (eventId: number) => {
+		console.log("Toggling event status for ID:", eventId);
+		if (selectedEvent === null) return;
+		const res = await toggleEventStatus(eventId);
+		toast.success(`Event status updated to ${res.event?.state}`);
+		setSelectedEvent((prev) => {
+			if (!prev || !res.event?.state) return prev;
+			return {
+				...prev,
+				state: res.event.state,
+			};
+		});
+		if (refetchEvents) {
+			refetchEvents();
+		}
+		setStatusModalOpen(false);
 	};
 
 	const handleEditEvent = (event: Event) => {
@@ -64,12 +105,14 @@ export function EventsPage({
 		setIsDetailOpen(false);
 	};
 
-	const handleDeleteEvent = async (eventId) => {
+	const handleDeleteEvent = async (eventId: number) => {
 		const res = await deleteEventAction(eventId);
 		if (res.success) {
 			toast.success("Event deleted successfully.");
 			setIsDetailOpen(false);
-			refetchEvents();
+			if (refetchEvents) {
+				refetchEvents();
+			}
 		} else {
 			toast.error(res.error || "Failed to delete event");
 		}
@@ -79,26 +122,28 @@ export function EventsPage({
 	const handlePublishEvent = async (eventId: number) => {
 		const res = await publishEventAction(eventId);
 		if (res.success) {
-			toast.success(`Event "${res.event.name}" published`);
-			refetchEvents();
+			toast.success(`Event "${res?.event?.name}" published`);
+			if (refetchEvents) {
+				refetchEvents();
+			}
 			setIsDetailOpen(false);
 		} else {
 			toast.error(res.error || "Failed to publish event");
 		}
 	};
 
-	const handleEventClick = (event) => {
+	const handleEventClick = (event: ExtendedEvent) => {
 		setSelectedEvent(event);
 		setIsDetailOpen(true);
 	};
 
-	const handleViewParticipants = (event: Event) => {
+	const handleViewParticipants = (event: ExtendedEvent) => {
 		setEditingEvent(event);
 		setActivePage("event-participants");
 		setIsDetailOpen(false);
 	};
 
-	const handleAttendance = (event: Event) => {
+	const handleAttendance = (event: ExtendedEvent) => {
 		setEditingEvent(event);
 		setActivePage("event-attendance");
 		setIsDetailOpen(false);
@@ -134,17 +179,40 @@ export function EventsPage({
 						Manage and organize your events
 					</p>
 				</div>
-				<Button
-					onClick={handleCreateEvent}
-					className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg"
-				>
-					<Plus className="h-4 w-4 mr-2" />
-					Create Event
-				</Button>
+
+				<div className="flex items-center gap-3">
+					<div className="flex items-center gap-3">
+						<Select
+							value={selectedYear.toString()}
+							onValueChange={(value) =>
+								setSelectedYear(value === "ALL" ? "ALL" : value)
+							}
+						>
+							<SelectTrigger className="w-32 border border-gray-300 dark:border-slate-800 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200">
+								<SelectValue placeholder="Year" />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="ALL">All</SelectItem>
+								{years.map((year) => (
+									<SelectItem key={year} value={year.toString()}>
+										{year}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					</div>
+					<Button
+						onClick={handleCreateEvent}
+						className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg"
+					>
+						<Plus className="h-4 w-4 mr-2" />
+						Create Event
+					</Button>
+				</div>
 			</div>
 
 			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-				{events.map((event) => (
+				{filteredEvents.map((event) => (
 					<Card
 						key={event.id}
 						className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800 overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group"
@@ -201,11 +269,11 @@ export function EventsPage({
 									<div className="flex items-center gap-4 text-sm text-gray-600 dark:text-slate-400">
 										<span className="flex items-center gap-1">
 											<Users className="h-4 w-4" />
-											{event.participants}/{event.maxTeams}
+											{event.confirmedTeams}/{event.maxTeams}
 										</span>
 										{(event.flcAmount > 0 || event.nonFlcAmount > 0) && (
 											<span className="flex items-center gap-1">
-												<DollarSign className="h-4 w-4" />₹{event.flcAmount}/₹
+												<IndianRupee className="h-4 w-4" />₹{event.flcAmount}/₹
 												{event.nonFlcAmount}
 											</span>
 										)}
@@ -286,7 +354,9 @@ export function EventsPage({
 											<Clock className="h-4 w-4 text-gray-500 dark:text-slate-400" />
 											<span className="text-sm text-gray-900 dark:text-slate-200">
 												Registration Deadline:{" "}
-												{new Date(selectedEvent.deadline).toLocaleString()}
+												{selectedEvent?.deadline
+													? new Date(selectedEvent.deadline).toLocaleString()
+													: "N/A"}
 											</span>
 										</div>
 									</div>
@@ -305,7 +375,7 @@ export function EventsPage({
 												"Team Size",
 												`${selectedEvent.minTeamSize} - ${selectedEvent.maxTeamSize}`,
 											],
-											["Current Participants", selectedEvent.participants],
+											["Confirmed Teams", selectedEvent.confirmedTeams],
 											[
 												"Members Only",
 												selectedEvent.isMembersOnly ? "Yes" : "No",
@@ -361,6 +431,27 @@ export function EventsPage({
 							</div>
 
 							<div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200 dark:border-slate-800">
+								{selectedEvent.state !== "COMPLETED" ? (
+									<Button
+										type="button"
+										onClick={() => setStatusModalOpen(true)}
+										className="bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-200 border border-gray-300 dark:border-slate-800"
+									>
+										{selectedEvent.state === "DRAFT"
+											? "Publish Event"
+											: selectedEvent.state === "PUBLISHED"
+												? "Mark as Live"
+												: selectedEvent.state === "LIVE"
+													? "Mark as Completed"
+													: null}
+									</Button>
+								) : (
+									<div>
+										<p className="text-green-700 dark:text-green-400 font-semibold bg-green-100 dark:bg-green-900/30 px-4 py-2 rounded-full">
+											Event is Completed
+										</p>
+									</div>
+								)}
 								<Button
 									type="button"
 									onClick={() => handleViewParticipants(selectedEvent)}
@@ -369,14 +460,14 @@ export function EventsPage({
 									View Participants
 								</Button>
 
-								{selectedEvent.state === "DRAFT" && (
+								{/* {selectedEvent.state === "DRAFT" && (
 									<Button
 										onClick={() => handlePublishEvent(selectedEvent.id)}
 										className="bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800 text-green-700 dark:text-green-200 border border-green-300 dark:border-green-800"
 									>
 										Publish Event
 									</Button>
-								)}
+								)} */}
 
 								{(selectedEvent.state === "LIVE" ||
 									selectedEvent.state === "PUBLISHED") && (
@@ -405,6 +496,52 @@ export function EventsPage({
 					)}
 				</DialogContent>
 			</Dialog>
+
+			{statusModalOpen && (
+				<Dialog open={statusModalOpen} onOpenChange={setStatusModalOpen}>
+					<DialogContent className="max-w-sm">
+						<DialogHeader>
+							<DialogTitle className="text-lg font-semibold text-gray-900 dark:text-slate-200">
+								{selectedEvent?.state === "DRAFT"
+									? "Mark Event as Published"
+									: selectedEvent?.state === "PUBLISHED"
+										? "Mark Event as Live"
+										: selectedEvent?.state === "LIVE"
+											? "Mark Event as Completed"
+											: null}
+							</DialogTitle>
+						</DialogHeader>
+						<div className="space-y-4">
+							<p className="text-gray-600 dark:text-slate-400">
+								Are you sure you want to toggle the status of this event?
+							</p>
+							<div className="flex justify-end gap-2">
+								<Button
+									variant="outline"
+									onClick={() => setStatusModalOpen(false)}
+								>
+									Cancel
+								</Button>
+								<Button
+									onClick={() => {
+										if (selectedEvent && typeof selectedEvent.id === "number") {
+											handleToggleEventStatus(selectedEvent.id);
+										}
+									}}
+								>
+									{selectedEvent?.state === "DRAFT"
+										? "Publish Event"
+										: selectedEvent?.state === "PUBLISHED"
+											? "Mark as Live"
+											: selectedEvent?.state === "LIVE"
+												? "Mark as Completed"
+												: null}
+								</Button>
+							</div>
+						</div>
+					</DialogContent>
+				</Dialog>
+			)}
 		</div>
 	);
 }

@@ -266,6 +266,28 @@ export async function confirmTeam(teamId: string) {
 	return { success: true, data: updatedTeam };
 }
 
+export async function unConfirmTeam(teamId: string) {
+	const team = await db.team.findUnique({
+		where: { id: teamId },
+		select: { id: true, isConfirmed: true },
+	});
+
+	if (!team) {
+		throw new Error("Team not found");
+	}
+
+	if (!team.isConfirmed) {
+		return { success: false, message: "Team is already not confirmed" };
+	}
+
+	const updatedTeam = await db.team.update({
+		where: { id: teamId },
+		data: { isConfirmed: false },
+	});
+
+	return { success: true, data: updatedTeam };
+}
+
 export async function createTeam(input: CreateTeamInput) {
 	const { eventId, teamName, leaderId, memberIds, isConfirmed = false } = input;
 

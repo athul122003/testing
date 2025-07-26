@@ -123,6 +123,10 @@ export function EventForm({
 				return;
 			}
 		}
+		if (parseInt(formData.nonFlcAmount) > 0 && formData.isMembersOnly) {
+			toast.error("Non-FLC amount cannot be set for members-only events.");
+			return;
+		}
 		if (Number(formData.maxTeams) === 0) {
 			toast.error("Max teams must be at least 1.");
 			return;
@@ -166,6 +170,8 @@ export function EventForm({
 		setActivePage("events");
 		setEditingEvent(null);
 	};
+
+	const [uploading, setUploading] = useState(false);
 
 	return (
 		<div className="space-y-8">
@@ -373,7 +379,7 @@ export function EventForm({
 					</div>
 					<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 						<div className="space-y-2">
-							<Label htmlFor="flcAmount">FLC Member Amount ($)</Label>
+							<Label htmlFor="flcAmount">FLC Member Amount in rs</Label>
 							<Input
 								id="flcAmount"
 								type="number"
@@ -385,7 +391,7 @@ export function EventForm({
 							/>
 						</div>
 						<div className="space-y-2">
-							<Label htmlFor="nonFlcAmount">Non-FLC Amount ($)</Label>
+							<Label htmlFor="nonFlcAmount">Non-FLC Amount in rs</Label>
 							<Input
 								id="nonFlcAmount"
 								type="number"
@@ -409,6 +415,12 @@ export function EventForm({
 								const file = e.dataTransfer.files?.[0];
 								if (!file) return;
 
+								if (file.size > 1024 * 1024) {
+									toast.error("Image size must be less than 1MB.");
+									return;
+								}
+
+								setUploading(true);
 								try {
 									const url = await uploadImageToCloudinary(file);
 									setFormData((prev) => ({ ...prev, imgSrc: url }));
@@ -416,16 +428,45 @@ export function EventForm({
 								} catch (err) {
 									console.error(err);
 									toast.error("Image upload failed.");
+								} finally {
+									setUploading(false);
 								}
 							}}
 						>
-							{formData.imgSrc ? (
+							{uploading ? (
+								<div className="flex flex-col items-center justify-center">
+									<svg
+										className="animate-spin h-8 w-8 text-slate-400 mb-2"
+										xmlns="http://www.w3.org/2000/svg"
+										fill="none"
+										viewBox="0 0 24 24"
+									>
+										<title>Loading spinner</title>
+										<circle
+											className="opacity-25"
+											cx="12"
+											cy="12"
+											r="10"
+											stroke="currentColor"
+											strokeWidth="4"
+										></circle>
+										<path
+											className="opacity-75"
+											fill="currentColor"
+											d="M4 12a8 8 0 018-8v8z"
+										></path>
+									</svg>
+									<p className="text-slate-600 dark:text-slate-400">
+										Uploading...
+									</p>
+								</div>
+							) : formData.imgSrc ? (
 								<Image
-									width={300}
-									height={200} // HAVE TO CHECK IF THIS IS CORRECT
+									width={250}
+									height={315}
 									src={formData.imgSrc}
 									alt="Uploaded preview"
-									className="mx-auto h-48 object-cover rounded-lg"
+									className="mx-auto object-cover rounded-lg"
 								/>
 							) : (
 								<>
@@ -434,7 +475,7 @@ export function EventForm({
 										Click to upload or drag and drop
 									</p>
 									<p className="text-sm text-slate-500 dark:text-slate-500">
-										PNG, JPG up to 10MB
+										PNG, JPG up to 1MB
 									</p>
 								</>
 							)}
@@ -448,6 +489,12 @@ export function EventForm({
 								const file = e.target.files?.[0];
 								if (!file) return;
 
+								if (file.size > 1024 * 1024) {
+									toast.error("Image size must be less than 1MB.");
+									return;
+								}
+
+								setUploading(true);
 								try {
 									const url = await uploadImageToCloudinary(file);
 									setFormData((prev) => ({ ...prev, imgSrc: url }));
@@ -455,11 +502,12 @@ export function EventForm({
 								} catch (err) {
 									console.error(err);
 									toast.error("Image upload failed.");
+								} finally {
+									setUploading(false);
 								}
 							}}
 						/>
 					</div>
-					\{" "}
 					<div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
 						<Button variant="outline" onClick={handleCancel}>
 							Cancel

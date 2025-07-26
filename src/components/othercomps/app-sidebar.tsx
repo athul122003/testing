@@ -66,15 +66,11 @@ export function AppSidebar({ activePage, setActivePage }: AppSidebarProps) {
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <no need of exhaustive dependencies>
 	useLayoutEffect(() => {
+		if (!activePage) return;
 		moveIndicator();
 		const resizeObserver = new ResizeObserver(() => moveIndicator());
 		if (containerRef.current) resizeObserver.observe(containerRef.current);
 		return () => resizeObserver.disconnect();
-	}, []);
-
-	// biome-ignore lint/correctness/useExhaustiveDependencies: <no need of exhaustive dependencies>
-	useEffect(() => {
-		moveIndicator();
 	}, [activePage]);
 
 	return (

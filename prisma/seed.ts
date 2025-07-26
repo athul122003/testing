@@ -148,40 +148,40 @@ const main = async () => {
 			}
 		}
 
-		// const allUsers = await db.user.findMany();
-		// const paymentTypes = PaymentType;
+		const allUsers = await db.user.findMany();
+		const paymentTypes = PaymentType;
 
-		// for (let i = 1; i <= 28; i++) {
-		// 	const user = allUsers[i - 1];
-		// 	const isSuccess = i % 6 !== 0;
+		for (let i = 1; i <= 28; i++) {
+			const user = allUsers[i - 1];
+			const isSuccess = i % 6 !== 0;
 
-		// 	//create 35 payments
-		// 	await db.payment.create({
-		// 		data: {
-		// 			paymentName: `Payment ${i}`,
-		// 			amount: Math.floor(Math.random() * 90 + 10) * 10,
-		// 			paymentType:
-		// 				PaymentType[
-		// 					Object.keys(paymentTypes)[
-		// 						Math.floor(Math.random() * Object.keys(paymentTypes).length)
-		// 					] as keyof typeof PaymentType
-		// 				],
-		// 			razorpayOrderId: `order_${Math.random().toString(36).slice(2, 12)}`,
-		// 			razorpayPaymentId: isSuccess
-		// 				? `pay_${Math.random().toString(36).slice(2, 12)}`
-		// 				: "",
-		// 			razorpaySignature: isSuccess
-		// 				? `sig_${Math.random().toString(36).slice(2, 12)}`
-		// 				: "",
-		// 			createdAt: new Date(Date.now() - i * 86400000),
-		// 			User: {
-		// 				connect: { id: user.id },
-		// 			},
-		// 		},
-		// 	});
-		// }
+			//create 35 payments
+			await db.payment.create({
+				data: {
+					paymentName: `Payment ${i}`,
+					amount: Math.floor(Math.random() * 90 + 10) * 10,
+					paymentType:
+						PaymentType[
+							Object.keys(paymentTypes)[
+								Math.floor(Math.random() * Object.keys(paymentTypes).length)
+							] as keyof typeof PaymentType
+						],
+					razorpayOrderId: `order_${Math.random().toString(36).slice(2, 12)}`,
+					razorpayPaymentId: isSuccess
+						? `pay_${Math.random().toString(36).slice(2, 12)}`
+						: "",
+					razorpaySignature: isSuccess
+						? `sig_${Math.random().toString(36).slice(2, 12)}`
+						: "",
+					createdAt: new Date(Date.now() - i * 86400000),
+					User: {
+						connect: { id: user.id },
+					},
+				},
+			});
+		}
 
-		// console.log("28 payments seeded");
+		console.log("28 payments seeded");
 
 		const settings = [
 			{
@@ -211,116 +211,116 @@ const main = async () => {
 
 		const now = new Date();
 
-		// const events = await db.$transaction([
-		// 	db.event.create({
-		// 		data: {
-		// 			name: "Solo Coding Challenge",
-		// 			eventType: EventType.SOLO,
-		// 			category: EventCategory.WORKSHOP,
-		// 			maxTeamSize: 1,
-		// 			minTeamSize: 1,
-		// 			isMembersOnly: false,
-		// 			state: "PUBLISHED",
-		// 			fromDate: new Date(now.getTime() + 7 * 86400000),
-		// 			toDate: new Date(now.getTime() + 8 * 86400000),
-		// 			deadline: new Date(now.getTime() + 6 * 86400000),
-		// 			description: "A solo coding event.",
-		// 			isLegacy: false,
-		// 		},
-		// 	}),
-		// 	db.event.create({
-		// 		data: {
-		// 			name: "Team Hackathon",
-		// 			eventType: EventType.TEAM,
-		// 			category: EventCategory.HACKATHON,
-		// 			maxTeamSize: 4,
-		// 			minTeamSize: 2,
-		// 			isMembersOnly: false,
-		// 			state: "PUBLISHED",
-		// 			fromDate: new Date(now.getTime() + 14 * 86400000),
-		// 			toDate: new Date(now.getTime() + 15 * 86400000),
-		// 			deadline: new Date(now.getTime() + 13 * 86400000),
-		// 			description: "A team-based hackathon.",
-		// 			isLegacy: false,
-		// 		},
-		// 	}),
-		// 	db.event.create({
-		// 		data: {
-		// 			name: "Unconfirmed Event 1",
-		// 			eventType: EventType.SOLO,
-		// 			category: EventCategory.SPECIAL,
-		// 			maxTeamSize: 1,
-		// 			minTeamSize: 1,
-		// 			isMembersOnly: false,
-		// 			state: "DRAFT",
-		// 			fromDate: new Date(now.getTime() + 21 * 86400000),
-		// 			toDate: new Date(now.getTime() + 22 * 86400000),
-		// 			deadline: new Date(now.getTime() + 20 * 86400000),
-		// 			description: "Unconfirmed event.",
-		// 			isLegacy: false,
-		// 		},
-		// 	}),
-		// 	db.event.create({
-		// 		data: {
-		// 			name: "Unconfirmed Event 2",
-		// 			eventType: EventType.TEAM,
-		// 			category: EventCategory.COMPETITION,
-		// 			maxTeamSize: 3,
-		// 			minTeamSize: 2,
-		// 			isMembersOnly: false,
-		// 			state: "DRAFT",
-		// 			fromDate: new Date(now.getTime() + 28 * 86400000),
-		// 			toDate: new Date(now.getTime() + 29 * 86400000),
-		// 			deadline: new Date(now.getTime() + 27 * 86400000),
-		// 			description: "Another unconfirmed event.",
-		// 			isLegacy: false,
-		// 		},
-		// 	}),
-		// ]);
+		const events = await db.$transaction([
+			db.event.create({
+				data: {
+					name: "Solo Coding Challenge",
+					eventType: EventType.SOLO,
+					category: EventCategory.WORKSHOP,
+					maxTeamSize: 1,
+					minTeamSize: 1,
+					isMembersOnly: false,
+					state: "PUBLISHED",
+					fromDate: new Date(now.getTime() + 7 * 86400000),
+					toDate: new Date(now.getTime() + 8 * 86400000),
+					deadline: new Date(now.getTime() + 6 * 86400000),
+					description: "A solo coding event.",
+					isLegacy: false,
+				},
+			}),
+			db.event.create({
+				data: {
+					name: "Team Hackathon",
+					eventType: EventType.TEAM,
+					category: EventCategory.HACKATHON,
+					maxTeamSize: 4,
+					minTeamSize: 2,
+					isMembersOnly: false,
+					state: "PUBLISHED",
+					fromDate: new Date(now.getTime() + 14 * 86400000),
+					toDate: new Date(now.getTime() + 15 * 86400000),
+					deadline: new Date(now.getTime() + 13 * 86400000),
+					description: "A team-based hackathon.",
+					isLegacy: false,
+				},
+			}),
+			db.event.create({
+				data: {
+					name: "Unconfirmed Event 1",
+					eventType: EventType.SOLO,
+					category: EventCategory.SPECIAL,
+					maxTeamSize: 1,
+					minTeamSize: 1,
+					isMembersOnly: false,
+					state: "DRAFT",
+					fromDate: new Date(now.getTime() + 21 * 86400000),
+					toDate: new Date(now.getTime() + 22 * 86400000),
+					deadline: new Date(now.getTime() + 20 * 86400000),
+					description: "Unconfirmed event.",
+					isLegacy: false,
+				},
+			}),
+			db.event.create({
+				data: {
+					name: "Unconfirmed Event 2",
+					eventType: EventType.TEAM,
+					category: EventCategory.COMPETITION,
+					maxTeamSize: 3,
+					minTeamSize: 2,
+					isMembersOnly: false,
+					state: "DRAFT",
+					fromDate: new Date(now.getTime() + 28 * 86400000),
+					toDate: new Date(now.getTime() + 29 * 86400000),
+					deadline: new Date(now.getTime() + 27 * 86400000),
+					description: "Another unconfirmed event.",
+					isLegacy: false,
+				},
+			}),
+		]);
 
-		// console.log("Events seeded");
+		console.log("Events seeded");
 
-		// const soloEvent = events[0];
-		// const teamEvent = events[1];
+		const soloEvent = events[0];
+		const teamEvent = events[1];
 
-		// if (allUsers.length < 10) {
-		// 	throw new Error("Not enough users to seed events.");
-		// }
+		if (allUsers.length < 10) {
+			throw new Error("Not enough users to seed events.");
+		}
 
-		// // Step 3: Populate SOLO event registrations
-		// for (let i = 0; i < 5; i++) {
-		// 	const user = allUsers[i];
-		// 	await db.team.create({
-		// 		data: {
-		// 			name: user.name,
-		// 			isConfirmed: true,
-		// 			eventId: soloEvent.id,
-		// 			leaderId: user.id,
-		// 			Members: {
-		// 				connect: [],
-		// 			},
-		// 		},
-		// 	});
-		// }
+		// Step 3: Populate SOLO event registrations
+		for (let i = 0; i < 5; i++) {
+			const user = allUsers[i];
+			await db.team.create({
+				data: {
+					name: user.name,
+					isConfirmed: true,
+					eventId: soloEvent.id,
+					leaderId: user.id,
+					Members: {
+						connect: [],
+					},
+				},
+			});
+		}
 
-		// let userIndex1 = 5;
-		// for (let i = 0; i < 4; i++) {
-		// 	const teamMembers = allUsers.slice(userIndex1, userIndex1 + 3); // Up to 3 members per team
-		// 	const leader = teamMembers[0];
-		// 	userIndex1 += 3;
+		let userIndex1 = 5;
+		for (let i = 0; i < 4; i++) {
+			const teamMembers = allUsers.slice(userIndex1, userIndex1 + 3); // Up to 3 members per team
+			const leader = teamMembers[0];
+			userIndex1 += 3;
 
-		// 	await db.team.create({
-		// 		data: {
-		// 			name: `Team ${i + 1}`,
-		// 			isConfirmed: Math.random() > 0.5, // Random confirmed/unconfirmed
-		// 			eventId: teamEvent.id,
-		// 			leaderId: leader.id,
-		// 			Members: {
-		// 				connect: teamMembers.map((m) => ({ id: m.id })),
-		// 			},
-		// 		},
-		// 	});
-		// }
+			await db.team.create({
+				data: {
+					name: `Team ${i + 1}`,
+					isConfirmed: Math.random() > 0.5, // Random confirmed/unconfirmed
+					eventId: teamEvent.id,
+					leaderId: leader.id,
+					Members: {
+						connect: teamMembers.map((m) => ({ id: m.id })),
+					},
+				},
+			});
+		}
 
 		console.log("Teams seeded for events");
 
