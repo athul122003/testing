@@ -265,7 +265,7 @@ export async function getAllEvents(): Promise<
 > {
 	try {
 		const events = await db.event.findMany({
-			orderBy: { fromDate: "asc" },
+			orderBy: { fromDate: "desc" },
 			include: {
 				Team: {
 					select: { id: true, isConfirmed: true },
