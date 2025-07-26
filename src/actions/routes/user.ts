@@ -339,3 +339,26 @@ export const searchUserById = async (input: { userId: number }) => {
 
 	return user;
 };
+
+export const searchUserByUsn = protectedAction(
+	async (_session, input: { usn: string }) => {
+		const { usn } = input;
+
+		const user = await db.user.findUnique({
+			where: { usn },
+			select: {
+				id: true,
+				name: true,
+				usn: true,
+				email: true,
+			},
+		});
+
+		if (!user) {
+			return { success: false, error: "User not found" };
+		}
+
+		return { success: true, data: user };
+	},
+	{ actionName: "user.searchByUsn" },
+);

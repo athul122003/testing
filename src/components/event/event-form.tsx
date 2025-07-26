@@ -1,11 +1,13 @@
 "use client";
 
 import { ArrowLeft, Save, Upload } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { Trash2 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { api } from "~/lib/api";
 import {
 	Select,
 	SelectContent,
@@ -13,6 +15,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "~/components/ui/select";
+import { permissionKeys as perm } from "~/actions/middleware/routePermissions";
 import { Switch } from "~/components/ui/switch";
 import { Textarea } from "~/components/ui/textarea";
 
@@ -57,7 +60,7 @@ export function EventForm({
 	editingEvent,
 	setEditingEvent,
 }: EventFormProps) {
-	const { refetchEvents } = useDashboardData();
+	const { refetchEvents, hasPerm } = useDashboardData();
 	const [formData, setFormData] = useState({
 		name: "",
 		imgSrc: "",
@@ -508,6 +511,10 @@ export function EventForm({
 							}}
 						/>
 					</div>
+					{hasPerm(perm.MANAGE_EVENTS) && editingEvent.id && (
+						<AddOrganisersSection eventId={editingEvent.id} />
+					)}
+
 					<div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
 						<Button variant="outline" onClick={handleCancel}>
 							Cancel
@@ -522,6 +529,149 @@ export function EventForm({
 					</div>
 				</CardContent>
 			</Card>
+		</div>
+	);
+}
+
+type User = {
+	id: number;
+	name: string;
+	email: string;
+	usn: string;
+};
+
+export function AddOrganisersSection({ eventId }: { eventId: number }) {
+	const [usn, setUsn] = useState("");
+	const [searchResult, setSearchResult] = useState<User | null>(null);
+	const [errorMsg, setErrorMsg] = useState("");
+	const [loading, setLoading] = useState(false);
+	const [existingOrganisers, setExistingOrganisers] = useState<User[]>([]);
+
+	// 🔄 Load organisers
+	const fetchOrganisers = useCallback(async () => {
+		const res = await api.event.getOrganisers(eventId);
+		if (res.success) {
+			setExistingOrganisers(res.data || []);
+		} else {
+			toast.error("Failed to load organisers.");
+		}
+	}, [eventId]);
+
+	useEffect(() => {
+		fetchOrganisers();
+	}, [fetchOrganisers]);
+
+	// 🔍 Search by USN
+	const handleSearch = async () => {
+		setLoading(true);
+		setErrorMsg("");
+		setSearchResult(null);
+
+		const res = await api.user.searchUserByUsn({
+			usn: usn.trim().toUpperCase(),
+		});
+
+		if (!res.success || !res.data) {
+			setErrorMsg("User not found");
+		} else if (existingOrganisers.some((org) => org.id === res.data.id)) {
+			setErrorMsg("User is already an organiser");
+		} else {
+			setSearchResult(res.data);
+		}
+
+		setLoading(false);
+	};
+
+	// ➕ Add organiser
+	const handleAddOrganiser = async () => {
+		if (!searchResult) return;
+
+		const res = await api.event.addOrganisers({
+			eventId,
+			userIds: [searchResult.id],
+		});
+
+		if (res.success) {
+			toast.success("Organiser added successfully");
+			setSearchResult(null);
+			setUsn("");
+			fetchOrganisers();
+		} else {
+			toast.error(res.error || "Failed to add organiser");
+		}
+	};
+
+	// ❌ Remove organiser
+	const handleRemoveOrganiser = async (userId: number) => {
+		const res = await api.event.removeOrganiser({ eventId, userId });
+
+		if (res.success) {
+			toast.success("Organiser removed");
+			fetchOrganisers();
+		} else {
+			toast.error("Failed to remove organiser");
+		}
+	};
+
+	return (
+		<div className="text-sm text-slate-700 dark:text-slate-300 space-y-4 mt-4">
+			<p className="text-base font-semibold">Event Organisers</p>
+
+			{existingOrganisers.length > 0 ? (
+				<ul className="space-y-1">
+					{existingOrganisers.map((org) => (
+						<li key={org.id} className="flex justify-between items-center">
+							<span>
+								{org.name} ({org.email}) - <strong>{org.usn}</strong>
+							</span>
+							<Button
+								variant="ghost"
+								size="icon"
+								onClick={() => handleRemoveOrganiser(org.id)}
+							>
+								<Trash2 className="w-4 h-4 text-red-500" />
+							</Button>
+						</li>
+					))}
+				</ul>
+			) : (
+				<p className="text-muted-foreground italic text-xs">
+					No organisers added yet.
+				</p>
+			)}
+
+			<hr className="my-4" />
+
+			<p className="text-base font-semibold">Add Organiser by USN</p>
+			<div className="flex gap-2">
+				<Input
+					value={usn}
+					onChange={(e) => setUsn(e.target.value)}
+					placeholder="Enter USN"
+				/>
+				<Button onClick={handleSearch} disabled={loading}>
+					{loading ? "Searching..." : "Search"}
+				</Button>
+			</div>
+
+			{errorMsg && <p className="text-red-500 text-xs mt-1">{errorMsg}</p>}
+
+			{searchResult && (
+				<div className="mt-2 border p-3 rounded-md bg-muted">
+					<p>
+						<strong>Name:</strong> {searchResult.name}
+					</p>
+					<p>
+						<strong>Email:</strong> {searchResult.email}
+					</p>
+					<p>
+						<strong>USN:</strong> {searchResult.usn}
+					</p>
+					<Button className="mt-3" onClick={handleAddOrganiser}>
+						Add as Organiser
+					</Button>
+				</div>
+			)}
 		</div>
 	);
 }

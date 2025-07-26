@@ -1,5 +1,6 @@
 "use server";
 import { db } from "~/server/db";
+import { protectedAction } from "~/actions/middleware/protectedAction";
 
 export async function getAllEvents() {
 	try {
@@ -800,3 +801,59 @@ export async function deleteTeam(userId: number, teamId: string) {
 		};
 	}
 }
+
+// GET ORGANISERS
+export const getOrganisers = protectedAction(
+	async (_session, eventId: number) => {
+		const organisers = await db.organiser.findMany({
+			where: { eventId },
+			include: {
+				User: {
+					select: { id: true, name: true, email: true, usn: true },
+				},
+			},
+		});
+		return {
+			success: true,
+			data: organisers.map((o) => o.User),
+		};
+	},
+	{ actionName: "event.organiser.getAll" },
+);
+
+// ADD ORGANISERS
+export const addOrganisers = protectedAction(
+	async (_session, input: { eventId: number; userIds: number[] }) => {
+		try {
+			await db.organiser.createMany({
+				data: input.userIds.map((userId) => ({
+					eventId: input.eventId,
+					userId,
+				})),
+				skipDuplicates: true,
+			});
+			return { success: true };
+		} catch (error) {
+			console.error("Failed to add organisers:", error);
+			return {
+				success: false,
+				error: "Failed to add organisers. Please try again.",
+			};
+		}
+	},
+	{ actionName: "event.organiser.add" },
+);
+
+// REMOVE ORGANISER
+export const removeOrganiser = protectedAction(
+	async (_session, input: { eventId: number; userId: number }) => {
+		await db.organiser.deleteMany({
+			where: {
+				eventId: input.eventId,
+				userId: input.userId,
+			},
+		});
+		return { success: true };
+	},
+	{ actionName: "event.organiser.remove" },
+);
