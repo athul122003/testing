@@ -35,6 +35,17 @@ export const POST = async (req: Request) => {
 		);
 		const teamId = data.payload.payment.entity.notes?.teamId;
 
+		console.log("Processing payment capture:", {
+			paymentId,
+			paymentSignature,
+			orderId,
+			amount,
+			paymentType,
+			paymentName,
+			sessionUserId,
+			teamId,
+		});
+
 		try {
 			await api.payment.webhookCapture(
 				paymentId,
