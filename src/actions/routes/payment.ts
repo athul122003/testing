@@ -63,6 +63,21 @@ export async function createOrder(input: CreateOrderInput) {
 					cause: "BAD_REQUEST",
 				});
 			}
+
+			const userRole = await db.role.findUnique({
+				where: { name: "USER" },
+				select: { id: true },
+			});
+			if (!userRole) {
+				throw new Error("User role not found", { cause: "NOT_FOUND" });
+			}
+
+			if (user.roleId !== userRole.id) {
+				return {
+					success: false,
+					error: "User has already paid for membership or has a different role",
+				};
+			}
 		} else {
 			amount = 0;
 			const team = await db.team.findUnique({
@@ -210,6 +225,9 @@ export async function createOrder(input: CreateOrderInput) {
 }
 
 export async function savePayment(input: VerifyAndSavePaymentInput) {
+	if (input.paymentType === "EVENT") {
+		console.log("Saving payment with input:", input.teamId);
+	}
 	const typeOfPayment =
 		input.paymentType === "EVENT"
 			? {
@@ -230,16 +248,28 @@ export async function savePayment(input: VerifyAndSavePaymentInput) {
 				};
 	console.log(input);
 	console.log(input.sessionUserId);
-	const payment = await db.payment.create({
-		data: {
-			paymentType: input.paymentType,
-			paymentName: input.paymentName,
-			razorpayOrderId: input.razorpayOrderId,
+	const existingPayment = await db.payment.findFirst({
+		where: {
 			razorpayPaymentId: input.razorpayPaymentId,
-			razorpaySignature: input.razorpaySignature,
-			...typeOfPayment,
 		},
 	});
+
+	let payment = null;
+
+	if (!existingPayment) {
+		payment = await db.payment.create({
+			data: {
+				paymentType: input.paymentType,
+				paymentName: input.paymentName,
+				razorpayOrderId: input.razorpayOrderId,
+				razorpayPaymentId: input.razorpayPaymentId,
+				razorpaySignature: input.razorpaySignature,
+				...typeOfPayment,
+			},
+		});
+	} else {
+		payment = existingPayment;
+	}
 
 	if (input.paymentType === "MEMBERSHIP") {
 		const memberRole = await db.role.findUnique({
@@ -248,6 +278,25 @@ export async function savePayment(input: VerifyAndSavePaymentInput) {
 		});
 		if (!memberRole) {
 			throw new Error("Member role not found", { cause: "NOT_FOUND" });
+		}
+		const userRole = await db.role.findUnique({
+			where: { name: "USER" },
+			select: { id: true },
+		});
+		if (!userRole) {
+			throw new Error("User role not found", { cause: "NOT_FOUND" });
+		}
+		const existingUser = await db.user.findUnique({
+			where: { id: input.sessionUserId },
+		});
+		if (!existingUser) {
+			throw new Error("User not found", { cause: "NOT_FOUND" });
+		}
+		if (existingUser.roleId !== userRole.id) {
+			return {
+				success: false,
+				error: "User has already paid for membership or has a different role",
+			};
 		}
 		await db.user.update({
 			where: { id: input.sessionUserId },
@@ -301,21 +350,18 @@ export async function webhookCapture(
 		},
 	});
 
-	if (payment) {
-		console.log("Payment already exists, skipping capture");
-		return;
+	if (!payment) {
+		await db.payment.create({
+			data: {
+				paymentType: paymentType as PaymentType,
+				paymentName: paymentName,
+				razorpayOrderId: orderId,
+				razorpayPaymentId: paymentId,
+				razorpaySignature: paymentSignature || "webhook-capture",
+				...typeOfPayment,
+			},
+		});
 	}
-
-	await db.payment.create({
-		data: {
-			paymentType: paymentType as PaymentType,
-			paymentName: paymentName,
-			razorpayOrderId: orderId,
-			razorpayPaymentId: paymentId,
-			razorpaySignature: paymentSignature || "webhook-capture",
-			...typeOfPayment,
-		},
-	});
 
 	if (paymentType === PaymentType.MEMBERSHIP) {
 		const memberRole = await db.role.findUnique({
@@ -324,6 +370,22 @@ export async function webhookCapture(
 		});
 		if (!memberRole) {
 			throw new Error("Member role not found", { cause: "NOT_FOUND" });
+		}
+		const userRole = await db.role.findUnique({
+			where: { name: "USER" },
+			select: { id: true },
+		});
+		if (!userRole) {
+			throw new Error("User role not found", { cause: "NOT_FOUND" });
+		}
+		const existingUser = await db.user.findUnique({
+			where: { id: sessionUserId },
+		});
+		if (!existingUser) {
+			throw new Error("User not found", { cause: "NOT_FOUND" });
+		}
+		if (existingUser.roleId !== userRole.id) {
+			return;
 		}
 		await db.user.update({
 			where: { id: sessionUserId },
