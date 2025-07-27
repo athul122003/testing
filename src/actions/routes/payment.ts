@@ -79,6 +79,10 @@ export async function createOrder(input: CreateOrderInput) {
 			if (!team) {
 				throw new Error("Team not found", { cause: "NOT_FOUND" });
 			}
+
+			if (team.isConfirmed) {
+				throw new Error("Team is already confirmed", { cause: "BAD_REQUEST" });
+			}
 			const members = team.Members;
 			if (members.length === 0) {
 				throw new Error("Team has no members", { cause: "BAD_REQUEST" });
@@ -117,12 +121,23 @@ export async function createOrder(input: CreateOrderInput) {
 					cause: "BAD_REQUEST",
 				});
 			}
-			if (team.paymentId) {
-				// TODO [RAHUL] Confirm if there are unique teams being created and cannot use same team again
-				throw new Error("Team has already paid for event", {
-					cause: "BAD_REQUEST",
+
+			if (team.Event.nonFlcAmount > 0 || team.Event.flcAmount > 0) {
+				const hasPaid = await db.payment.findFirst({
+					where: {
+						Team: {
+							id: team.id,
+						},
+						paymentType: PaymentType.EVENT,
+					},
 				});
+				if (hasPaid) {
+					throw new Error("Team has already paid for this event", {
+						cause: "BAD_REQUEST",
+					});
+				}
 			}
+
 			if (input.sessionUserId !== team.leaderId) {
 				throw new Error("Only team leader can create order", {
 					cause: "FORBIDDEN",
@@ -139,7 +154,18 @@ export async function createOrder(input: CreateOrderInput) {
 				select: { id: true },
 			});
 			if (!userRole) {
-				throw new Error("Member role not found", { cause: "NOT_FOUND" });
+				throw new Error("User role not found", { cause: "NOT_FOUND" });
+			}
+			if (event.isMembersOnly) {
+				const nonFlcMembers = team.Members.filter(
+					(m) => m.roleId === userRole.id,
+				);
+				if (nonFlcMembers.length > 0) {
+					throw new Error(
+						"Non-FLC members are not allowed to register for this event",
+						{ cause: "FORBIDDEN" },
+					);
+				}
 			}
 			team.Members.forEach((m) => {
 				if (m.roleId === userRole.id) {

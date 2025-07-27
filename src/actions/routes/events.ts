@@ -585,29 +585,46 @@ export async function confirmTeam(userId: number, teamId: string) {
 			};
 		}
 
-		const memberRole = await db.role.findUnique({
-			where: { name: "MEMBER" },
-			select: { id: true },
-		});
-		if (!memberRole) {
+		if (team.Members.length === 0) {
 			return {
 				success: false,
-				error: "Member role not found",
+				error: "Team has no members",
 			};
 		}
+
+		if (
+			team.Members.length < team.Event.minTeamSize ||
+			team.Members.length > team.Event.maxTeamSize
+		) {
+			return {
+				success: false,
+				error: `Team must have between ${team.Event.minTeamSize} and ${team.Event.maxTeamSize} members including the leader. Currently has ${team.Members.length}.`,
+			};
+		}
+
 		if (team.Event.isMembersOnly) {
+			const userRole = await db.role.findUnique({
+				where: { name: "USER" },
+				select: { id: true },
+			});
+			if (!userRole) {
+				return {
+					success: false,
+					error: "User role not found",
+				};
+			}
 			const userInfo = await db.user.findUnique({
 				where: { id: userId },
 				select: { id: true, name: true, roleId: true },
 			});
-			if (!userInfo || userInfo.roleId !== memberRole.id) {
+			if (!userInfo || userInfo.roleId === userRole.id) {
 				return {
 					success: false,
 					error: "Only FLC members can confirm the team for this event",
 				};
 			}
 			const nonFlcMembers = team.Members.filter(
-				(member) => member.roleId !== memberRole.id,
+				(member) => member.roleId === userRole.id,
 			);
 
 			if (nonFlcMembers.length > 0) {
@@ -639,8 +656,7 @@ export async function confirmTeam(userId: number, teamId: string) {
 			};
 		}
 
-		// Total size includes leader
-		const totalSize = 1 + team.Members.length;
+		const totalSize = team.Members.length;
 		const { minTeamSize, maxTeamSize } = team.Event;
 
 		if (totalSize < minTeamSize || totalSize > maxTeamSize) {
