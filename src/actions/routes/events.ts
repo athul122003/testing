@@ -445,7 +445,7 @@ export async function joinTeam(
 		}
 
 		// Check if team is full
-		const totalMembers = team.Members.length + 1; // +1 for leader
+		const totalMembers = team.Members.length;
 		if (totalMembers >= maxSize) {
 			return {
 				success: false,
