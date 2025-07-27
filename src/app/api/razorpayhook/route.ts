@@ -57,5 +57,15 @@ export const POST = async (req: Request) => {
 				},
 			);
 		}
+		return new Response(
+			JSON.stringify({
+				success: true,
+				message: "Payment captured successfully",
+			}),
+			{
+				status: 200,
+				headers: { "Content-Type": "application/json" },
+			},
+		);
 	}
 };
