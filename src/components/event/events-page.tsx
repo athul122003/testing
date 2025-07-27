@@ -166,7 +166,6 @@ export function EventsPage({
 				return "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400";
 		}
 	};
-	console.log("organiser status:", isOrganiser);
 	if (!canManageEvents && !isOrganiser) {
 		return (
 			<div className="flex flex-col items-center justify-center h-[60vh]">

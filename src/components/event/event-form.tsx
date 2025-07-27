@@ -193,7 +193,9 @@ export function EventForm({
 					</p>
 				</div>
 			</div>
-
+			{hasPerm(perm.MANAGE_EVENTS) && editingEvent.id && (
+				<AddOrganisersSection eventId={editingEvent.id} />
+			)}
 			<Card className="border-0 shadow-lg bg-white dark:bg-slate-800">
 				<CardHeader>
 					<CardTitle className="text-lg sm:text-xl text-slate-900 dark:text-white">
@@ -511,9 +513,6 @@ export function EventForm({
 							}}
 						/>
 					</div>
-					{hasPerm(perm.MANAGE_EVENTS) && editingEvent.id && (
-						<AddOrganisersSection eventId={editingEvent.id} />
-					)}
 
 					<div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
 						<Button variant="outline" onClick={handleCancel}>
