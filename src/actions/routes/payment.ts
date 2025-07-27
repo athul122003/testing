@@ -268,12 +268,12 @@ export async function savePayment(input: VerifyAndSavePaymentInput) {
 
 export async function webhookCapture(
 	paymentId: string,
-	paymentSignature: string,
 	orderId: string,
 	amount: number,
 	paymentType: string,
 	paymentName: string,
 	sessionUserId: number,
+	paymentSignature?: string,
 	teamId?: string,
 ) {
 	const typeOfPayment =
@@ -312,7 +312,7 @@ export async function webhookCapture(
 			paymentName: paymentName,
 			razorpayOrderId: orderId,
 			razorpayPaymentId: paymentId,
-			razorpaySignature: "webhook_capture", // Placeholder, not used in this context
+			razorpaySignature: paymentSignature || "webhook-capture",
 			...typeOfPayment,
 		},
 	});
