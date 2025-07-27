@@ -25,7 +25,7 @@ export const POST = async (req: Request) => {
 	if (data.event === "payment.captured") {
 		console.log("Payment captured event received:", data.payload);
 		const paymentId = data.payload.payment.entity.id;
-		const paymentSignature = data.payload.payment.entity.signature;
+		const paymentSignature = signature;
 		const orderId = data.payload.payment.entity.order_id;
 		const amount = parseInt(data.payload.payment.entity.amount) / 100;
 		const paymentType = data.payload.payment.entity.notes?.paymentType;
@@ -38,12 +38,12 @@ export const POST = async (req: Request) => {
 		try {
 			await api.payment.webhookCapture(
 				paymentId,
-				paymentSignature,
 				orderId,
 				amount,
 				paymentType,
 				paymentName,
 				sessionUserId,
+				paymentSignature || "webhook-capture",
 				teamId,
 			);
 			console.log("Payment captured successfully:", paymentId);
@@ -57,5 +57,15 @@ export const POST = async (req: Request) => {
 				},
 			);
 		}
+		return new Response(
+			JSON.stringify({
+				success: true,
+				message: "Payment captured successfully",
+			}),
+			{
+				status: 200,
+				headers: { "Content-Type": "application/json" },
+			},
+		);
 	}
 };

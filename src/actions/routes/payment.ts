@@ -63,6 +63,21 @@ export async function createOrder(input: CreateOrderInput) {
 					cause: "BAD_REQUEST",
 				});
 			}
+
+			const userRole = await db.role.findUnique({
+				where: { name: "USER" },
+				select: { id: true },
+			});
+			if (!userRole) {
+				throw new Error("User role not found", { cause: "NOT_FOUND" });
+			}
+
+			if (user.roleId !== userRole.id) {
+				return {
+					success: false,
+					error: "User has already paid for membership or has a different role",
+				};
+			}
 		} else {
 			amount = 0;
 			const team = await db.team.findUnique({
@@ -78,6 +93,10 @@ export async function createOrder(input: CreateOrderInput) {
 
 			if (!team) {
 				throw new Error("Team not found", { cause: "NOT_FOUND" });
+			}
+
+			if (team.isConfirmed) {
+				throw new Error("Team is already confirmed", { cause: "BAD_REQUEST" });
 			}
 			const members = team.Members;
 			if (members.length === 0) {
@@ -117,12 +136,23 @@ export async function createOrder(input: CreateOrderInput) {
 					cause: "BAD_REQUEST",
 				});
 			}
-			if (team.paymentId) {
-				// TODO [RAHUL] Confirm if there are unique teams being created and cannot use same team again
-				throw new Error("Team has already paid for event", {
-					cause: "BAD_REQUEST",
+
+			if (team.Event.nonFlcAmount > 0 || team.Event.flcAmount > 0) {
+				const hasPaid = await db.payment.findFirst({
+					where: {
+						Team: {
+							id: team.id,
+						},
+						paymentType: PaymentType.EVENT,
+					},
 				});
+				if (hasPaid) {
+					throw new Error("Team has already paid for this event", {
+						cause: "BAD_REQUEST",
+					});
+				}
 			}
+
 			if (input.sessionUserId !== team.leaderId) {
 				throw new Error("Only team leader can create order", {
 					cause: "FORBIDDEN",
@@ -139,7 +169,18 @@ export async function createOrder(input: CreateOrderInput) {
 				select: { id: true },
 			});
 			if (!userRole) {
-				throw new Error("Member role not found", { cause: "NOT_FOUND" });
+				throw new Error("User role not found", { cause: "NOT_FOUND" });
+			}
+			if (event.isMembersOnly) {
+				const nonFlcMembers = team.Members.filter(
+					(m) => m.roleId === userRole.id,
+				);
+				if (nonFlcMembers.length > 0) {
+					throw new Error(
+						"Non-FLC members are not allowed to register for this event",
+						{ cause: "FORBIDDEN" },
+					);
+				}
 			}
 			team.Members.forEach((m) => {
 				if (m.roleId === userRole.id) {
@@ -184,6 +225,9 @@ export async function createOrder(input: CreateOrderInput) {
 }
 
 export async function savePayment(input: VerifyAndSavePaymentInput) {
+	if (input.paymentType === "EVENT") {
+		console.log("Saving payment with input:", input.teamId);
+	}
 	const typeOfPayment =
 		input.paymentType === "EVENT"
 			? {
@@ -204,16 +248,28 @@ export async function savePayment(input: VerifyAndSavePaymentInput) {
 				};
 	console.log(input);
 	console.log(input.sessionUserId);
-	const payment = await db.payment.create({
-		data: {
-			paymentType: input.paymentType,
-			paymentName: input.paymentName,
-			razorpayOrderId: input.razorpayOrderId,
+	const existingPayment = await db.payment.findFirst({
+		where: {
 			razorpayPaymentId: input.razorpayPaymentId,
-			razorpaySignature: input.razorpaySignature,
-			...typeOfPayment,
 		},
 	});
+
+	let payment = null;
+
+	if (!existingPayment) {
+		payment = await db.payment.create({
+			data: {
+				paymentType: input.paymentType,
+				paymentName: input.paymentName,
+				razorpayOrderId: input.razorpayOrderId,
+				razorpayPaymentId: input.razorpayPaymentId,
+				razorpaySignature: input.razorpaySignature,
+				...typeOfPayment,
+			},
+		});
+	} else {
+		payment = existingPayment;
+	}
 
 	if (input.paymentType === "MEMBERSHIP") {
 		const memberRole = await db.role.findUnique({
@@ -222,6 +278,25 @@ export async function savePayment(input: VerifyAndSavePaymentInput) {
 		});
 		if (!memberRole) {
 			throw new Error("Member role not found", { cause: "NOT_FOUND" });
+		}
+		const userRole = await db.role.findUnique({
+			where: { name: "USER" },
+			select: { id: true },
+		});
+		if (!userRole) {
+			throw new Error("User role not found", { cause: "NOT_FOUND" });
+		}
+		const existingUser = await db.user.findUnique({
+			where: { id: input.sessionUserId },
+		});
+		if (!existingUser) {
+			throw new Error("User not found", { cause: "NOT_FOUND" });
+		}
+		if (existingUser.roleId !== userRole.id) {
+			return {
+				paymentDbId: payment.id,
+				paymentRazorpayId: payment.razorpayPaymentId,
+			};
 		}
 		await db.user.update({
 			where: { id: input.sessionUserId },
@@ -242,12 +317,12 @@ export async function savePayment(input: VerifyAndSavePaymentInput) {
 
 export async function webhookCapture(
 	paymentId: string,
-	paymentSignature: string,
 	orderId: string,
 	amount: number,
 	paymentType: string,
 	paymentName: string,
 	sessionUserId: number,
+	paymentSignature?: string,
 	teamId?: string,
 ) {
 	const typeOfPayment =
@@ -275,21 +350,18 @@ export async function webhookCapture(
 		},
 	});
 
-	if (payment) {
-		console.log("Payment already exists, skipping capture");
-		return;
+	if (!payment) {
+		await db.payment.create({
+			data: {
+				paymentType: paymentType as PaymentType,
+				paymentName: paymentName,
+				razorpayOrderId: orderId,
+				razorpayPaymentId: paymentId,
+				razorpaySignature: paymentSignature || "webhook-capture",
+				...typeOfPayment,
+			},
+		});
 	}
-
-	await db.payment.create({
-		data: {
-			paymentType: paymentType as PaymentType,
-			paymentName: paymentName,
-			razorpayOrderId: orderId,
-			razorpayPaymentId: paymentId,
-			razorpaySignature: "webhook_capture", // Placeholder, not used in this context
-			...typeOfPayment,
-		},
-	});
 
 	if (paymentType === PaymentType.MEMBERSHIP) {
 		const memberRole = await db.role.findUnique({
@@ -298,6 +370,22 @@ export async function webhookCapture(
 		});
 		if (!memberRole) {
 			throw new Error("Member role not found", { cause: "NOT_FOUND" });
+		}
+		const userRole = await db.role.findUnique({
+			where: { name: "USER" },
+			select: { id: true },
+		});
+		if (!userRole) {
+			throw new Error("User role not found", { cause: "NOT_FOUND" });
+		}
+		const existingUser = await db.user.findUnique({
+			where: { id: sessionUserId },
+		});
+		if (!existingUser) {
+			throw new Error("User not found", { cause: "NOT_FOUND" });
+		}
+		if (existingUser.roleId !== userRole.id) {
+			return;
 		}
 		await db.user.update({
 			where: { id: sessionUserId },

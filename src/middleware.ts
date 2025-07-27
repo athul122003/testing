@@ -10,6 +10,7 @@ export function middleware(request: NextRequest) {
 			"https://flc-client-25.vercel.app",
 			"https://finiteloop.vercel.app",
 			"https://finiteloop.club",
+			"https://www.finiteloop.club",
 		];
 		const origin = request.headers.get("origin");
 		if (origin && allowedOrigins.includes(origin)) {

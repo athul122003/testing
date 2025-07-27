@@ -400,6 +400,7 @@ export function EventForm({
 							<Input
 								id="nonFlcAmount"
 								type="number"
+								disabled={formData.isMembersOnly}
 								placeholder="Amount for non-FLC members"
 								value={formData.nonFlcAmount}
 								onChange={(e) =>
