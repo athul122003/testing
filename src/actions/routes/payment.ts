@@ -294,8 +294,8 @@ export async function savePayment(input: VerifyAndSavePaymentInput) {
 		}
 		if (existingUser.roleId !== userRole.id) {
 			return {
-				success: false,
-				error: "User has already paid for membership or has a different role",
+				paymentDbId: payment.id,
+				paymentRazorpayId: payment.razorpayPaymentId,
 			};
 		}
 		await db.user.update({
