@@ -163,7 +163,7 @@ export async function soloEventReg(userId: number, eventId: number) {
 			error: "Maximum number of users reached for this event",
 		};
 	}
-	if (event.state !== "PUBLISHED") {
+	if (event.state === "COMPLETED") {
 		return {
 			success: false,
 			error: "Event Registration is not open, contact support",
@@ -175,8 +175,8 @@ export async function soloEventReg(userId: number, eventId: number) {
 			error: "Registration for this event has closed",
 		};
 	}
-	const memberRole = await db.role.findUnique({
-		where: { name: "MEMBER" },
+	const userRole = await db.role.findUnique({
+		where: { name: "USER" },
 		select: { id: true },
 	});
 	if (event.isMembersOnly) {
@@ -184,7 +184,7 @@ export async function soloEventReg(userId: number, eventId: number) {
 			where: { id: userId },
 			select: { id: true, name: true, roleId: true },
 		});
-		if (!userInfo || userInfo.roleId !== memberRole?.id) {
+		if (!userInfo || userInfo.roleId === userRole?.id) {
 			return {
 				success: false,
 				error: "Only FLC members can register for this event",
@@ -260,11 +260,11 @@ export async function createTeam(
 			};
 		}
 
-		const memberRole = await db.role.findUnique({
-			where: { name: "MEMBER" },
+		const userRole = await db.role.findUnique({
+			where: { name: "USER" },
 			select: { id: true },
 		});
-		if (!memberRole) {
+		if (!userRole) {
 			return {
 				success: false,
 				error: "Member role not found",
@@ -309,7 +309,7 @@ export async function createTeam(
 			};
 		}
 
-		if (event.isMembersOnly && userInfo.roleId !== memberRole.id) {
+		if (event.isMembersOnly && userInfo.roleId === userRole.id) {
 			return {
 				success: false,
 				error: "Only FLC members can create a team for this event",
@@ -370,6 +370,65 @@ export async function createTeam(
 	}
 }
 
+export async function removeMember(
+	teamId: string,
+	memberId: number,
+	leaderId: number,
+) {
+	try {
+		const team = await db.team.findUnique({
+			where: { id: teamId },
+			include: {
+				Members: true,
+				Leader: true,
+			},
+		});
+		if (!team) {
+			return {
+				success: false,
+				error: "Team not found",
+			};
+		}
+		if (team.leaderId !== leaderId) {
+			return {
+				success: false,
+				error: "Only the team leader can remove members",
+			};
+		}
+		if (team.Members.length <= 1) {
+			return {
+				success: false,
+				error: "Cannot remove the last member from the team",
+			};
+		}
+		if (team.Members.some((member) => member.id === memberId)) {
+			await db.team.update({
+				where: { id: teamId },
+				data: {
+					Members: {
+						disconnect: { id: memberId },
+					},
+				},
+			});
+			return {
+				success: true,
+				message: "Member removed successfully",
+			};
+		} else {
+			return {
+				success: false,
+				error: "Member not found in the team",
+			};
+		}
+	} catch (error) {
+		console.error("removeMember Error:", error);
+		return {
+			success: false,
+			error: "Failed to remove member from team",
+		};
+	}
+}
+
 export async function joinTeam(
 	userId: number,
 	teamId: string,
@@ -384,11 +443,11 @@ export async function joinTeam(
 				Event: true,
 			},
 		});
-		const memberRole = await db.role.findUnique({
-			where: { name: "MEMBER" },
+		const userRole = await db.role.findUnique({
+			where: { name: "USER" },
 			select: { id: true },
 		});
-		if (!memberRole) {
+		if (!userRole) {
 			return {
 				success: false,
 				error: "Member role not found",
@@ -418,7 +477,7 @@ export async function joinTeam(
 			};
 		}
 
-		if (team.Event.state !== "PUBLISHED") {
+		if (team.Event.state === "COMPLETED") {
 			return {
 				success: false,
 				error: "Team cannot be joined at this time",
@@ -462,7 +521,7 @@ export async function joinTeam(
 		const event = team.Event;
 		const maxSize = event.maxTeamSize;
 
-		if (event.isMembersOnly && userInfo.roleId !== memberRole.id) {
+		if (event.isMembersOnly && userInfo.roleId === userRole.id) {
 			return {
 				success: false,
 				error: "Only FLC members can join this team",
@@ -562,6 +621,7 @@ export async function getTeam(userId: number, eventId: number) {
 	if (!teams || teams.length === 0) {
 		return {
 			success: false,
+			status: 203,
 			error: "User is not part of any team for this event.",
 		};
 	}
@@ -642,6 +702,12 @@ export async function confirmTeam(userId: number, teamId: string) {
 			team.Members.length < team.Event.minTeamSize ||
 			team.Members.length > team.Event.maxTeamSize
 		) {
+			if (team.Event.minTeamSize === team.Event.maxTeamSize) {
+				return {
+					success: false,
+					error: `Team must have exactly ${team.Event.minTeamSize} members including the leader. Currently has ${team.Members.length}.`,
+				};
+			}
 			return {
 				success: false,
 				error: `Team must have between ${team.Event.minTeamSize} and ${team.Event.maxTeamSize} members including the leader. Currently has ${team.Members.length}.`,

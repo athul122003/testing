@@ -111,17 +111,24 @@ export async function createOrder(input: CreateOrderInput) {
 				members.length < team.Event.minTeamSize ||
 				members.length > team.Event.maxTeamSize
 			) {
-				throw new Error(
-					`Team size must be between ${team.Event.minTeamSize} and ${team.Event.maxTeamSize}`,
-					{ cause: "BAD_REQUEST" },
-				);
+				if (team.Event.minTeamSize === team.Event.maxTeamSize) {
+					throw new Error(
+						`Team must have exactly ${team.Event.minTeamSize} members including the leader. Currently has ${members.length}.`,
+						{ cause: "BAD_REQUEST" },
+					);
+				} else {
+					throw new Error(
+						`Team size must be between ${team.Event.minTeamSize} and ${team.Event.maxTeamSize}`,
+						{ cause: "BAD_REQUEST" },
+					);
+				}
 			}
 			if (team.Event.deadline && new Date(team.Event.deadline) < new Date()) {
 				throw new Error("Event registration deadline has passed", {
 					cause: "BAD_REQUEST",
 				});
 			}
-			if (team.Event.state !== "PUBLISHED") {
+			if (team.Event.state === "COMPLETED") {
 				throw new Error("Event Registration is not open, contact support", {
 					cause: "BAD_REQUEST",
 				});
@@ -147,9 +154,12 @@ export async function createOrder(input: CreateOrderInput) {
 					},
 				});
 				if (hasPaid) {
-					throw new Error("Team has already paid for this event", {
-						cause: "BAD_REQUEST",
-					});
+					throw new Error(
+						"Team has already paid for this event, please contact support for any issues",
+						{
+							cause: "BAD_REQUEST",
+						},
+					);
 				}
 			}
 

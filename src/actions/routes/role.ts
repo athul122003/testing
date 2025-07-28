@@ -72,17 +72,19 @@ export const deleteRole = protectedAction(
 			select: { id: true },
 		});
 
+		if (!memberRole) throw new Error("Default MEMBER role not found");
+
 		const allRoleUsers = await db.user.findMany({
 			where: { roleId: role.id },
-			select: { id: true, paymentId: true },
+			select: { id: true, memberSince: true },
 		});
 
 		if (allRoleUsers.length > 0) {
 			for (const user of allRoleUsers) {
-				if (user.paymentId !== null) {
+				if (user.memberSince !== null) {
 					await db.user.update({
 						where: { id: user.id },
-						data: { roleId: memberRole?.id || userRole.id },
+						data: { roleId: memberRole?.id },
 					});
 				} else {
 					await db.user.update({
