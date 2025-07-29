@@ -24,10 +24,10 @@ export function withReactQueryHooks<
 ): {
 	[K in keyof T]: {
 		[F in keyof T[K]]: T[K][F] & {
-			useQuery?: (
+			useQuery: (
 				...args: Parameters<T[K][F]>
 			) => UseQueryResult<Awaited<ReturnType<T[K][F]>>, unknown>;
-			useMutation?: (
+			useMutation: (
 				options?: UseMutationOptions<
 					Awaited<ReturnType<T[K][F]>>,
 					unknown,
@@ -40,7 +40,7 @@ export function withReactQueryHooks<
 				Parameters<T[K][F]>[0],
 				unknown
 			>;
-			invalidate?: (...args: Parameters<T[K][F]>) => void;
+			invalidate: (...args: Parameters<T[K][F]>) => void;
 		};
 	};
 } {

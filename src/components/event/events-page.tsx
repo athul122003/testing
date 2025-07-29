@@ -150,6 +150,11 @@ export function EventsPage({
 		setActivePage("event-participants");
 		setIsDetailOpen(false);
 	};
+	const handleAssignWinner = (event: ExtendedEvent) => {
+		setEditingEvent(event);
+		setActivePage("event-winner");
+		setIsDetailOpen(false);
+	};
 
 	const handleAttendance = (event: ExtendedEvent) => {
 		setEditingEvent(event);
@@ -494,6 +499,18 @@ export function EventsPage({
 											Event is Completed
 										</p>
 									</div>
+								)}
+								{(selectedEvent.state === "LIVE" ||
+									selectedEvent.state === "COMPLETED") && (
+									<Button
+										type="button"
+										onClick={() => handleAssignWinner(selectedEvent)}
+										className="bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-200 border border-gray-300 dark:border-slate-800"
+									>
+										{selectedEvent.prizesAlloted
+											? "Edit Winners"
+											: "Assign Winners"}
+									</Button>
 								)}
 								<Button
 									type="button"

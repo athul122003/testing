@@ -28,6 +28,12 @@ export async function getTeamsForEvent(eventId: number) {
 					name: true,
 				},
 			},
+			Prize: {
+				select: {
+					prizeType: true,
+					flcPoints: true,
+				},
+			},
 		},
 		orderBy: {
 			isConfirmed: "desc", // confirmed teams first
@@ -44,6 +50,10 @@ export async function getTeamsForEvent(eventId: number) {
 			id: member.id,
 			name: member.name,
 		})),
+		Prize: {
+			prizeType: team.Prize?.prizeType,
+			flcPoints: team.Prize?.flcPoints,
+		},
 	}));
 }
 
