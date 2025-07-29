@@ -162,6 +162,39 @@ export function EventForm({
 			return;
 		}
 
+		const winnerPrize =
+			formData.prizes.find((p) => p.prizeType === "WINNER")?.flcPoints ?? 0;
+		const runnerUpPrize =
+			formData.prizes.find((p) => p.prizeType === "RUNNER_UP")?.flcPoints ?? 0;
+		const secondRunnerUpPrize =
+			formData.prizes.find((p) => p.prizeType === "SECOND_RUNNER_UP")
+				?.flcPoints ?? 0;
+		const participationPrize =
+			formData.prizes.find((p) => p.prizeType === "PARTICIPATION")?.flcPoints ??
+			0;
+
+		if (
+			winnerPrize <= 0 ||
+			runnerUpPrize <= 0 ||
+			secondRunnerUpPrize <= 0 ||
+			participationPrize <= 0
+		) {
+			toast.error("FLC points must be greater than 0 for all type of prizes.");
+			return;
+		}
+		if (
+			!(
+				winnerPrize >= runnerUpPrize &&
+				runnerUpPrize >= secondRunnerUpPrize &&
+				secondRunnerUpPrize >= participationPrize
+			)
+		) {
+			toast.error(
+				"Winner must have most points, then runner up, then second runner up, then participation.",
+			);
+			return;
+		}
+
 		const payload = {
 			...formData,
 			maxTeams: Number(formData.maxTeams),

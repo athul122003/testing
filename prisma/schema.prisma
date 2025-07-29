@@ -160,8 +160,9 @@ model Event {
   flcAmount     Int     @default(0)
   nonFlcAmount  Int     @default(0)
 
-  state    EventState @default(DRAFT)
-  isLegacy Boolean    @default(false)
+  state         EventState @default(DRAFT)
+  isLegacy      Boolean    @default(false)
+  prizesAlloted Boolean    @default(false)
 
   Organiser   Organiser[]
   Team        Team[]

@@ -246,56 +246,71 @@ export const editEventAction = protectedAction(
 				include: { Teams: { include: { Members: true } } },
 			});
 
-			const changedPrizes = validated.prizes?.filter((newPrize) => {
-				const oldPrize = existingPrizes.find(
-					(p) => p.prizeType === newPrize.prizeType,
-				);
-				return oldPrize && oldPrize.flcPoints !== newPrize.flcPoints;
-			});
-
-			if (changedPrizes?.length) {
-				for (const prize of changedPrizes) {
+			if (existingPrizes.length > 0) {
+				const changedPrizes = validated.prizes?.filter((newPrize) => {
 					const oldPrize = existingPrizes.find(
-						(p) => p.prizeType === prize.prizeType,
+						(p) => p.prizeType === newPrize.prizeType,
 					);
-					if (!oldPrize) continue;
+					return oldPrize && oldPrize.flcPoints !== newPrize.flcPoints;
+				});
 
-					// 1. Update prize points
-					await db.prize.update({
-						where: {
-							eventId_prizeType: {
-								eventId,
-								prizeType: prize.prizeType,
+				if (changedPrizes?.length) {
+					for (const prize of changedPrizes) {
+						const oldPrize = existingPrizes.find(
+							(p) => p.prizeType === prize.prizeType,
+						);
+						if (!oldPrize) continue;
+
+						// 1. Update prize points
+						await db.prize.update({
+							where: {
+								eventId_prizeType: {
+									eventId,
+									prizeType: prize.prizeType,
+								},
 							},
-						},
-						data: {
-							flcPoints: prize.flcPoints ?? 0,
-						},
-					});
+							data: {
+								flcPoints: prize.flcPoints ?? 0,
+							},
+						});
 
-					// 2. Update all members in teams who won this prize
-					for (const team of oldPrize.Teams) {
-						const members = team.Members;
-						for (const member of members) {
-							await db.user.update({
-								where: { id: member.id },
-								data: {
-									totalActivityPoints: {
-										decrement: oldPrize.flcPoints ?? 0,
+						// 2. Update all members in teams who won this prize
+						for (const team of oldPrize.Teams) {
+							const members = team.Members;
+							for (const member of members) {
+								await db.user.update({
+									where: { id: member.id },
+									data: {
+										totalActivityPoints: {
+											decrement: oldPrize.flcPoints ?? 0,
+										},
 									},
-								},
-							});
-							await db.user.update({
-								where: { id: member.id },
-								data: {
-									totalActivityPoints: {
-										increment: prize.flcPoints ?? 0,
+								});
+								await db.user.update({
+									where: { id: member.id },
+									data: {
+										totalActivityPoints: {
+											increment: prize.flcPoints ?? 0,
+										},
 									},
-								},
-							});
+								});
+							}
 						}
 					}
 				}
+			} else {
+				const prizeTypes: PrizeType[] = Object.values(PrizeType);
+				const inputPrizeMap = new Map<PrizeType, number>(
+					(validated.prizes || []).map((p) => [p.prizeType, p.flcPoints ?? 0]),
+				);
+
+				await db.prize.createMany({
+					data: prizeTypes.map((type) => ({
+						eventId,
+						prizeType: type,
+						flcPoints: inputPrizeMap.get(type) ?? 0,
+					})),
+				});
 			}
 			return { success: true, event: updated };
 		} catch (error) {
