@@ -128,7 +128,7 @@ export async function createOrder(input: CreateOrderInput) {
 			}
 			const totalTeams = await db.team.count({
 				where: {
-					Event: { id: team.Event.id },
+					AND: [{ eventId: team.Event.id }, { isConfirmed: true }],
 				},
 			});
 			if (totalTeams >= team.Event.maxTeams) {

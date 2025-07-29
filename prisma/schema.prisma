@@ -42,7 +42,6 @@ model User {
   Team              Team[]
   Organiser         Organiser[]
   Core              Core[]
-  ActivityPoint     ActivityPoint[]
   Certificate       Certificate[]
   FeedbackResponse  FeedbackResponse[]
   RefreshToken      RefreshToken[]
@@ -164,14 +163,12 @@ model Event {
   state    EventState @default(DRAFT)
   isLegacy Boolean    @default(false)
 
-  //Relations
-  ActivityPoint ActivityPoint[]
-  Organiser     Organiser[]
-  Team          Team[]
-  Attendance    Attendance[]
-  Prize         Prize[]
-  Certificate   Certificate[]
-  Feedback      Feedback[]
+  Organiser   Organiser[]
+  Team        Team[]
+  Attendance  Attendance[]
+  Prize       Prize[]
+  Certificate Certificate[]
+  Feedback    Feedback[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -223,7 +220,8 @@ model Team {
   Leader   User @relation("leaderOfTeam", fields: [leaderId], references: [id])
 
   Members User[]
-  Prize   Prize?
+  prizeId String?
+  Prize   Prize?  @relation(fields: [prizeId], references: [id])
 
   paymentId String?  @unique
   Payment   Payment? @relation(fields: [paymentId], references: [id])
@@ -234,19 +232,18 @@ model Team {
 
 model Prize {
   id        String    @id @default(cuid())
-  prizeType PrizeType
+  prizeType PrizeType @default(PARTICIPATION)
 
-  eventId Int
-  Event   Event @relation(fields: [eventId], references: [id])
+  flcPoints Int   @default(0)
+  eventId   Int
+  Event     Event @relation(fields: [eventId], references: [id])
 
-  teamId String @unique
-  Team   Team   @relation(fields: [teamId], references: [id])
+  Teams Team[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([eventId, teamId])
-  @@index([eventId, teamId])
+  @@unique([eventId, prizeType])
 }
 
 model Feedback {
@@ -281,21 +278,6 @@ model FeedbackResponse {
   @@index([userId, feedbackId])
 }
 
-//Activity Points and Certificates
-model ActivityPoint {
-  id    String  @id @default(cuid())
-  point Int
-  name  String? @default("Event")
-
-  eventId Int?
-  Event   Event? @relation(fields: [eventId], references: [id])
-
-  User User[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
 model Certificate {
   id              String          @id @default(cuid())
   issuedOn        DateTime
@@ -316,15 +298,15 @@ model Certificate {
 
 // Blog
 model Blog {
-  id          String      @id @unique @default(cuid())
+  id          String    @id @unique @default(cuid())
   title       String
-  slug        String?     @unique //new
-  description String      @db.Text //corrected spelling 
-  content     String      @db.Text
+  slug        String?   @unique //new
+  description String    @db.Text //corrected spelling 
+  content     String    @db.Text
   readTime    Int
   words       Int
   coverImage  String? //new: cover image url for the blog
-  blogState   BlogState   @default(DRAFT)
+  blogState   BlogState @default(DRAFT)
 
   userId Int
   User   User @relation(fields: [userId], references: [id])
@@ -415,6 +397,7 @@ enum PrizeType {
   WINNER
   RUNNER_UP
   SECOND_RUNNER_UP
+  PARTICIPATION
 }
 
 enum CertificateType {

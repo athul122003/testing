@@ -160,7 +160,13 @@ export async function soloEventReg(userId: number, eventId: number) {
 	if (countOfTeams >= event.maxTeams) {
 		return {
 			success: false,
-			error: "Maximum number of teams reached for this event",
+			error: "Maximum number of users reached for this event",
+		};
+	}
+	if (event.state !== "PUBLISHED") {
+		return {
+			success: false,
+			error: "Event Registration is not open, contact support",
 		};
 	}
 	if (event.deadline && new Date() > event.deadline) {
@@ -412,6 +418,33 @@ export async function joinTeam(
 			};
 		}
 
+		if (team.Event.state !== "PUBLISHED") {
+			return {
+				success: false,
+				error: "Team cannot be joined at this time",
+			};
+		}
+
+		if (team.Event.deadline && new Date(team.Event.deadline) < new Date()) {
+			return {
+				success: false,
+				error: "Event registration deadline has passed",
+			};
+		}
+
+		const totalTeams = await db.team.count({
+			where: {
+				AND: [{ eventId: team.Event.id }, { isConfirmed: true }],
+			},
+		});
+
+		if (totalTeams >= team.Event.maxTeams) {
+			return {
+				success: false,
+				error: "Maximum number of teams reached for this event",
+			};
+		}
+
 		if (team.isConfirmed) {
 			return {
 				success: false,
@@ -568,6 +601,19 @@ export async function confirmTeam(userId: number, teamId: string) {
 			return {
 				success: false,
 				error: "Team not found",
+			};
+		}
+
+		const totalTeams = await db.team.count({
+			where: {
+				AND: [{ eventId: team.Event.id }, { isConfirmed: true }],
+			},
+		});
+
+		if (totalTeams >= team.Event.maxTeams) {
+			return {
+				success: false,
+				error: "Maximum number of teams reached for this event",
 			};
 		}
 
