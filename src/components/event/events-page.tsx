@@ -27,6 +27,7 @@ import {
 } from "~/components/ui/dialog";
 import { useDashboardData } from "~/providers/dashboardDataContext";
 import { ComponentLoading } from "../ui/component-loading";
+import { PrizeType } from "@prisma/client";
 import {
 	Select,
 	SelectContent,
@@ -34,7 +35,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "~/components/ui/select";
-import { Event } from "@prisma/client";
 import { AccessDenied } from "../othercomps/access-denied";
 
 interface EventsPageProps {
@@ -53,7 +53,8 @@ export function EventsPage({
 	const [statusModalOpen, setStatusModalOpen] = useState(false);
 	const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-	const { hasPerm, eventsQuery, refetchEvents } = useDashboardData();
+	const { hasPerm, eventsQuery, refetchEvents, isOrganiser } =
+		useDashboardData();
 	const canManageEvents = hasPerm(perm.MANAGE_EVENTS);
 	const { data: eventsData, isLoading } = eventsQuery;
 
@@ -94,14 +95,18 @@ export function EventsPage({
 		setStatusModalOpen(false);
 	};
 
-	const handleEditEvent = (event: Event) => {
+	const handleEditEvent = (event: ExtendedEvent) => {
 		const eventForForm = {
 			...event,
 			fromDate: event.fromDate.toISOString().slice(0, 16), // for datetime-local input
 			toDate: event.toDate.toISOString().slice(0, 16),
 			deadline: event.deadline ? event.deadline.toISOString().slice(0, 16) : "",
+			prizes: Object.values(PrizeType).map((type) => ({
+				prizeType: type,
+				flcPoints:
+					event?.prizes?.find((p) => p.prizeType === type)?.flcPoints || 0,
+			})),
 		};
-
 		setEditingEvent(eventForForm);
 		setActivePage("event-form");
 		setIsDetailOpen(false);
@@ -165,8 +170,7 @@ export function EventsPage({
 				return "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400";
 		}
 	};
-
-	if (!canManageEvents) {
+	if (!canManageEvents && !isOrganiser) {
 		return (
 			<div className="flex flex-col items-center justify-center h-[60vh]">
 				<AccessDenied />
@@ -432,6 +436,25 @@ export function EventsPage({
 										</div>
 									</div>
 								</div>
+								{selectedEvent.prizes && selectedEvent.prizes.length > 0 && (
+									<div>
+										<h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200 mb-3">
+											FLC Points Allocation
+										</h3>
+										<div className="space-y-2">
+											{selectedEvent.prizes.map((prize) => (
+												<div key={prize.id} className="flex justify-between">
+													<span className="text-sm text-gray-600 dark:text-slate-400">
+														{prize.prizeType}
+													</span>
+													<span className="text-sm font-medium text-gray-900 dark:text-slate-200">
+														{prize.flcPoints} pts
+													</span>
+												</div>
+											))}
+										</div>
+									</div>
+								)}
 
 								<div className="flex gap-2 flex-wrap">
 									<Badge className="bg-gray-100 dark:bg-slate-900 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-800">

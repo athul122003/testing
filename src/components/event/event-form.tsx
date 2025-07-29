@@ -2,6 +2,7 @@
 
 import { ArrowLeft, Save, Upload } from "lucide-react";
 import { useEffect, useState, useCallback } from "react";
+import { PrizeType } from "@prisma/client";
 import { Trash2 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -78,7 +79,12 @@ export function EventForm({
 		flcAmount: "",
 		nonFlcAmount: "",
 		state: "DRAFT" as EventState,
+		prizes: Object.values(PrizeType).map((type) => ({
+			prizeType: type,
+			flcPoints: 0,
+		})),
 	});
+	const [prizeFocus, setPrizeFocus] = useState<Record<string, boolean>>({});
 
 	useEffect(() => {
 		if (editingEvent) {
@@ -99,6 +105,17 @@ export function EventForm({
 				flcAmount: editingEvent.flcAmount?.toString() || "",
 				nonFlcAmount: editingEvent.nonFlcAmount?.toString() || "",
 				state: editingEvent.state || "DRAFT",
+				prizes: Object.values(PrizeType).map((type) => {
+					const found = (
+						editingEvent.prizes as
+							| { prizeType: PrizeType; flcPoints: number }[]
+							| undefined
+					)?.find((p) => p.prizeType === type);
+					return {
+						prizeType: type,
+						flcPoints: found?.flcPoints ?? 0,
+					};
+				}),
 			});
 		}
 	}, [editingEvent]);
@@ -152,6 +169,10 @@ export function EventForm({
 			maxTeamSize: Number(formData.maxTeamSize),
 			flcAmount: Number(formData.flcAmount),
 			nonFlcAmount: Number(formData.nonFlcAmount),
+			prizes: formData.prizes.map((p) => ({
+				prizeType: p.prizeType,
+				flcPoints: Number(p.flcPoints),
+			})),
 		};
 
 		const result = editingEvent?.id
@@ -193,7 +214,9 @@ export function EventForm({
 					</p>
 				</div>
 			</div>
-
+			{hasPerm(perm.MANAGE_EVENTS) && editingEvent?.id && (
+				<AddOrganisersSection eventId={editingEvent.id} />
+			)}
 			<Card className="border-0 shadow-lg bg-white dark:bg-slate-800">
 				<CardHeader>
 					<CardTitle className="text-lg sm:text-xl text-slate-900 dark:text-white">
@@ -407,6 +430,51 @@ export function EventForm({
 							/>
 						</div>
 					</div>
+					<div className="space-y-4">
+						<Label className="text-lg font-semibold"> FLC Points</Label>
+
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+							{Object.values(PrizeType).map((type) => {
+								const prize = formData.prizes.find((p) => p.prizeType === type);
+								const flcValue = prize?.flcPoints ?? 0;
+								const focused = prizeFocus?.[type] ?? false;
+
+								return (
+									<div key={type} className="flex flex-col gap-1">
+										<Label htmlFor={`prize-${type}`}>
+											{type.charAt(0) + type.slice(1).toLowerCase()}
+										</Label>
+										<Input
+											type="number"
+											id={`prize-${type}`}
+											min={0}
+											className="border rounded-md px-3 py-2"
+											value={focused && flcValue === 0 ? "" : flcValue}
+											onFocus={() =>
+												setPrizeFocus((prev) => ({ ...prev, [type]: true }))
+											}
+											onBlur={() =>
+												setPrizeFocus((prev) => ({ ...prev, [type]: false }))
+											}
+											onChange={(e) => {
+												const newValue = Number.isNaN(e.target.valueAsNumber)
+													? 0
+													: e.target.valueAsNumber;
+												const newPrizes = formData.prizes.map((p) =>
+													p.prizeType === type
+														? { ...p, flcPoints: newValue }
+														: p,
+												);
+
+												setFormData({ ...formData, prizes: newPrizes });
+											}}
+										/>
+									</div>
+								);
+							})}
+						</div>
+					</div>
+
 					<div className="space-y-2">
 						<Label htmlFor="imgUpload">Event Image</Label>
 						<button
@@ -512,9 +580,6 @@ export function EventForm({
 							}}
 						/>
 					</div>
-					{hasPerm(perm.MANAGE_EVENTS) && editingEvent.id && (
-						<AddOrganisersSection eventId={editingEvent.id} />
-					)}
 
 					<div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t">
 						<Button variant="outline" onClick={handleCancel}>
@@ -547,10 +612,14 @@ export function AddOrganisersSection({ eventId }: { eventId: number }) {
 	const [errorMsg, setErrorMsg] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [existingOrganisers, setExistingOrganisers] = useState<User[]>([]);
+	const [stagedOrganisers, setStagedOrganisers] = useState<User[]>([]);
+	const [confirmingDeleteId, setConfirmingDeleteId] = useState<number | null>(
+		null,
+	);
 
-	// 🔄 Load organisers
+	// 🔄 Load existing organisers
 	const fetchOrganisers = useCallback(async () => {
-		const res = await api.event.getOrganisers(eventId);
+		const res = await api.event.getOrganisers({ eventId });
 		if (res.success) {
 			setExistingOrganisers(res.data || []);
 		} else {
@@ -562,7 +631,7 @@ export function AddOrganisersSection({ eventId }: { eventId: number }) {
 		fetchOrganisers();
 	}, [fetchOrganisers]);
 
-	// 🔍 Search by USN
+	// 🔍 Search user by USN
 	const handleSearch = async () => {
 		setLoading(true);
 		setErrorMsg("");
@@ -576,6 +645,8 @@ export function AddOrganisersSection({ eventId }: { eventId: number }) {
 			setErrorMsg("User not found");
 		} else if (existingOrganisers.some((org) => org.id === res.data.id)) {
 			setErrorMsg("User is already an organiser");
+		} else if (stagedOrganisers.some((org) => org.id === res.data.id)) {
+			setErrorMsg("User is already staged to be added");
 		} else {
 			setSearchResult(res.data);
 		}
@@ -583,26 +654,38 @@ export function AddOrganisersSection({ eventId }: { eventId: number }) {
 		setLoading(false);
 	};
 
-	// ➕ Add organiser
-	const handleAddOrganiser = async () => {
+	// ➕ Add to staged list
+	const handleStageOrganiser = () => {
 		if (!searchResult) return;
+		setStagedOrganisers((prev) => [...prev, searchResult]);
+		setSearchResult(null);
+		setUsn("");
+	};
+
+	// ❌ Remove from staged list
+	const handleRemoveStaged = (userId: number) => {
+		setStagedOrganisers((prev) => prev.filter((u) => u.id !== userId));
+	};
+
+	// 💾 Confirm & Add staged organisers to event
+	const handleSaveStaged = async () => {
+		if (stagedOrganisers.length === 0) return;
 
 		const res = await api.event.addOrganisers({
 			eventId,
-			userIds: [searchResult.id],
+			userIds: stagedOrganisers.map((u) => u.id),
 		});
 
 		if (res.success) {
-			toast.success("Organiser added successfully");
-			setSearchResult(null);
-			setUsn("");
+			toast.success("Staged organisers added successfully");
+			setStagedOrganisers([]);
 			fetchOrganisers();
 		} else {
-			toast.error(res.error || "Failed to add organiser");
+			toast.error(res.error || "Failed to add organisers");
 		}
 	};
 
-	// ❌ Remove organiser
+	// ❌ Remove from existing organisers
 	const handleRemoveOrganiser = async (userId: number) => {
 		const res = await api.event.removeOrganiser({ eventId, userId });
 
@@ -625,13 +708,32 @@ export function AddOrganisersSection({ eventId }: { eventId: number }) {
 							<span>
 								{org.name} ({org.email}) - <strong>{org.usn}</strong>
 							</span>
-							<Button
-								variant="ghost"
-								size="icon"
-								onClick={() => handleRemoveOrganiser(org.id)}
-							>
-								<Trash2 className="w-4 h-4 text-red-500" />
-							</Button>
+							{confirmingDeleteId === org.id ? (
+								<div className="flex gap-2">
+									<Button
+										variant="destructive"
+										size="sm"
+										onClick={() => handleRemoveOrganiser(org.id)}
+									>
+										Confirm
+									</Button>
+									<Button
+										variant="outline"
+										size="sm"
+										onClick={() => setConfirmingDeleteId(null)}
+									>
+										Cancel
+									</Button>
+								</div>
+							) : (
+								<Button
+									variant="ghost"
+									size="icon"
+									onClick={() => setConfirmingDeleteId(org.id)}
+								>
+									<Trash2 className="w-4 h-4 text-red-500" />
+								</Button>
+							)}
 						</li>
 					))}
 				</ul>
@@ -668,8 +770,33 @@ export function AddOrganisersSection({ eventId }: { eventId: number }) {
 					<p>
 						<strong>USN:</strong> {searchResult.usn}
 					</p>
-					<Button className="mt-3" onClick={handleAddOrganiser}>
-						Add as Organiser
+					<Button className="mt-3" onClick={handleStageOrganiser}>
+						Add to Staged
+					</Button>
+				</div>
+			)}
+
+			{stagedOrganisers.length > 0 && (
+				<div className="mt-4">
+					<p className="text-base font-semibold">Staged Organisers</p>
+					<ul className="space-y-1 mt-1">
+						{stagedOrganisers.map((org) => (
+							<li key={org.id} className="flex justify-between items-center">
+								<span>
+									{org.name} ({org.email}) - <strong>{org.usn}</strong>
+								</span>
+								<Button
+									variant="ghost"
+									size="icon"
+									onClick={() => handleRemoveStaged(org.id)}
+								>
+									<Trash2 className="w-4 h-4 text-orange-500" />
+								</Button>
+							</li>
+						))}
+					</ul>
+					<Button className="mt-3" onClick={handleSaveStaged}>
+						Save All Staged Organisers
 					</Button>
 				</div>
 			)}

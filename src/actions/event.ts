@@ -1,6 +1,12 @@
 "use server";
 
-import { type Event, EventState, EventType } from "@prisma/client";
+import {
+	type Event,
+	EventState,
+	EventType,
+	PrizeType,
+	type Prize,
+} from "@prisma/client";
 import { z } from "zod";
 import { db } from "~/server/db";
 import { createEventZ } from "~/zod/eventZ";
@@ -11,12 +17,15 @@ export type EventsQuery = Awaited<ReturnType<typeof getAllEvents>>;
 
 export interface ExtendedEvent extends Event {
 	confirmedTeams: number;
+	prizes?: Prize[];
 }
 
 export const createEventAction = protectedAction(
 	async (values: CreateEventInput) => {
 		try {
 			const validated = createEventZ.parse(values);
+
+			// Validation...
 			if (validated.fromDate > validated.toDate) {
 				return {
 					success: false,
@@ -60,6 +69,7 @@ export const createEventAction = protectedAction(
 				};
 			}
 
+			// Step 1: Create Event
 			const event = await db.event.create({
 				data: {
 					name: validated.name,
@@ -81,6 +91,21 @@ export const createEventAction = protectedAction(
 					flcAmount: validated.flcAmount,
 					nonFlcAmount: validated.nonFlcAmount,
 				},
+			});
+
+			// Step 2: Create Prizes (all 4 types)
+			const prizeTypes: PrizeType[] = Object.values(PrizeType);
+
+			const inputPrizeMap = new Map<PrizeType, number>(
+				(validated.prizes || []).map((p) => [p.prizeType, p.flcPoints ?? 0]),
+			);
+
+			await db.prize.createMany({
+				data: prizeTypes.map((type) => ({
+					eventId: event.id,
+					prizeType: type,
+					flcPoints: inputPrizeMap.get(type) ?? 0,
+				})),
 			});
 
 			return { success: true, event };
@@ -215,6 +240,63 @@ export const editEventAction = protectedAction(
 				},
 			});
 
+			// Step 2: Update prizes (ONLY if changed)
+			const existingPrizes = await db.prize.findMany({
+				where: { eventId },
+				include: { Teams: { include: { Members: true } } },
+			});
+
+			const changedPrizes = validated.prizes?.filter((newPrize) => {
+				const oldPrize = existingPrizes.find(
+					(p) => p.prizeType === newPrize.prizeType,
+				);
+				return oldPrize && oldPrize.flcPoints !== newPrize.flcPoints;
+			});
+
+			if (changedPrizes?.length) {
+				for (const prize of changedPrizes) {
+					const oldPrize = existingPrizes.find(
+						(p) => p.prizeType === prize.prizeType,
+					);
+					if (!oldPrize) continue;
+
+					// 1. Update prize points
+					await db.prize.update({
+						where: {
+							eventId_prizeType: {
+								eventId,
+								prizeType: prize.prizeType,
+							},
+						},
+						data: {
+							flcPoints: prize.flcPoints ?? 0,
+						},
+					});
+
+					// 2. Update all members in teams who won this prize
+					for (const team of oldPrize.Teams) {
+						const members = team.Members;
+						for (const member of members) {
+							await db.user.update({
+								where: { id: member.id },
+								data: {
+									totalActivityPoints: {
+										decrement: oldPrize.flcPoints ?? 0,
+									},
+								},
+							});
+							await db.user.update({
+								where: { id: member.id },
+								data: {
+									totalActivityPoints: {
+										increment: prize.flcPoints ?? 0,
+									},
+								},
+							});
+						}
+					}
+				}
+			}
 			return { success: true, event: updated };
 		} catch (error) {
 			console.error("editEventAction Error:", error);
@@ -270,12 +352,14 @@ export async function getAllEvents(): Promise<
 				Team: {
 					select: { id: true, isConfirmed: true },
 				},
+				Prize: true, // include Prize data
 			},
 		});
 
-		const formattedEvents = events.map((event) => ({
+		const formattedEvents: ExtendedEvent[] = events.map((event) => ({
 			...event,
 			confirmedTeams: event.Team.filter((team) => team.isConfirmed).length,
+			prizes: event.Prize ?? [],
 		}));
 
 		return {

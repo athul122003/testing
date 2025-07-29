@@ -7,6 +7,7 @@ import type {
 	Permission,
 	Role,
 } from "@prisma/client";
+import type { ExtendedEvent } from "~/actions/event";
 import { type UseQueryResult, useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import {
@@ -24,6 +25,7 @@ import type {
 } from "~/actions/tanstackHooks/payment-queries";
 import { api } from "~/lib/api";
 import type { EventsQuery } from "~/actions/event";
+import { el } from "date-fns/locale";
 
 type DashboardDataContextType = {
 	paymentsQuery: UseQueryResult<PaymentWithUser>;
@@ -81,6 +83,7 @@ type DashboardDataContextType = {
 		| undefined;
 
 	hasPerm: (...perms: string[]) => boolean;
+	isOrganiser: boolean;
 };
 
 const DashboardDataContext = createContext<DashboardDataContextType | null>(
@@ -117,6 +120,20 @@ export const DashboardDataProvider = ({
 
 	const canManageEvents = hasPerm("MANAGE_EVENTS");
 	const canManagePayments = hasPerm("MANAGE_PAYMENTS");
+
+	const isOrganiserQuery = useQuery<{ success: boolean; data: boolean }>({
+		queryKey: ["isUserOrganiser", user?.id],
+		queryFn: async () => {
+			if (user?.id) {
+				return api.user.isUserOrganiser({ userId: Number(user.id) });
+			}
+			return { success: false, data: false };
+		},
+		enabled: !!user?.id && !canManageEvents,
+		staleTime: 30_000,
+	});
+
+	const isOrganiser = isOrganiserQuery.data?.data === true;
 
 	const [paymentArgs, setPaymentArgs] = useState<{
 		page: number;
@@ -238,10 +255,40 @@ export const DashboardDataProvider = ({
 
 	const eventsQuery = useQuery<EventsQuery>({
 		queryKey: ["events"],
-		queryFn: getAllEvents,
+		queryFn: async () => {
+			if (canManageEvents) {
+				return await getAllEvents();
+			} else {
+				const result = await api.event.getOrganisedEvents({
+					userId: Number(user?.id),
+				} as { userId: number });
+
+				// Ensure the result matches the expected EventsQuery type
+				if (result && typeof result.success === "boolean") {
+					if (result.success === true) {
+						return {
+							success: true,
+							data: result.data as ExtendedEvent[],
+						};
+					} else {
+						return {
+							success: false,
+							error: result.error ?? "Unknown error",
+							data: [],
+						};
+					}
+				}
+				// fallback in case of unexpected result
+				return {
+					success: false,
+					error: "Unexpected response from getOrganisedEvents",
+					data: [],
+				};
+			}
+		},
 		refetchOnWindowFocus: false,
 		staleTime: 30_000,
-		enabled: canManageEvents,
+		enabled: canManageEvents || isOrganiser,
 	});
 
 	const value: DashboardDataContextType = {
@@ -262,6 +309,7 @@ export const DashboardDataProvider = ({
 		role,
 		user,
 		hasPerm,
+		isOrganiser,
 	};
 
 	return (

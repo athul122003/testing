@@ -367,3 +367,27 @@ export const searchUserByUsn = protectedAction(
 	},
 	{ actionName: "user.searchByUsn" },
 );
+
+export const isUserOrganiser = protectedAction(
+	async (input: { userId: number }) => {
+		const { userId } = input;
+
+		// Fetch the user, but only return the count of Organiser relations
+		const userWithOrganiserCount = await db.user.findUnique({
+			where: { id: userId },
+			select: {
+				_count: {
+					select: { Organiser: true },
+				},
+			},
+		});
+
+		// If the user doesn't exist, treat as "not an organiser"
+		const organiserCount = userWithOrganiserCount?._count.Organiser ?? 0;
+
+		return {
+			success: true,
+			data: organiserCount > 0,
+		};
+	},
+);
