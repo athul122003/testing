@@ -36,6 +36,7 @@ import {
 	SelectValue,
 } from "~/components/ui/select";
 import { AccessDenied } from "../othercomps/access-denied";
+import { HTMLContent } from "~/components/ui/html-content";
 
 interface EventsPageProps {
 	setActivePage: (page: string) => void;
@@ -265,9 +266,12 @@ export function EventsPage({
 									<h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-slate-200 mb-2">
 										{event.name}
 									</h3>
-									<p className="text-sm text-gray-600 dark:text-slate-400 line-clamp-2">
-										{event.description}
-									</p>
+									<div className="text-sm text-gray-600 dark:text-slate-400 line-clamp-2">
+										<HTMLContent
+											content={event.description || ""}
+											className="prose-sm"
+										/>
+									</div>
 								</div>
 
 								<div className="space-y-2">
@@ -348,9 +352,12 @@ export function EventsPage({
 										<h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200 mb-2">
 											Event Details
 										</h3>
-										<p className="text-gray-600 dark:text-slate-400">
-											{selectedEvent.description}
-										</p>
+										<div className="text-gray-600 dark:text-slate-400">
+											<HTMLContent
+												content={selectedEvent.description || ""}
+												className=""
+											/>
+										</div>
 									</div>
 
 									<div className="space-y-3">

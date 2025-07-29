@@ -18,7 +18,7 @@ import {
 } from "~/components/ui/select";
 import { permissionKeys as perm } from "~/actions/middleware/routePermissions";
 import { Switch } from "~/components/ui/switch";
-import { Textarea } from "~/components/ui/textarea";
+import { RichTextEditor } from "~/components/ui/rich-text-editor";
 
 const eventTypes = ["SOLO", "TEAM"];
 const eventCategories = ["WORKSHOP", "COMPETITION", "HACKATHON", "SPECIAL"];
@@ -283,14 +283,13 @@ export function EventForm({
 					</div>
 					<div className="space-y-2">
 						<Label htmlFor="description">Description</Label>
-						<Textarea
-							id="description"
-							placeholder="Event description"
-							rows={4}
+						<RichTextEditor
 							value={formData.description}
-							onChange={(e) =>
-								setFormData({ ...formData, description: e.target.value })
+							onChange={(value) =>
+								setFormData({ ...formData, description: value })
 							}
+							placeholder="Provide a detailed description of the event"
+							className="min-h-[100px] sm:min-h-[120px] md:min-h-[140px] lg:min-h-[160px]"
 						/>
 					</div>
 					<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

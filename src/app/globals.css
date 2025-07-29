@@ -2,6 +2,84 @@
 @tailwind components;
 @tailwind utilities;
 
+.ProseMirror {
+	outline: none;
+}
+
+.ProseMirror p {
+	margin: 0.25em 0;
+}
+
+.ProseMirror p:first-child {
+	margin-top: 0;
+}
+
+.ProseMirror p:last-child {
+	margin-bottom: 0;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+	color: #adb5bd;
+	content: attr(data-placeholder);
+	float: left;
+	height: 0;
+	pointer-events: none;
+}
+
+.ProseMirror .is-empty::before {
+	color: #adb5bd;
+	content: attr(data-placeholder);
+	float: left;
+	height: 0;
+	pointer-events: none;
+}
+
+.dark .ProseMirror p.is-editor-empty:first-child::before,
+.dark .ProseMirror .is-empty::before {
+	color: #6b7280;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+	margin: 0.5em 0;
+	padding-left: 1.5em;
+}
+
+.ProseMirror li {
+	margin: 0.125em 0;
+}
+
+.ProseMirror li p {
+	margin: 0;
+}
+
+.ProseMirror blockquote {
+	margin: 0.5em 0;
+	padding-left: 1em;
+	border-left: 3px solid #e2e8f0;
+}
+
+.dark .ProseMirror blockquote {
+	border-left-color: #475569;
+}
+
+.prose p {
+	margin: 0.25em 0 !important;
+}
+
+.prose ul,
+.prose ol {
+	margin: 0.5em 0 !important;
+}
+
+.prose li {
+	margin: 0.125em 0 !important;
+}
+
+.prose blockquote {
+	margin: 0.5em 0 !important;
+}
+
 * {
 	scrollbar-width: none;
 	-ms-overflow-style: none;
