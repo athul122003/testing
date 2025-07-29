@@ -1,4 +1,9 @@
-import { EventCategory, EventState, EventType } from "@prisma/client";
+import {
+	EventCategory,
+	EventState,
+	EventType,
+	PrizeType,
+} from "@prisma/client";
 import { z } from "zod";
 
 const createEventZ = z.object({
@@ -23,6 +28,14 @@ const createEventZ = z.object({
 	isMembersOnly: z.boolean(),
 	flcAmount: z.number().nonnegative(),
 	nonFlcAmount: z.number().nonnegative(),
+	prizes: z
+		.array(
+			z.object({
+				prizeType: z.nativeEnum(PrizeType),
+				flcPoints: z.number().optional(),
+			}),
+		)
+		.optional(),
 });
 
 const deleteEventZ = z.object({

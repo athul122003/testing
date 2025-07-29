@@ -865,7 +865,8 @@ export async function deleteTeam(userId: number, teamId: string) {
 
 // GET ORGANISERS
 export const getOrganisers = protectedAction(
-	async (eventId: number) => {
+	async ({ eventId }: { eventId: number }) => {
+		console.log("Fetching organisers for eventId:", eventId);
 		const organisers = await db.organiser.findMany({
 			where: { eventId },
 			include: {
@@ -936,6 +937,7 @@ export const getOrganisedEvents = protectedAction(
 					Team: {
 						select: { id: true, isConfirmed: true },
 					},
+					Prize: true, // include Prize data
 				},
 			});
 
@@ -943,6 +945,7 @@ export const getOrganisedEvents = protectedAction(
 			const formattedEvents = events.map((event) => ({
 				...event,
 				confirmedTeams: event.Team.filter((team) => team.isConfirmed).length,
+				prizes: event.Prize ?? [],
 			}));
 
 			return {
