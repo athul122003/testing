@@ -20,6 +20,7 @@ import { getTeamsForEvent } from "~/actions/teams";
 import { toast } from "sonner";
 import type { ExtendedEvent } from "~/actions/event";
 import { ComponentLoading } from "~/components/ui/component-loading";
+import { useDashboardData } from "~/providers/dashboardDataContext";
 import { set } from "lodash";
 type Member = {
 	id: number;
@@ -44,6 +45,8 @@ export function EventParticipants({
 }: {
 	editingEvent: ExtendedEvent;
 }) {
+	const { refetchEvents } = useDashboardData();
+
 	const [searchQuery, setSearchQuery] = useState("");
 	const [teams, setTeams] = useState<Team[]>([]);
 	const [page, setPage] = useState(1);
@@ -237,6 +240,7 @@ export function EventParticipants({
 		onSuccess: () => {
 			toast.success("Prizes saved and FLC points updated!");
 			// optionally refetch event/team data here if needed
+			refetchEvents?.();
 			setLoading(true);
 			loadTeams();
 		},
