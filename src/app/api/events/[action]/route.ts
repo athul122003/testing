@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
 
 				const result = await server.event.getTeam(data.userId, eventId);
 				return NextResponse.json(result, {
-					status: result.success ? 200 : 400,
+					status: result.status ? result.status : result.success ? 200 : 400,
 				});
 			}
 
@@ -218,6 +218,36 @@ export async function POST(req: NextRequest) {
 				});
 			}
 
+			case "removeMember": {
+				const { teamId, memberId } = body as {
+					teamId: string;
+					memberId: number;
+				};
+				const customHeader = req.headers.get("authorization");
+				const data = parseJwtFromAuthHeader(customHeader || "");
+				if (!data || !data.userId) {
+					return NextResponse.json(
+						{ success: false, error: "Invalid or missing authentication data" },
+						{ status: 401 },
+					);
+				}
+				const userId = data.userId;
+				if (!userId || !teamId || !memberId) {
+					return NextResponse.json(
+						{ success: false, error: "Missing userId, teamId or memberId" },
+						{ status: 400 },
+					);
+				}
+
+				const result = await server.event.removeMember(
+					teamId,
+					memberId,
+					userId,
+				);
+				return NextResponse.json(result, {
+					status: result.success ? 200 : 400,
+				});
+			}
 			default:
 				return NextResponse.json(
 					{ success: false, error: "Unknown action" },
