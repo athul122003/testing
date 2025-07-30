@@ -10,6 +10,9 @@ import {
 	Download,
 	ChevronRight,
 	CheckCircle,
+	Calendar,
+	Trophy,
+	Users,
 } from "lucide-react";
 
 // Import certificate components
@@ -20,10 +23,28 @@ import VariableMapping from "../othercomps/variableMapping";
 import CertificatePreview from "../othercomps/certificate-preview";
 import CertificateGenerator from "../othercomps/certificate-download";
 
+// Import UI components
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+} from "../ui/card";
+import { Badge } from "../ui/badge";
+import { Button } from "../ui/button";
+
+// Import context and utils
+import { useDashboardData } from "../../providers/dashboardDataContext";
+import { formatDateTime } from "../../lib/formatDateTime";
+
 // Import types
 import type { Section, CSVData, Variable } from "../types";
+import type { ExtendedEvent } from "../../actions/event";
 
 type CertificateStep =
+	| "event-selection"
 	| "template-upload"
 	| "template-editor"
 	| "csv-upload"
@@ -32,9 +53,17 @@ type CertificateStep =
 	| "certificate-generator";
 
 function CertificatePage() {
+	// Dashboard data
+	const { eventsQuery } = useDashboardData();
+
 	// Main state management
 	const [currentStep, setCurrentStep] =
-		useState<CertificateStep>("template-upload");
+		useState<CertificateStep>("event-selection");
+
+	// Selected event state
+	const [selectedEvent, setSelectedEvent] = useState<ExtendedEvent | null>(
+		null,
+	);
 
 	// Template state
 	const [templateImage, setTemplateImage] = useState<string | null>(null);
@@ -52,6 +81,13 @@ function CertificatePage() {
 
 	// Step configuration
 	const steps = [
+		{
+			key: "event-selection" as CertificateStep,
+			title: "Select Event",
+			description: "Choose the completed event for certificate generation",
+			icon: Calendar,
+			completed: !!selectedEvent,
+		},
 		{
 			key: "template-upload" as CertificateStep,
 			title: "Upload Template",
@@ -202,9 +238,134 @@ function CertificatePage() {
 		</div>
 	);
 
+	// Render event selection step
+	const renderEventSelection = () => {
+		if (eventsQuery.isLoading) {
+			return (
+				<div className="flex items-center justify-center p-8">
+					<div className="text-center">
+						<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-2" />
+						<p className="text-sm text-gray-500">Loading events...</p>
+					</div>
+				</div>
+			);
+		}
+
+		if (eventsQuery.isError || !eventsQuery.data?.success) {
+			return (
+				<div className="text-center p-8">
+					<p className="text-red-500">Failed to load events</p>
+				</div>
+			);
+		}
+
+		const completedEvents = eventsQuery.data.data.filter(
+			(event) => event.state === "COMPLETED",
+		);
+
+		if (completedEvents.length === 0) {
+			return (
+				<div className="text-center p-8">
+					<Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+					<h3 className="text-lg font-medium text-gray-900 mb-2">
+						No Completed Events
+					</h3>
+					<p className="text-gray-500">
+						There are no completed events available for certificate generation.
+					</p>
+				</div>
+			);
+		}
+
+		return (
+			<div className="space-y-6">
+				<div className="text-center">
+					<h2 className="text-2xl font-bold text-gray-900 mb-2">
+						Select a Completed Event
+					</h2>
+					<p className="text-gray-600">
+						Choose the event for which you want to generate certificates
+					</p>
+				</div>
+
+				<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+					{completedEvents.map((event) => (
+						<Card
+							key={event.id}
+							className={`cursor-pointer transition-all hover:shadow-md ${
+								selectedEvent?.id === event.id ? "ring-2 ring-blue-500" : ""
+							}`}
+							onClick={() => setSelectedEvent(event)}
+						>
+							<CardHeader>
+								<CardTitle className="text-lg flex items-center gap-2">
+									<Trophy className="w-5 h-5 text-yellow-500" />
+									{event.name}
+								</CardTitle>
+								<CardDescription>
+									<Badge variant="secondary" className="mb-2">
+										{event.eventType}
+									</Badge>
+								</CardDescription>
+							</CardHeader>
+
+							<CardContent className="space-y-3">
+								<div className="flex items-center gap-2 text-sm text-gray-600">
+									<Calendar className="w-4 h-4" />
+									<span>
+										{formatDateTime(event.fromDate).date} -{" "}
+										{formatDateTime(event.toDate).date}
+									</span>
+								</div>
+
+								<div className="flex items-center gap-2 text-sm text-gray-600">
+									<Users className="w-4 h-4" />
+									<span>{event.confirmedTeams} confirmed teams</span>
+								</div>
+
+								{event.prizes && event.prizes.length > 0 && (
+									<div className="flex flex-wrap gap-1">
+										{event.prizes.map((prize) => (
+											<Badge
+												key={prize.id}
+												variant="outline"
+												className="text-xs"
+											>
+												{prize.prizeType}
+											</Badge>
+										))}
+									</div>
+								)}
+							</CardContent>
+
+							<CardFooter>
+								<Button
+									className="w-full"
+									variant={
+										selectedEvent?.id === event.id ? "default" : "outline"
+									}
+									onClick={(e) => {
+										e.stopPropagation();
+										setSelectedEvent(event);
+										nextStep();
+									}}
+								>
+									Issue Certificate
+								</Button>
+							</CardFooter>
+						</Card>
+					))}
+				</div>
+			</div>
+		);
+	};
+
 	// Render current step content
 	const renderStepContent = () => {
 		switch (currentStep) {
+			case "event-selection":
+				return renderEventSelection();
+
 			case "template-upload":
 				return (
 					<TemplateUpload
@@ -290,15 +451,16 @@ function CertificatePage() {
 
 				{/* Quick actions */}
 				<div className="flex items-center gap-3">
-					{currentStep !== "template-upload" && (
+					{currentStep !== "event-selection" && (
 						<button
 							type="button"
 							onClick={() => {
+								setSelectedEvent(null);
 								setTemplateImage(null);
 								setSections([]);
 								setCsvData(null);
 								setVariableMapping({});
-								setCurrentStep("template-upload");
+								setCurrentStep("event-selection");
 							}}
 							className="px-4 py-2 text-sm bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors duration-200"
 						>
