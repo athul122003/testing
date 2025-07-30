@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
 	FileImage,
 	Edit3,
@@ -13,6 +13,8 @@ import {
 	Calendar,
 	Trophy,
 	Users,
+	Mail,
+	AlertCircle,
 } from "lucide-react";
 
 // Import certificate components
@@ -22,6 +24,7 @@ import EnhancedCSVUpload from "../othercomps/enhanced-csv-upload";
 import EnhancedVariableMapping from "../othercomps/enhanced-variable-mapping";
 import CertificatePreview from "../othercomps/certificate-preview";
 import EnhancedCertificateDownload from "../othercomps/enhanced-certificate-download";
+import CertificateMailingStatus from "../othercomps/certificate-mailing-status";
 
 // Import UI components
 import {
@@ -39,6 +42,7 @@ import { Button } from "../ui/button";
 import { useDashboardData } from "../../providers/dashboardDataContext";
 import { useCertificateContext } from "../../providers/certificateContext";
 import { formatDateTime } from "../../lib/formatDateTime";
+import { getEventCertificateStatus } from "../../actions/certificate-management";
 
 type CertificateStep =
 	| "event-selection"
@@ -47,7 +51,8 @@ type CertificateStep =
 	| "csv-upload"
 	| "variable-mapping"
 	| "certificate-preview"
-	| "certificate-generator";
+	| "certificate-generator"
+	| "mailing-status";
 
 function CertificatePage() {
 	// Dashboard data
@@ -69,6 +74,78 @@ function CertificatePage() {
 	// Main state management
 	const [currentStep, setCurrentStep] =
 		useState<CertificateStep>("event-selection");
+	const [eventCertificateStatuses, setEventCertificateStatuses] = useState<
+		Record<
+			number,
+			{
+				totalCertificates: number;
+				sentCertificates: number;
+				errorCertificates: number;
+				hasCertificates: boolean;
+			}
+		>
+	>({});
+
+	// Load certificate statuses for all events
+	useEffect(() => {
+		const loadCertificateStatuses = async () => {
+			if (eventsQuery.data?.success) {
+				const completedEvents = eventsQuery.data.data.filter(
+					(event) => event.state === "COMPLETED",
+				);
+
+				const statusPromises = completedEvents.map(async (event) => {
+					try {
+						const result = await getEventCertificateStatus(event.id);
+						return {
+							eventId: event.id,
+							status:
+								result.success && result.status
+									? {
+											totalCertificates: result.totalCertificates || 0,
+											sentCertificates: result.mailedCertificates || 0,
+											errorCertificates: result.failedMails || 0,
+											hasCertificates: (result.totalCertificates || 0) > 0,
+										}
+									: {
+											totalCertificates: 0,
+											sentCertificates: 0,
+											errorCertificates: 0,
+											hasCertificates: false,
+										},
+						};
+					} catch {
+						return {
+							eventId: event.id,
+							status: {
+								totalCertificates: 0,
+								sentCertificates: 0,
+								errorCertificates: 0,
+								hasCertificates: false,
+							},
+						};
+					}
+				});
+
+				const statuses = await Promise.all(statusPromises);
+				const statusMap: Record<
+					number,
+					{
+						totalCertificates: number;
+						sentCertificates: number;
+						errorCertificates: number;
+						hasCertificates: boolean;
+					}
+				> = {};
+				statuses.forEach(({ eventId, status }) => {
+					statusMap[eventId] = status;
+				});
+				setEventCertificateStatuses(statusMap);
+			}
+		};
+
+		loadCertificateStatuses();
+	}, [eventsQuery.data]);
 
 	// Step configuration
 	const steps = [
@@ -289,6 +366,39 @@ function CertificatePage() {
 									<span>{event.confirmedTeams} confirmed teams</span>
 								</div>
 
+								{/* Certificate Status Indicator */}
+								{eventCertificateStatuses[event.id]?.hasCertificates && (
+									<div className="flex items-center gap-2 text-sm">
+										<Mail className="w-4 h-4" />
+										{eventCertificateStatuses[event.id].errorCertificates >
+										0 ? (
+											<div className="flex items-center gap-1">
+												<AlertCircle className="w-4 h-4 text-red-500" />
+												<span className="text-red-600">
+													Certificate Sending Failed
+												</span>
+											</div>
+										) : eventCertificateStatuses[event.id].sentCertificates ===
+											eventCertificateStatuses[event.id].totalCertificates ? (
+											<div className="flex items-center gap-1">
+												<CheckCircle className="w-4 h-4 text-green-500" />
+												<span className="text-green-600">
+													Certificates Successfully Sent
+												</span>
+											</div>
+										) : (
+											<div className="flex items-center gap-1">
+												<Calendar className="w-4 h-4 text-orange-500" />
+												<span className="text-orange-600">
+													{eventCertificateStatuses[event.id].sentCertificates}/
+													{eventCertificateStatuses[event.id].totalCertificates}{" "}
+													Sent
+												</span>
+											</div>
+										)}
+									</div>
+								)}
+
 								{event.prizes && event.prizes.length > 0 && (
 									<div className="flex flex-wrap gap-1">
 										{event.prizes.map((prize) => (
@@ -305,19 +415,36 @@ function CertificatePage() {
 							</CardContent>
 
 							<CardFooter>
-								<Button
-									className="w-full"
-									variant={
-										selectedEvent?.id === event.id ? "default" : "outline"
-									}
-									onClick={(e) => {
-										e.stopPropagation();
-										setSelectedEvent(event);
-										nextStep();
-									}}
-								>
-									Issue Certificate
-								</Button>
+								<div className="flex gap-2 w-full">
+									<Button
+										className="flex-1"
+										variant={
+											selectedEvent?.id === event.id ? "default" : "outline"
+										}
+										onClick={(e) => {
+											e.stopPropagation();
+											setSelectedEvent(event);
+											nextStep();
+										}}
+									>
+										Issue Certificate
+									</Button>
+
+									{eventCertificateStatuses[event.id]?.hasCertificates && (
+										<Button
+											variant="outline"
+											className="flex-1"
+											onClick={(e) => {
+												e.stopPropagation();
+												setSelectedEvent(event);
+												setCurrentStep("mailing-status");
+											}}
+										>
+											<Mail className="w-4 h-4 mr-2" />
+											View Mailing
+										</Button>
+									)}
+								</div>
 							</CardFooter>
 						</Card>
 					))}
@@ -378,6 +505,15 @@ function CertificatePage() {
 
 			case "certificate-generator":
 				return <EnhancedCertificateDownload onBack={prevStep} />;
+
+			case "mailing-status":
+				return selectedEvent ? (
+					<CertificateMailingStatus
+						eventId={selectedEvent.id}
+						eventName={selectedEvent.name}
+						onBack={() => setCurrentStep("event-selection")}
+					/>
+				) : null;
 
 			default:
 				return null;

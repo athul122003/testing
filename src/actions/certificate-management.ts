@@ -11,6 +11,27 @@ export interface CertificateUploadResult {
 	url?: string;
 }
 
+export interface CertificateStatus {
+	id: string;
+	eventId: number;
+	userId: number;
+	userName: string;
+	userEmail: string;
+	userUsn: string;
+	link: string;
+	statusOfMailing: boolean;
+	errorInMailing: boolean;
+	createdAt: Date;
+}
+
+export interface EventCertificateStatus {
+	eventId: number;
+	totalCertificates: number;
+	sentCertificates: number;
+	errorCertificates: number;
+	certificates: CertificateStatus[];
+}
+
 const transporter = nodemailer.createTransport({
 	host: "smtp.gmail.com",
 	port: 587,
@@ -296,6 +317,84 @@ export async function getEventCertificateStatus(eventId: number): Promise<{
 		};
 	} catch (error) {
 		console.error("Error getting certificate status:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Unknown error",
+		};
+	}
+}
+
+export async function getEventCertificateList(eventId: number): Promise<{
+	success: boolean;
+	data?: EventCertificateStatus;
+	error?: string;
+}> {
+	try {
+		const certificates = await db.certificate.findMany({
+			where: {
+				eventId: eventId,
+			},
+			include: {
+				User: {
+					select: {
+						name: true,
+						email: true,
+						usn: true,
+					},
+				},
+			},
+			orderBy: {
+				createdAt: "desc",
+			},
+		});
+
+		if (certificates.length === 0) {
+			return {
+				success: true,
+				data: {
+					eventId,
+					totalCertificates: 0,
+					sentCertificates: 0,
+					errorCertificates: 0,
+					certificates: [],
+				},
+			};
+		}
+
+		const sentCount = certificates.filter(
+			(cert) => cert.statusOfMailing === true,
+		).length;
+		const errorCount = certificates.filter(
+			(cert) => cert.errorInMailing === true,
+		).length;
+
+		const certificateStatuses: CertificateStatus[] = certificates.map(
+			(cert) => ({
+				id: cert.id,
+				eventId: cert.eventId,
+				userId: cert.userId,
+				userName: cert.User.name,
+				userEmail: cert.User.email,
+				userUsn: cert.User.usn,
+				link: cert.link || "",
+				statusOfMailing: cert.statusOfMailing,
+				errorInMailing: cert.errorInMailing,
+				createdAt: cert.createdAt,
+			}),
+		);
+
+		return {
+			success: true,
+			data: {
+				eventId,
+				totalCertificates: certificates.length,
+				sentCertificates: sentCount,
+				errorCertificates: errorCount,
+				certificates: certificateStatuses,
+			},
+		};
+	} catch (error) {
+		console.error("Error getting event certificate list:", error);
 		return {
 			success: false,
 			error: error instanceof Error ? error.message : "Unknown error",
