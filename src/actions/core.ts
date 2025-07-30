@@ -1,7 +1,7 @@
 "use server";
 import { CoreType } from "@prisma/client";
 import { User } from "lucide-react";
-import prisma from "~/lib/prisma";
+import { db } from "~/server/db";
 
 export async function addToCore(formData: FormData) {
 	try {
@@ -15,19 +15,19 @@ export async function addToCore(formData: FormData) {
 
 		if (coreId) {
 			const userId = userIds[0];
-			const duplicate = await prisma.core.findFirst({
+			const duplicate = await db.core.findFirst({
 				where: { userId, year, id: { not: coreId } },
 			});
 			if (duplicate) {
 				throw new Error("User already exists in core for this year and type");
 			}
-			await prisma.core.update({
+			await db.core.update({
 				where: { id: coreId },
 				data: { position, year, type, priority },
 			});
 		} else {
 			for (const userId of userIds) {
-				const duplicate = await prisma.core.findFirst({
+				const duplicate = await db.core.findFirst({
 					where: { userId, year },
 				});
 
@@ -35,7 +35,7 @@ export async function addToCore(formData: FormData) {
 					throw new Error("User already exists in core for this year");
 				}
 
-				await prisma.core.create({
+				await db.core.create({
 					data: {
 						userId,
 						year,
@@ -64,7 +64,7 @@ export async function getCoreMembers({
 	try {
 		const skip = (page - 1) * pageSize;
 		const [coreMembers, totalCore] = await Promise.all([
-			prisma.core.findMany({
+			db.core.findMany({
 				skip,
 				take: pageSize,
 				orderBy: { priority: "asc" },
@@ -77,7 +77,7 @@ export async function getCoreMembers({
 					},
 				},
 			}),
-			prisma.core.count(),
+			db.core.count(),
 		]);
 		const totalPages = Math.ceil(totalCore / pageSize);
 		return { coreMembers, totalCore, totalPages, page, pageSize };
@@ -92,7 +92,7 @@ export async function deleteBulkCore(coreIds: string[]) {
 		if (coreIds.length === 0) {
 			throw new Error("No core IDs provided for deletion");
 		}
-		const deletedResult = await prisma.core.deleteMany({
+		const deletedResult = await db.core.deleteMany({
 			where: {
 				id: { in: coreIds },
 			},
