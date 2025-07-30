@@ -1381,7 +1381,7 @@ export default function SectionEditor({
 									segment.textDecoration !== undefined;
 
 								return (
-									// biome-ignore lint/a11y/noStaticElementInteractions: segment selection requires interactive div
+									// biome-ignore lint/a11y/useSemanticElements: <explanation>
 									<div
 										key={segment.id}
 										className={`p-4 rounded-lg border cursor-pointer transition-all duration-200 ${
@@ -1404,6 +1404,9 @@ export default function SectionEditor({
 												);
 											}
 										}}
+										tabIndex={0}
+										role="button"
+										aria-pressed={selectedSegment === segment.id}
 									>
 										<div className="flex items-center justify-between mb-2">
 											<div className="flex items-center">
@@ -1443,7 +1446,16 @@ export default function SectionEditor({
 										</div>
 
 										{selectedSegment === segment.id && (
-											<div className="pt-3 border-t border-gray-200 dark:border-slate-600 space-y-3">
+											// biome-ignore lint/a11y/noStaticElementInteractions: <explanation>
+											<div
+												className="pt-3 border-t border-gray-200 dark:border-slate-600 space-y-3"
+												onClick={(e) => e.stopPropagation()}
+												onKeyDown={(e) => {
+													if (e.key === "Enter" || e.key === " ") {
+														e.stopPropagation();
+													}
+												}}
+											>
 												<div className="flex justify-between items-center">
 													<span className="text-xs font-medium text-gray-700 dark:text-slate-300">
 														Custom Styling
