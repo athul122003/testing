@@ -18,10 +18,10 @@ import {
 // Import certificate components
 import TemplateUpload from "../othercomps/templateUpload";
 import SectionEditor from "../othercomps/section-editor";
-import CSVUpload from "../othercomps/CSVUpload";
-import VariableMapping from "../othercomps/variableMapping";
+import EnhancedCSVUpload from "../othercomps/enhanced-csv-upload";
+import EnhancedVariableMapping from "../othercomps/enhanced-variable-mapping";
 import CertificatePreview from "../othercomps/certificate-preview";
-import CertificateGenerator from "../othercomps/certificate-download";
+import EnhancedCertificateDownload from "../othercomps/enhanced-certificate-download";
 
 // Import UI components
 import {
@@ -37,11 +37,8 @@ import { Button } from "../ui/button";
 
 // Import context and utils
 import { useDashboardData } from "../../providers/dashboardDataContext";
+import { useCertificateContext } from "../../providers/certificateContext";
 import { formatDateTime } from "../../lib/formatDateTime";
-
-// Import types
-import type { Section, CSVData, Variable } from "../types";
-import type { ExtendedEvent } from "../../actions/event";
 
 type CertificateStep =
 	| "event-selection"
@@ -56,28 +53,22 @@ function CertificatePage() {
 	// Dashboard data
 	const { eventsQuery } = useDashboardData();
 
+	// Certificate context
+	const {
+		selectedEvent,
+		setSelectedEvent,
+		templateImage,
+		setTemplateImage,
+		sections,
+		setSections,
+		csvData,
+		variableMapping,
+		resetCertificateData,
+	} = useCertificateContext();
+
 	// Main state management
 	const [currentStep, setCurrentStep] =
 		useState<CertificateStep>("event-selection");
-
-	// Selected event state
-	const [selectedEvent, setSelectedEvent] = useState<ExtendedEvent | null>(
-		null,
-	);
-
-	// Template state
-	const [templateImage, setTemplateImage] = useState<string | null>(null);
-
-	// Sections state (for template editor)
-	const [sections, setSections] = useState<Section[]>([]);
-
-	// CSV data state
-	const [csvData, setCsvData] = useState<CSVData | null>(null);
-
-	// Variable mapping state
-	const [variableMapping, setVariableMapping] = useState<
-		Record<string, string>
-	>({});
 
 	// Step configuration
 	const steps = [
@@ -131,31 +122,6 @@ function CertificatePage() {
 			completed: false,
 		},
 	];
-
-	// Get variables from sections
-	const getVariablesFromSections = (): Variable[] => {
-		const variables: Variable[] = [];
-		sections.forEach((section) => {
-			section.segments.forEach((segment) => {
-				if (segment.isVariable && segment.variableName) {
-					const existing = variables.find(
-						(v) => v.name === segment.variableName,
-					);
-					if (!existing) {
-						variables.push({
-							name: segment.variableName,
-							sections: [section.name],
-						});
-					} else {
-						if (!existing.sections.includes(section.name)) {
-							existing.sections.push(section.name);
-						}
-					}
-				}
-			});
-		});
-		return variables;
-	};
 
 	// Step navigation functions
 	const goToStep = (step: CertificateStep) => {
@@ -387,29 +353,13 @@ function CertificatePage() {
 				) : null;
 
 			case "csv-upload":
-				return (
-					<CSVUpload
-						csvData={csvData}
-						onCSVUpload={setCsvData}
-						onNext={nextStep}
-						onBack={prevStep}
-					/>
-				);
+				return <EnhancedCSVUpload onNext={nextStep} onBack={prevStep} />;
 
 			case "variable-mapping":
-				return csvData ? (
-					<VariableMapping
-						variables={getVariablesFromSections()}
-						csvHeaders={csvData.headers}
-						mapping={variableMapping}
-						onMappingChange={setVariableMapping}
-						onNext={nextStep}
-						onBack={prevStep}
-					/>
-				) : null;
+				return <EnhancedVariableMapping onNext={nextStep} onBack={prevStep} />;
 
 			case "certificate-preview":
-				return templateImage && csvData ? (
+				return templateImage ? (
 					<CertificatePreview
 						templateImage={templateImage}
 						sections={sections}
@@ -418,18 +368,16 @@ function CertificatePage() {
 						onNext={nextStep}
 						onBack={prevStep}
 					/>
-				) : null;
+				) : (
+					<div className="text-center p-8">
+						<p className="text-red-500">
+							No template image found. Please go back and upload a template.
+						</p>
+					</div>
+				);
 
 			case "certificate-generator":
-				return templateImage && csvData ? (
-					<CertificateGenerator
-						templateImage={templateImage}
-						sections={sections}
-						csvData={csvData}
-						variableMapping={variableMapping}
-						onBack={prevStep}
-					/>
-				) : null;
+				return <EnhancedCertificateDownload onBack={prevStep} />;
 
 			default:
 				return null;
@@ -455,11 +403,7 @@ function CertificatePage() {
 						<button
 							type="button"
 							onClick={() => {
-								setSelectedEvent(null);
-								setTemplateImage(null);
-								setSections([]);
-								setCsvData(null);
-								setVariableMapping({});
+								resetCertificateData();
 								setCurrentStep("event-selection");
 							}}
 							className="px-4 py-2 text-sm bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors duration-200"
