@@ -266,7 +266,6 @@ export default function EnhancedVariableMapping({
 				</CardContent>
 			</Card>
 
-			{/* Variable Mapping */}
 			{templateVariables.length > 0 && (
 				<Card>
 					<CardHeader>
@@ -284,7 +283,6 @@ export default function EnhancedVariableMapping({
 								</Label>
 
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-									{/* Database Variables */}
 									<div>
 										<Label className="text-xs text-gray-500 mb-2 block">
 											From Database
@@ -359,7 +357,6 @@ export default function EnhancedVariableMapping({
 										</Select>
 									</div>
 
-									{/* CSV Data */}
 									{csvData && availableExtraColumns.length > 0 && (
 										<div>
 											<Label className="text-xs text-gray-500 mb-2 block">
@@ -420,7 +417,6 @@ export default function EnhancedVariableMapping({
 				</Card>
 			)}
 
-			{/* Filename Format */}
 			<Card>
 				<CardHeader>
 					<CardTitle className="flex items-center gap-2">
@@ -500,7 +496,6 @@ export default function EnhancedVariableMapping({
 				</CardContent>
 			</Card>
 
-			{/* Navigation */}
 			<div className="flex justify-between">
 				<Button variant="outline" onClick={onBack}>
 					Back

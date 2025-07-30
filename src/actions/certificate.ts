@@ -47,6 +47,7 @@ export async function getEventParticipants(eventId: number): Promise<{
 			// Add team members
 			for (const member of team.Members) {
 				participants.push({
+					id: member.id,
 					usn: member.usn,
 					name: member.name,
 					email: member.email,

@@ -190,7 +190,6 @@ export default function EnhancedCSVUpload({
 								</Button>
 							</div>
 
-							{/* USN Column Selection */}
 							<div>
 								{/** biome-ignore lint/a11y/noLabelWithoutControl: <fine> */}
 								<label className="block text-sm font-medium text-gray-700 mb-2">
@@ -212,7 +211,6 @@ export default function EnhancedCSVUpload({
 								</select>
 							</div>
 
-							{/* Preview Headers */}
 							<div>
 								{/** biome-ignore lint/a11y/noLabelWithoutControl: <fine> */}
 								<label className="block text-sm font-medium text-gray-700 mb-2">
@@ -249,12 +247,10 @@ export default function EnhancedCSVUpload({
 				</CardContent>
 			</Card>
 
-			{/* Navigation */}
 			<div className="flex justify-between">
 				<Button variant="outline" onClick={onBack}>
 					Back
 				</Button>
-				{/* Navigation is handled by the skip/continue buttons above */}
 			</div>
 		</div>
 	);

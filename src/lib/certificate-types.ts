@@ -1,6 +1,7 @@
 import type { PrizeType } from "@prisma/client";
 
 export interface EventParticipant {
+	id: number;
 	usn: string;
 	name: string;
 	email: string;
