@@ -20,6 +20,7 @@ import { UsersPage } from "~/components/user1/users-page";
 import { useDashboardData } from "~/providers/dashboardDataContext";
 import { permissionKeys as perm } from "~/actions/middleware/routePermissions";
 import { useIsMobile } from "~/hooks/use-mobile";
+import CertificatePage from "../certficates/certificate-page";
 
 export function Dashboard() {
 	const { hasPerm } = useDashboardData();
@@ -35,6 +36,7 @@ export function Dashboard() {
 				"blogs",
 				"gallery",
 				"users",
+				"certificates",
 				"settings",
 			];
 			if (storedPage && validPages.includes(storedPage)) {
@@ -92,6 +94,8 @@ export function Dashboard() {
 				return <GalleryPage />;
 			case "payments":
 				return <PaymentsPage />;
+			case "certificates":
+				return <CertificatePage />;
 			case "users":
 				if (hasPerm(perm.MANAGE_USER_ROLES, perm.MANAGE_ROLE_PERMISSIONS)) {
 					return <UsersPage />;
