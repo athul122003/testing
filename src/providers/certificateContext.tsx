@@ -1,6 +1,12 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import {
+	createContext,
+	useContext,
+	useEffect,
+	useState,
+	type ReactNode,
+} from "react";
 import type { ExtendedEvent } from "../actions/event";
 import type { Section, CSVData } from "../components/types";
 
@@ -12,7 +18,13 @@ interface CertificateContextType {
 	sections: Section[];
 	setSections: (sections: Section[]) => void;
 	csvData: CSVData | null;
+	uploadCSV: boolean;
+	setUploadCSV: (value: boolean) => void;
 	setCsvData: (data: CSVData | null) => void;
+	csvStepCompleted: boolean;
+	setCsvStepCompleted: (completed: boolean) => void;
+	variableMappingCompleted: boolean;
+	setVariableMappingCompleted: (completed: boolean) => void;
 	variableMapping: Record<string, string>;
 	setVariableMapping: (
 		mapping:
@@ -60,9 +72,14 @@ export function CertificateProvider({ children }: { children: ReactNode }) {
 	const [selectedEvent, setSelectedEvent] = useState<ExtendedEvent | null>(
 		null,
 	);
+
 	const [templateImage, setTemplateImage] = useState<string | null>(null);
 	const [sections, setSections] = useState<Section[]>([]);
 	const [csvData, setCsvData] = useState<CSVData | null>(null);
+	const [uploadCSV, setUploadCSV] = useState(false);
+	const [csvStepCompleted, setCsvStepCompleted] = useState(false);
+	const [variableMappingCompleted, setVariableMappingCompleted] =
+		useState(false);
 	const [variableMapping, setVariableMapping] = useState<
 		Record<string, string>
 	>({});
@@ -83,11 +100,18 @@ export function CertificateProvider({ children }: { children: ReactNode }) {
 		}>
 	>([]);
 
+	useEffect(() => {
+		console.log(uploadCSV, csvData);
+	}, [uploadCSV, csvData]);
+
 	const resetCertificateData = () => {
 		setSelectedEvent(null);
 		setTemplateImage(null);
 		setSections([]);
 		setCsvData(null);
+		setUploadCSV(false);
+		setCsvStepCompleted(false);
+		setVariableMappingCompleted(false);
 		setVariableMapping({});
 		setExtraDataMapping({});
 		setUsnColumn(null);
@@ -106,7 +130,13 @@ export function CertificateProvider({ children }: { children: ReactNode }) {
 				sections,
 				setSections,
 				csvData,
+				uploadCSV,
+				setUploadCSV,
 				setCsvData,
+				csvStepCompleted,
+				setCsvStepCompleted,
+				variableMappingCompleted,
+				setVariableMappingCompleted,
 				variableMapping,
 				setVariableMapping,
 				extraDataMapping,

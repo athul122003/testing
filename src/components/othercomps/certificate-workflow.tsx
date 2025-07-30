@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import {
 	Card,
@@ -22,7 +22,6 @@ import {
 	ExternalLink,
 } from "lucide-react";
 import { useCertificateContext } from "../../providers/certificateContext";
-import { getEventParticipants } from "../../actions/certificate";
 import type { EventParticipant } from "../../lib/certificate-types";
 import {
 	generateCertificate,
@@ -66,16 +65,25 @@ interface CertificateWorkflowProps {
 	}>;
 }
 
-type WorkflowStep = "confirm" | "upload" | "mail";
+type WorkflowStep = "confirm" | "generate" | "upload" | "mail";
 
 export default function CertificateWorkflow({
 	onBack,
 	generatedCertificates = [],
 }: CertificateWorkflowProps) {
-	const { selectedEvent } = useCertificateContext();
+	const {
+		selectedEvent,
+		templateImage,
+		sections,
+		csvData,
+		usnColumn,
+		variableMapping,
+		extraDataMapping,
+		filenameFormat,
+	} = useCertificateContext();
 
 	const [currentStep, setCurrentStep] = useState<WorkflowStep>("confirm");
-	const [participants, setParticipants] = useState<EventParticipant[]>([]);
+	const [participants] = useState<EventParticipant[]>([]);
 	const [certificates, setCertificates] = useState<CertificateWithStatus[]>([]);
 
 	// Generation state

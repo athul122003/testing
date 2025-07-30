@@ -60,6 +60,7 @@ export default function EnhancedVariableMapping({
 		setFilenameFormat,
 		missingUsns,
 		setMissingUsns,
+		setVariableMappingCompleted,
 	} = useCertificateContext();
 
 	const [participants, setParticipants] = useState<EventParticipant[]>([]);
@@ -93,7 +94,7 @@ export default function EnhancedVariableMapping({
 			} else {
 				setError(result.error || "Failed to load participants");
 			}
-		} catch (err) {
+		} catch {
 			setError("Failed to load participants");
 		} finally {
 			setLoading(false);
@@ -198,6 +199,11 @@ export default function EnhancedVariableMapping({
 			</div>
 		);
 	}
+
+	const handleContinue = () => {
+		setVariableMappingCompleted(true);
+		onNext();
+	};
 
 	return (
 		<div className="max-w-6xl mx-auto space-y-6">
@@ -500,7 +506,7 @@ export default function EnhancedVariableMapping({
 				<Button variant="outline" onClick={onBack}>
 					Back
 				</Button>
-				<Button onClick={onNext} disabled={!isValid()}>
+				<Button onClick={handleContinue} disabled={!isValid()}>
 					Continue to Preview
 				</Button>
 			</div>

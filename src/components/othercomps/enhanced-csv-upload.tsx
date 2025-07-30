@@ -20,8 +20,14 @@ export default function EnhancedCSVUpload({
 	onNext,
 	onBack,
 }: EnhancedCSVUploadProps) {
-	const { csvData, setCsvData, usnColumn, setUsnColumn } =
-		useCertificateContext();
+	const {
+		csvData,
+		setCsvData,
+		usnColumn,
+		setUsnColumn,
+		setUploadCSV,
+		setCsvStepCompleted,
+	} = useCertificateContext();
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 	const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
 	const [error, setError] = useState<string | null>(null);
@@ -75,8 +81,11 @@ export default function EnhancedCSVUpload({
 	};
 
 	const handleSkip = () => {
+		console.log("Skipping CSV upload");
+		setUploadCSV(false);
 		setCsvData(null);
 		setUsnColumn(null);
+		setCsvStepCompleted(true);
 		onNext();
 	};
 
@@ -85,6 +94,8 @@ export default function EnhancedCSVUpload({
 			setError("Please select which column contains USN data");
 			return;
 		}
+		setUploadCSV(true);
+		setCsvStepCompleted(true);
 		onNext();
 	};
 

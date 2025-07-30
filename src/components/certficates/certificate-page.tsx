@@ -67,6 +67,8 @@ function CertificatePage() {
 		sections,
 		setSections,
 		csvData,
+		csvStepCompleted,
+		variableMappingCompleted,
 		variableMapping,
 		resetCertificateData,
 	} = useCertificateContext();
@@ -175,14 +177,14 @@ function CertificatePage() {
 			title: "Upload Data",
 			description: "Upload CSV file with certificate data",
 			icon: Upload,
-			completed: !!csvData,
+			completed: csvStepCompleted,
 		},
 		{
 			key: "variable-mapping" as CertificateStep,
 			title: "Map Variables",
 			description: "Connect template variables to CSV columns",
 			icon: Link,
-			completed: Object.keys(variableMapping).length > 0,
+			completed: variableMappingCompleted,
 		},
 		{
 			key: "certificate-preview" as CertificateStep,
