@@ -568,34 +568,6 @@ function CertificatePage() {
 
 			{/* Step Content */}
 			<div className="min-h-[600px]">{renderStepContent()}</div>
-
-			{/* Help Section */}
-			<div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
-				<h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">
-					How Certificate Management Works
-				</h3>
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 text-sm text-blue-700 dark:text-blue-300">
-					<div>
-						<strong>1. Upload Template:</strong> Start with your certificate
-						design as an image
-					</div>
-					<div>
-						<strong>2. Add Placeholders:</strong> Place text sections with
-						variables like {"{name}"} on your template
-					</div>
-					<div>
-						<strong>3. Upload Data:</strong> Import a CSV file with the data for
-						each certificate
-					</div>
-					<div>
-						<strong>4. Map Variables:</strong> Connect your template variables
-						to CSV columns
-					</div>
-					<div>
-						<strong>5. Generate:</strong> Preview and download all certificates
-					</div>
-				</div>
-			</div>
 		</div>
 	);
 }

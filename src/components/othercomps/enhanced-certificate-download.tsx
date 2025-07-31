@@ -169,14 +169,6 @@ export default function EnhancedCertificateDownload({
 		});
 	};
 
-	const sendEmails = () => {
-		// Implement email sending logic
-		console.log(
-			"Sending emails to:",
-			generatedCertificates.map((c) => c.email),
-		);
-	};
-
 	return (
 		<>
 			{showWorkflow ? (
@@ -221,9 +213,7 @@ export default function EnhancedCertificateDownload({
 									<div className="text-2xl font-bold text-blue-600">
 										{participants.length}
 									</div>
-									<div className="text-sm text-gray-500">
-										Total Participants
-									</div>
+									<div className="text-sm text-gray-500">Total Attendees</div>
 								</div>
 								<div className="text-center">
 									<div className="text-2xl font-bold text-green-600">
@@ -322,14 +312,6 @@ export default function EnhancedCertificateDownload({
 											<Download className="w-4 h-4 mr-2" />
 											Download All Certificates
 										</Button>
-										<Button
-											onClick={sendEmails}
-											variant="outline"
-											className="flex-1"
-										>
-											<Mail className="w-4 h-4 mr-2" />
-											Send via Email
-										</Button>
 									</div>
 								</CardContent>
 							</Card>
@@ -385,7 +367,7 @@ export default function EnhancedCertificateDownload({
 													>
 														<Download className="w-4 h-4" />
 													</Button>
-													<Button
+													{/* <Button
 														variant="outline"
 														size="sm"
 														onClick={() => {
@@ -394,7 +376,7 @@ export default function EnhancedCertificateDownload({
 														}}
 													>
 														<Mail className="w-4 h-4" />
-													</Button>
+													</Button> */}
 												</div>
 											</div>
 										))}
@@ -410,21 +392,16 @@ export default function EnhancedCertificateDownload({
 							Back to Preview
 						</Button>
 						{generatedCertificates.length > 0 && (
-							<>
-								<Button
-									onClick={() => setShowWorkflow(true)}
-									disabled={generating || participants.length === 0}
-									variant="outline"
-									className="flex-1"
-									size="lg"
-								>
-									<Workflow className="w-4 h-4 mr-2" />
-									Certificate Workflow
-								</Button>
-								<Button onClick={() => window.location.reload()}>
-									Generate New Certificates
-								</Button>
-							</>
+							<Button
+								onClick={() => setShowWorkflow(true)}
+								disabled={generating || participants.length === 0}
+								variant="outline"
+								className="flex-1"
+								size="lg"
+							>
+								<Mail className="w-4 h-4 mr-2" />
+								Start Emailing
+							</Button>
 						)}
 					</div>
 				</div>

@@ -63,6 +63,8 @@ type DashboardDataContextType = {
 		dateFilter?: { startDate?: Date; endDate?: Date },
 	) => void;
 
+	setEventYear: (year: number | null) => void;
+
 	setUserParams?: (
 		query: string,
 		page: number,
@@ -134,6 +136,10 @@ export const DashboardDataProvider = ({
 	});
 
 	const isOrganiser = isOrganiserQuery.data?.data === true;
+
+	const [eventYear, setEventYear] = useState<number | null>(
+		new Date().getFullYear(),
+	);
 
 	const [paymentArgs, setPaymentArgs] = useState<{
 		page: number;
@@ -254,10 +260,14 @@ export const DashboardDataProvider = ({
 	});
 
 	const eventsQuery = useQuery<EventsQuery>({
-		queryKey: ["events"],
+		queryKey: ["events", eventYear],
 		queryFn: async () => {
 			if (canManageEvents) {
-				return await getAllEvents();
+				if (eventYear !== null) {
+					return await getAllEvents({ year: eventYear });
+				} else {
+					return await getAllEvents({ year: undefined });
+				}
 			} else {
 				const result = await api.event.getOrganisedEvents({
 					userId: Number(user?.id),
@@ -269,6 +279,9 @@ export const DashboardDataProvider = ({
 						return {
 							success: true,
 							data: result.data as ExtendedEvent[],
+							years: Array.isArray((result as any).years)
+								? (result as any).years
+								: [],
 						};
 					} else {
 						return {
@@ -304,6 +317,7 @@ export const DashboardDataProvider = ({
 		refetchUsers: canManageUsers ? usersQuery.refetch : undefined,
 		refetchRoles: canManageRoles ? rolesQuery.refetch : undefined,
 		setPaymentParams,
+		setEventYear,
 		setUserParams: canManageUsers ? setUserParams : undefined,
 		permissions,
 		role,

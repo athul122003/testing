@@ -16,11 +16,8 @@ export async function getEventParticipants(eventId: number): Promise<{
 			},
 			include: {
 				Members: {
-					select: {
-						usn: true,
-						name: true,
-						email: true,
-						id: true,
+					include: {
+						Attendance: true,
 					},
 				},
 				Leader: {
@@ -46,6 +43,10 @@ export async function getEventParticipants(eventId: number): Promise<{
 
 			// Add team members
 			for (const member of team.Members) {
+				const attendance = member.Attendance.find(
+					(att) => att.eventId === eventId,
+				);
+				if (!attendance || !attendance.hasAttended) continue;
 				participants.push({
 					id: member.id,
 					usn: member.usn,

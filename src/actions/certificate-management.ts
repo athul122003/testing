@@ -2,7 +2,10 @@
 
 import { db } from "../server/db";
 import nodemailer from "nodemailer";
-import { uploadImageToCloudinary } from "../lib/cloudinaryImageUploader";
+import {
+	deleteImageFromCloudinary,
+	uploadImageToCloudinary,
+} from "../lib/cloudinaryImageUploader";
 
 export interface CertificateUploadResult {
 	success: boolean;
@@ -30,6 +33,19 @@ export interface EventCertificateStatus {
 	sentCertificates: number;
 	errorCertificates: number;
 	certificates: CertificateStatus[];
+}
+
+function extractPublicIdFromUrl(url: string): string {
+	const urlObj = new URL(url);
+	const pathname = urlObj.pathname; // /your-cloud-name/image/upload/v1234567890/folder/filename.jpg
+	const parts = pathname.split("/");
+	// Remove the first parts like /image/upload/v123456
+	const publicIdParts = parts.slice(5); // starting after /image/upload/v123...
+	const fullFilename = publicIdParts.join("/"); // folder/filename.jpg
+
+	// Remove extension (.jpg, .png etc)
+	const lastDotIndex = fullFilename.lastIndexOf(".");
+	return fullFilename.substring(0, lastDotIndex);
 }
 
 const transporter = nodemailer.createTransport({
@@ -74,6 +90,28 @@ export async function uploadCertificateToCloudinary(
 
 		// Upload to Cloudinary
 		const cloudinaryUrl = await uploadImageToCloudinary(file, folderName);
+
+		const existingCertificate = await db.certificate.findUnique({
+			where: {
+				eventId_userId: {
+					eventId,
+					userId,
+				},
+			},
+			select: {
+				link: true,
+			},
+		});
+
+		const existingPublicId = extractPublicIdFromUrl(
+			existingCertificate?.link || "",
+		);
+
+		try {
+			await deleteImageFromCloudinary(existingPublicId);
+		} catch (error) {
+			console.error("Error deleting existing certificate image:", error);
+		}
 
 		// Create or update certificate record in database
 		const certificate = await db.certificate.upsert({

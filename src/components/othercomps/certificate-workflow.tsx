@@ -498,7 +498,7 @@ export default function CertificateWorkflow({
 								<div className="text-2xl font-bold text-blue-600">
 									{participants.length}
 								</div>
-								<div className="text-sm text-gray-500">Total Participants</div>
+								<div className="text-sm text-gray-500">Total Attendees</div>
 							</div>
 							<div className="text-center">
 								<div className="text-2xl font-bold text-green-600">
