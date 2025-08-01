@@ -284,11 +284,15 @@ model Certificate {
   issuedOn        DateTime
   certificateType CertificateType
 
+  link            String? // URL to certificate file
   eventId Int
   Event   Event @relation(fields: [eventId], references: [id])
 
   userId Int
   User   User @relation(fields: [userId], references: [id])
+
+  statusOfMailing Boolean @default(false) //new: to check if the certificate is mailed or not
+  errorInMailing Boolean @default(false) //new: to check if there was an error while mailing the certificate
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

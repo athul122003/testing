@@ -6,6 +6,7 @@ import {
 	CreditCard,
 	FileText,
 	LayoutDashboard,
+	PaperclipIcon,
 	Settings,
 	Users,
 } from "lucide-react";
@@ -40,6 +41,7 @@ export function AppSidebar({ activePage, setActivePage }: AppSidebarProps) {
 		{ title: "", icon: Calendar, id: "events" },
 		{ title: "", icon: FileText, id: "blogs" },
 		// { title: "", icon: ImageIcon, id: "gallery" },
+		{ title: "", icon: PaperclipIcon, id: "certificates" },
 		{ title: "", icon: CreditCard, id: "payments" },
 		...(hasPerm(
 			permissionKeys.MANAGE_USER_ROLES,

@@ -348,10 +348,11 @@ export const publishEventAction = protectedAction(async (eventId: number) => {
 	}
 });
 
-export async function getAllEvents(): Promise<
+export async function getAllEvents({ year }: { year?: number }): Promise<
 	| {
 			success: true;
 			data: ExtendedEvent[];
+			years: number[];
 			error?: undefined;
 	  }
 	| {
@@ -362,16 +363,35 @@ export async function getAllEvents(): Promise<
 > {
 	try {
 		const events = await db.event.findMany({
+			where: year
+				? {
+						fromDate: {
+							gte: new Date(`${year}-01-01T00:00:00.000Z`),
+							lte: new Date(`${year}-12-31T23:59:59.999Z`),
+						},
+					}
+				: undefined,
 			orderBy: { fromDate: "desc" },
 			include: {
 				Team: {
 					select: { id: true, isConfirmed: true },
 				},
-				Prize: true, // include Prize data
+				Prize: true,
 			},
 		});
 
-		const formattedEvents: ExtendedEvent[] = events.map((event) => ({
+		// Get all unique years from events in DB
+		const yearsRaw = await db.event.findMany({
+			select: { fromDate: true },
+			orderBy: { fromDate: "desc" },
+		});
+		const years = Array.from(
+			new Set(yearsRaw.map((e) => e.fromDate.getFullYear())),
+		);
+
+		const filteredEvents = events;
+
+		const formattedEvents: ExtendedEvent[] = filteredEvents.map((event) => ({
 			...event,
 			confirmedTeams: event.Team.filter((team) => team.isConfirmed).length,
 			prizes: event.Prize ?? [],
@@ -380,6 +400,7 @@ export async function getAllEvents(): Promise<
 		return {
 			success: true,
 			data: formattedEvents,
+			years,
 		};
 	} catch (error) {
 		console.error("getAllEvents Error:", error);

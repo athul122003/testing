@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { permissionKeys as perm } from "~/actions/middleware/routePermissions";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ExtendedEvent, toggleEventStatus } from "~/actions/event";
 import { toast } from "sonner";
 import { deleteEventAction, publishEventAction } from "~/actions/event";
@@ -50,28 +50,38 @@ export function EventsPage({
 	const [selectedEvent, setSelectedEvent] = useState<ExtendedEvent | null>(
 		null,
 	);
-	const [selectedYear, setSelectedYear] = useState("ALL");
+	const [allYears, setAllYears] = useState<string[]>([]);
+	const [selectedYear, setSelectedYear] = useState("2025");
 	const [statusModalOpen, setStatusModalOpen] = useState(false);
 	const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-	const { hasPerm, eventsQuery, refetchEvents, isOrganiser } =
+	const { hasPerm, eventsQuery, refetchEvents, isOrganiser, setEventYear } =
 		useDashboardData();
 	const canManageEvents = hasPerm(perm.MANAGE_EVENTS);
 	const { data: eventsData, isLoading } = eventsQuery;
 
 	const events = eventsData?.data || [];
 
-	const years = Array.from(
-		new Set(events.map((event) => new Date(event.fromDate).getFullYear())),
-	).sort((a, b) => b - a);
+	useEffect(() => {
+		if (eventsData?.success === true && Array.isArray(eventsData.years)) {
+			setAllYears(
+				new Set(eventsData.years).size > 0
+					? ["ALL", ...eventsData.years.map((year: number) => year.toString())]
+					: ["All"],
+			);
+		} else {
+			setAllYears(["2025"]);
+		}
+	}, [eventsData]);
 
-	const filteredEvents =
-		selectedYear === "ALL"
-			? events
-			: events.filter(
-					(event) =>
-						new Date(event.fromDate).getFullYear() === Number(selectedYear),
-				);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <no need of deps>
+	useEffect(() => {
+		if (selectedYear === "ALL") {
+			setEventYear(null);
+		} else {
+			setEventYear(Number(selectedYear));
+		}
+	}, [selectedYear]);
 
 	const handleCreateEvent = () => {
 		setEditingEvent(null);
@@ -216,8 +226,7 @@ export function EventsPage({
 								<SelectValue placeholder="Year" />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="ALL">All</SelectItem>
-								{years.map((year) => (
+								{allYears.map((year) => (
 									<SelectItem key={year} value={year.toString()}>
 										{year}
 									</SelectItem>
@@ -236,7 +245,7 @@ export function EventsPage({
 			</div>
 
 			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-				{filteredEvents.map((event) => (
+				{events.map((event) => (
 					<Card
 						key={event.id}
 						className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800 overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group"

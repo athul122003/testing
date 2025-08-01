@@ -1,11 +1,11 @@
 "use server";
 import type { BlogType } from "~/zod/blogZ";
-import prisma from "~/lib/prisma";
+import { db } from "~/server/db";
 
 const getBlogs = async (userId?: string) => {
 	try {
 		if (userId) {
-			return await prisma.blog.findMany({
+			return await db.blog.findMany({
 				where: { userId: Number(userId) },
 				orderBy: { createdAt: "desc" },
 				include: {
@@ -19,7 +19,7 @@ const getBlogs = async (userId?: string) => {
 				},
 			});
 		}
-		const blogs = await prisma.blog.findMany({
+		const blogs = await db.blog.findMany({
 			orderBy: { createdAt: "desc" },
 			include: {
 				User: {
@@ -40,7 +40,7 @@ const getBlogs = async (userId?: string) => {
 const createOrUpdateBlog = async (blogData: BlogType, userId: number) => {
 	try {
 		if (blogData.id) {
-			const updatedBlog = await prisma.blog.update({
+			const updatedBlog = await db.blog.update({
 				where: { id: blogData.id },
 				data: {
 					title: blogData.title,
@@ -56,7 +56,7 @@ const createOrUpdateBlog = async (blogData: BlogType, userId: number) => {
 			console.log("Blog updated successfully:", updatedBlog);
 			return updatedBlog;
 		} else {
-			const newBlog = await prisma.blog.create({
+			const newBlog = await db.blog.create({
 				data: {
 					title: blogData.title,
 					content: blogData.content,
@@ -82,7 +82,7 @@ const createOrUpdateBlog = async (blogData: BlogType, userId: number) => {
 
 const deleteBlog = async (blogId: string) => {
 	try {
-		const deletedBlog = await prisma.blog.delete({
+		const deletedBlog = await db.blog.delete({
 			where: { id: blogId },
 		});
 		console.log("Blog deleted successfully:", deletedBlog);
@@ -95,13 +95,13 @@ const deleteBlog = async (blogId: string) => {
 
 const publishBlog = async (blogId: string) => {
 	try {
-		const blog = await prisma.blog.findUnique({
+		const blog = await db.blog.findUnique({
 			where: { id: blogId },
 		});
 		if (!blog) {
 			throw new Error("Blog not found");
 		}
-		const updatedBlog = await prisma.blog.update({
+		const updatedBlog = await db.blog.update({
 			where: { id: blogId },
 			data: {
 				blogState: "PUBLISHED",
@@ -123,14 +123,14 @@ const publishBlog = async (blogId: string) => {
 
 const draftBlog = async (blogId: string) => {
 	try {
-		const blog = await prisma.blog.findUnique({
+		const blog = await db.blog.findUnique({
 			where: { id: blogId },
 		});
 		if (!blog) {
 			throw new Error("Blog not found");
 		}
 
-		const updatedBlog = await prisma.blog.update({
+		const updatedBlog = await db.blog.update({
 			where: { id: blogId },
 			data: {
 				blogState: "DRAFT",
@@ -161,7 +161,7 @@ export async function updateBlogById(
 ) {
 	try {
 		if (blogId) {
-			const existingBlog = await prisma.blog.findUnique({
+			const existingBlog = await db.blog.findUnique({
 				where: { id: blogId },
 				select: { userId: true },
 			});
@@ -172,7 +172,7 @@ export async function updateBlogById(
 				throw new Error("Unauthorized");
 			}
 
-			const updatedBlog = await prisma.blog.update({
+			const updatedBlog = await db.blog.update({
 				where: { id: blogId },
 				data: {
 					title: blogData.title,
@@ -200,7 +200,7 @@ export async function updateBlogById(
 export async function getBlogById(blogId: string) {
 	try {
 		if (blogId) {
-			const blog = await prisma.blog.findUnique({
+			const blog = await db.blog.findUnique({
 				where: { id: blogId },
 				include: {
 					User: {
@@ -227,7 +227,7 @@ export async function createBlog(blogData: BlogType, userId: string) {
 		throw new Error("Blog data and User ID are required");
 	}
 	try {
-		const newBlog = await prisma.blog.create({
+		const newBlog = await db.blog.create({
 			data: {
 				title: blogData.title,
 				content: blogData.content,

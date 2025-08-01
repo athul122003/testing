@@ -1,7 +1,7 @@
 "use server";
 
 import type { Payment } from "@prisma/client";
-import prisma from "~/lib/prisma";
+import { db } from "~/server/db";
 import { protectedAction } from "./middleware/protectedAction";
 
 export type PaymentQueryResponse = {
@@ -38,7 +38,7 @@ const getPaymentInfo = protectedAction(
 
 		try {
 			const [payments, totalPayments] = await Promise.all([
-				prisma.payment.findMany({
+				db.payment.findMany({
 					where: whereCondition,
 					skip,
 					take: pageSize,
@@ -64,7 +64,7 @@ const getPaymentInfo = protectedAction(
 						},
 					},
 				}),
-				prisma.payment.count({
+				db.payment.count({
 					where: whereCondition,
 				}),
 			]);
@@ -98,10 +98,10 @@ const getSummaryStats = protectedAction(
 				revenueAggregate,
 				totalSuccessfulPayments,
 			] = await Promise.all([
-				prisma.payment.count(),
-				prisma.user.count(),
-				prisma.payment.aggregate({ _sum: { amount: true } }),
-				prisma.payment.count({
+				db.payment.count(),
+				db.user.count(),
+				db.payment.aggregate({ _sum: { amount: true } }),
+				db.payment.count({
 					where: {
 						AND: [
 							{ razorpayPaymentId: { not: "" } },
