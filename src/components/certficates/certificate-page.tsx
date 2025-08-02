@@ -258,7 +258,7 @@ function CertificatePage() {
 										<Icon className="w-6 h-6" />
 									)}
 								</div>
-								<div className="text-center">
+								<div className="flex flex-col items-center">
 									<div
 										className={`text-sm font-medium ${
 											isActive
@@ -325,7 +325,7 @@ function CertificatePage() {
 		return (
 			<div className="space-y-6">
 				<div className="text-center">
-					<h2 className="text-2xl font-bold text-gray-900 mb-2">
+					<h2 className="text-2xl font-bold text-gray-400 mb-2">
 						Select a Completed Event
 					</h2>
 					<p className="text-gray-600">

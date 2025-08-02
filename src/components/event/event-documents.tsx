@@ -27,13 +27,9 @@ import {
 	FileText,
 	Calendar,
 	Trash2,
-	ViewIcon,
 } from "lucide-react";
 import { toast } from "sonner";
-import { uploadFileToGoogleDrive } from "~/lib/googleDrive";
-import { api } from "~/lib/api";
 import { createEventDoc, deleteEventDoc, getEventDocs } from "~/actions/event";
-import type { ExtendedEvent } from "~/actions/event";
 
 type Document = {
 	id: string;

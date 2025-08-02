@@ -25,26 +25,10 @@ import { downloadCertificate } from "../../lib/certificate-generator";
 import {
 	uploadCertificateToCloudinary,
 	sendCertificateEmail,
+	clearAllCertificates,
 } from "../../actions/certificate-management";
 
-interface CertificateWithStatus {
-	usn: string;
-	name: string;
-	email: string;
-	certificateUrl: string;
-	filename?: string;
-	prizeType?: string;
-	// Upload status
-	uploading?: boolean;
-	uploaded?: boolean;
-	uploadError?: string;
-	cloudinaryUrl?: string;
-	certificateId?: string;
-	// Mail status
-	mailing?: boolean;
-	mailed?: boolean;
-	mailError?: string;
-}
+import type { CertificateWithStatus } from "../../actions/certificate-management";
 
 interface CertificateWorkflowProps {
 	onBack: () => void;
@@ -114,6 +98,7 @@ export default function CertificateWorkflow({
 		setError(null);
 
 		try {
+			await clearAllCertificates({ eventId });
 			for (let i = 0; i < certificates.length; i++) {
 				const cert = certificates[i];
 

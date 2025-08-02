@@ -134,7 +134,7 @@ export default function CertificateMailingStatus({
 						<ArrowLeft className="w-4 h-4 mr-2" />
 						Back
 					</Button>
-					<h2 className="text-2xl font-bold text-gray-900">
+					<h2 className="text-2xl font-bold text-gray-500">
 						Certificate Mailing Status - {eventName}
 					</h2>
 				</div>
@@ -159,7 +159,7 @@ export default function CertificateMailingStatus({
 						<ArrowLeft className="w-4 h-4 mr-2" />
 						Back
 					</Button>
-					<h2 className="text-2xl font-bold text-gray-900">
+					<h2 className="text-2xl font-bold text-gray-500">
 						Certificate Mailing Status - {eventName}
 					</h2>
 				</div>
@@ -185,7 +185,7 @@ export default function CertificateMailingStatus({
 						<ArrowLeft className="w-4 h-4 mr-2" />
 						Back
 					</Button>
-					<h2 className="text-2xl font-bold text-gray-900">
+					<h2 className="text-2xl font-bold text-gray-500">
 						Certificate Mailing Status - {eventName}
 					</h2>
 				</div>
@@ -212,7 +212,7 @@ export default function CertificateMailingStatus({
 					<ArrowLeft className="w-4 h-4 mr-2" />
 					Back
 				</Button>
-				<h2 className="text-2xl font-bold text-gray-900">
+				<h2 className="text-2xl font-bold text-gray-500">
 					Certificate Mailing Status - {eventName}
 				</h2>
 			</div>

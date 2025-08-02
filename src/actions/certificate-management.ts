@@ -35,17 +35,41 @@ export interface EventCertificateStatus {
 	certificates: CertificateStatus[];
 }
 
-function extractPublicIdFromUrl(url: string): string {
-	const urlObj = new URL(url);
-	const pathname = urlObj.pathname; // /your-cloud-name/image/upload/v1234567890/folder/filename.jpg
-	const parts = pathname.split("/");
-	// Remove the first parts like /image/upload/v123456
-	const publicIdParts = parts.slice(5); // starting after /image/upload/v123...
-	const fullFilename = publicIdParts.join("/"); // folder/filename.jpg
+export interface CertificateWithStatus {
+	usn: string;
+	name: string;
+	email: string;
+	certificateUrl: string;
+	filename?: string;
+	prizeType?: string;
+	// Upload status
+	uploading?: boolean;
+	uploaded?: boolean;
+	uploadError?: string;
+	cloudinaryUrl?: string;
+	certificateId?: string;
+	// Mail status
+	mailing?: boolean;
+	mailed?: boolean;
+	mailError?: string;
+}
 
-	// Remove extension (.jpg, .png etc)
-	const lastDotIndex = fullFilename.lastIndexOf(".");
-	return fullFilename.substring(0, lastDotIndex);
+function extractPublicIdFromUrl(url: string): string | null {
+	try {
+		const urlObj = new URL(url);
+		const pathname = urlObj.pathname; // /your-cloud-name/image/upload/v1234567890/folder/filename.jpg
+		const parts = pathname.split("/");
+		// Remove the first parts like /image/upload/v123456
+		const publicIdParts = parts.slice(5); // starting after /image/upload/v123...
+		const fullFilename = publicIdParts.join("/"); // folder/filename.jpg
+
+		// Remove extension (.jpg, .png etc)
+		const lastDotIndex = fullFilename.lastIndexOf(".");
+		return fullFilename.substring(0, lastDotIndex);
+	} catch (error) {
+		console.error("Error extracting public ID from URL:", error);
+		return null;
+	}
 }
 
 const transporter = nodemailer.createTransport({
@@ -70,7 +94,6 @@ export async function uploadCertificateToCloudinary(
 		| "PARTICIPATION",
 ): Promise<CertificateUploadResult> {
 	try {
-		// Get event details for folder name
 		const event = await db.event.findUnique({
 			where: { id: eventId },
 			select: { name: true },
@@ -80,40 +103,14 @@ export async function uploadCertificateToCloudinary(
 			return { success: false, error: "Event not found" };
 		}
 
-		// Convert data URL to File object
 		const response = await fetch(certificateDataUrl);
 		const blob = await response.blob();
 		const file = new File([blob], filename, { type: "image/png" });
 
-		// Create folder name from event name (replace spaces with hyphens)
 		const folderName = `certificates/${event.name.replace(/\s+/g, "-").toLowerCase()}`;
 
-		// Upload to Cloudinary
 		const cloudinaryUrl = await uploadImageToCloudinary(file, folderName);
 
-		const existingCertificate = await db.certificate.findUnique({
-			where: {
-				eventId_userId: {
-					eventId,
-					userId,
-				},
-			},
-			select: {
-				link: true,
-			},
-		});
-
-		const existingPublicId = extractPublicIdFromUrl(
-			existingCertificate?.link || "",
-		);
-
-		try {
-			await deleteImageFromCloudinary(existingPublicId);
-		} catch (error) {
-			console.error("Error deleting existing certificate image:", error);
-		}
-
-		// Create or update certificate record in database
 		const certificate = await db.certificate.upsert({
 			where: {
 				eventId_userId: {
@@ -211,9 +208,6 @@ export async function sendCertificateEmail(certificateId: string): Promise<{
 		if (!certificate) {
 			return { success: false, error: "Certificate not found" };
 		}
-
-		await new Promise((resolve) => setTimeout(resolve, 1000));
-
 		const res = await transporter.sendMail({
 			from: '"Finite Loop Club" <flc@nmamit.in>',
 			to: certificate.User.email,
@@ -227,10 +221,7 @@ export async function sendCertificateEmail(certificateId: string): Promise<{
                    <p>Finite Loop Club</p>`,
 		});
 
-		console.log("Email sent:", res);
-
 		if (res) {
-			// Update certificate as successfully mailed
 			await db.certificate.update({
 				where: { id: certificateId },
 				data: {
@@ -433,6 +424,41 @@ export async function getEventCertificateList(eventId: number): Promise<{
 		};
 	} catch (error) {
 		console.error("Error getting event certificate list:", error);
+		return {
+			success: false,
+			error: error instanceof Error ? error.message : "Unknown error",
+		};
+	}
+}
+
+export async function clearAllCertificates({ eventId }: { eventId: number }) {
+	try {
+		const existingCertificates = await db.certificate.findMany({
+			where: {
+				eventId,
+			},
+			select: {
+				id: true,
+				link: true,
+			},
+		});
+		for (const cert of existingCertificates) {
+			if (cert.link) {
+				const publicId = extractPublicIdFromUrl(cert.link);
+				if (!publicId) {
+					throw new Error("Invalid Cloudinary URL");
+				}
+				await deleteImageFromCloudinary(publicId);
+			}
+
+			await db.certificate.delete({
+				where: { id: cert.id },
+			});
+		}
+
+		return { success: true };
+	} catch (error) {
+		console.error("Error deleting certificates:", error);
 		return {
 			success: false,
 			error: error instanceof Error ? error.message : "Unknown error",
