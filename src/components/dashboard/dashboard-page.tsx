@@ -46,6 +46,10 @@ export function Dashboard() {
 		}
 	}, []);
 	const [editingEvent, setEditingEvent] = useState(null);
+	useEffect(() => {
+		console.log("Editing event set to:", editingEvent);
+	}, [editingEvent]);
+
 	const [editingBlog, setEditingBlog] = useState<Blog | null>(null);
 	const isMobile = useIsMobile();
 

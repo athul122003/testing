@@ -14,7 +14,8 @@ export async function uploadFileToCloudinary(file: File, folder: string) {
 
 	const formData = new FormData();
 	formData.append("file", file);
-	formData.append("upload_preset", "eventdocuments"); // Replace with your upload preset
+	formData.append("name", file.name);
+	formData.append("upload_preset", "eventdocuments");
 	formData.append("folder", folder || "default-folder");
 
 	const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudinary.config().cloud_name}/${resourceType}/upload`;
@@ -37,3 +38,52 @@ export async function uploadFileToCloudinary(file: File, folder: string) {
 		throw new Error("File upload failed");
 	}
 }
+
+export async function deleteFileFromCloudinary(publicId: string, type: string) {
+	try {
+		const response = await cloudinary.uploader.destroy(publicId, {
+			resource_type: type,
+		});
+
+		console.log(type);
+		console.log(publicId);
+
+		console.log("Delete response:", response);
+
+		if (response.result === "ok") {
+			console.log("File deleted successfully:", response);
+			return true;
+		} else {
+			throw new Error(response.error?.message || "File deletion failed");
+		}
+	} catch (error) {
+		console.error("Error deleting file from Cloudinary:", error);
+		throw new Error("File deletion failed");
+	}
+}
+
+export const detectTypeAndDelete = async (publicId: string) => {
+	for (const type of ["image", "video", "raw"]) {
+		try {
+			const res = await cloudinary.api.resource(publicId, {
+				resource_type: type,
+			});
+			if (res) {
+				console.log("Found under type:", type);
+				const deleteRes = await cloudinary.uploader.destroy(publicId, {
+					resource_type: type,
+				});
+				console.log("Delete Result:", deleteRes);
+				return deleteRes.result === "ok";
+			}
+		} catch (_) {
+			continue;
+		}
+	}
+	const res = await cloudinary.search
+		.expression("resource_type:raw")
+		.max_results(30)
+		.execute();
+	console.log("Search Result:", res);
+	throw new Error("File not found under any resource_type");
+};

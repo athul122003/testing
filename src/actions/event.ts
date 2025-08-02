@@ -11,6 +11,12 @@ import { z } from "zod";
 import { db } from "~/server/db";
 import { createEventZ } from "~/zod/eventZ";
 import { protectedAction } from "./middleware/protectedAction";
+import mime from "mime";
+import {
+	deleteFileFromCloudinary,
+	detectTypeAndDelete,
+	uploadFileToCloudinary,
+} from "~/lib/cloudinaryFileUploader";
 
 export type CreateEventInput = z.infer<typeof createEventZ>;
 export type EventsQuery = Awaited<ReturnType<typeof getAllEvents>>;
@@ -18,6 +24,29 @@ export type EventsQuery = Awaited<ReturnType<typeof getAllEvents>>;
 export interface ExtendedEvent extends Event {
 	confirmedTeams: number;
 	prizes?: Prize[];
+}
+
+function extractPublicIdFromUrl({
+	url,
+	resType,
+}: {
+	url: string;
+	resType: string;
+}): string {
+	const urlObj = new URL(url);
+	const pathname = urlObj.pathname; // /your-cloud-name/image/upload/v1234567890/folder/filename.jpg
+	const parts = pathname.split("/");
+
+	const publicIdParts = parts.slice(5); // starting after /image/upload/v123...
+	const fullFilename = publicIdParts.join("/"); // folder/filename.jpg
+
+	// Remove extension (.jpg, .png etc)
+	const lastDotIndex = fullFilename.lastIndexOf(".");
+	if (resType === "raw") {
+		return fullFilename;
+	} else {
+		return fullFilename.substring(0, lastDotIndex);
+	}
 }
 
 export const createEventAction = protectedAction(
@@ -408,6 +437,166 @@ export async function getAllEvents({ year }: { year?: number }): Promise<
 			success: false,
 			error: "Failed to fetch events.",
 			data: [],
+		};
+	}
+}
+
+export const getEventDocs = protectedAction(
+	async (eventId: number) => {
+		try {
+			const event = await db.event.findUnique({
+				where: { id: eventId },
+				include: {
+					EventDocument: true,
+				},
+			});
+			if (!event) {
+				return { success: false, error: "Event not found" };
+			}
+			return {
+				success: true,
+				data: event.EventDocument.map((doc) => ({
+					id: doc.id,
+					name: doc.name,
+					url: doc.fileUrl,
+					fileType: doc.fileType,
+					fileSize: doc.fileSize,
+					createdAt: doc.createdAt,
+				})),
+			};
+		} catch (error) {
+			console.error("getEventDocs Error:", error);
+			return {
+				success: false,
+				error: "Failed to fetch event documents.",
+			};
+		}
+	},
+	{ actionName: "event.ALLPERM" },
+);
+
+export const createEventDoc = protectedAction(
+	async (eventId: number, file: File, name: string, description: string) => {
+		try {
+			const event = await db.event.findUnique({
+				where: { id: eventId },
+				select: { id: true, name: true },
+			});
+
+			if (!event) {
+				return { success: false, error: "Event not found" };
+			}
+			let resType: string | undefined;
+			const mimeType = mime.getType(file.name);
+			console.log("MIME type detected:", mimeType);
+			if (!mimeType) {
+				resType = "unknown";
+			}
+
+			if (mimeType) {
+				if (!(mimeType.startsWith("image/") || mimeType.startsWith("video/"))) {
+					console.log("MIME type is not image or video, using raw type");
+					resType = "raw" + "/" + mimeType.split("/")[1] || "unknown";
+				} else {
+					resType = mimeType;
+				}
+			} else {
+				console.log("MIME type is unknown, using raw/unknown");
+				resType = "raw/unknown";
+			}
+			console.log("Resource type determined as:", resType);
+			const fileType = resType || "unknown/unknown";
+			const fileSize = file.size;
+			const fileUrl = await uploadFileToCloudinary(
+				file,
+				`event-documents/${event.name}-${eventId}`,
+			);
+			const newDoc = await db.eventDocument.create({
+				data: {
+					name,
+					fileUrl,
+					description,
+					fileType,
+					fileSize,
+					eventId: event.id,
+				},
+			});
+			return {
+				success: true,
+				data: {
+					id: newDoc.id,
+					name: newDoc.name,
+					url: newDoc.fileUrl,
+					fileType: newDoc.fileType,
+					fileSize: newDoc.fileSize,
+					createdAt: newDoc.createdAt,
+				},
+			};
+		} catch (error) {
+			console.error("createEventDoc Error:", error);
+			if (error instanceof z.ZodError) {
+				return {
+					success: false,
+					error: "Validation failed",
+					issues: error.issues,
+				};
+			}
+			return {
+				success: false,
+				error: "An unexpected error occurred while uploading the document.",
+			};
+		}
+	},
+	{ actionName: "event.ALLPERM" },
+);
+
+export async function deleteEventDoc(
+	eventId: number,
+	docId: string,
+): Promise<
+	{ success: true; message: string } | { success: false; error: string }
+> {
+	try {
+		const event = await db.event.findUnique({
+			where: { id: eventId },
+			select: { id: true, name: true },
+		});
+		if (!event) {
+			return { success: false, error: "Event not found" };
+		}
+		const doc = await db.eventDocument.findUnique({
+			where: { id: docId, eventId: event.id },
+			select: { id: true, fileUrl: true, fileType: true },
+		});
+		if (!doc) {
+			return { success: false, error: "Document not found" };
+		}
+		let resourceType: string;
+		const resType = doc.fileType?.split("/")[0] || "unknown";
+		if (resType === "unknown") {
+			resourceType = "raw";
+		} else if (resType === "image" || resType === "video") {
+			resourceType = resType;
+		} else {
+			resourceType = "raw";
+		}
+		const res = await deleteFileFromCloudinary(
+			extractPublicIdFromUrl({ url: doc.fileUrl, resType: resType }),
+			resourceType,
+		);
+		// const res = await detectTypeAndDelete(extractPublicIdFromUrl(doc.fileUrl));
+		if (!res) {
+			return { success: false, error: "Failed to delete file from Cloudinary" };
+		}
+		await db.eventDocument.delete({
+			where: { id: doc.id },
+		});
+		return { success: true, message: "Document deleted successfully" };
+	} catch (error) {
+		console.error("deleteEventDoc Error:", error);
+		return {
+			success: false,
+			error: "An unexpected error occurred while deleting the document.",
 		};
 	}
 }

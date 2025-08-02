@@ -142,6 +142,13 @@ export async function addMemberToTeam(teamId: string, userId: number) {
 
 export const markAttendance = protectedAction(
 	async (eventId: number, userId: number) => {
+		const team = await db.team.findFirst({
+			where: { eventId, Members: { some: { id: userId } } },
+			select: { id: true },
+		});
+		if (!team) {
+			throw new Error("Team not found for this user in the event");
+		}
 		const attendance = await db.attendance.upsert({
 			where: {
 				userId_eventId: {
@@ -155,6 +162,7 @@ export const markAttendance = protectedAction(
 			create: {
 				eventId,
 				userId,
+				teamId: team.id,
 				hasAttended: true,
 			},
 		});
@@ -206,6 +214,17 @@ export const markAttendanceByScan = protectedAction(
 						},
 					},
 				});
+				const team = await db.team.findFirst({
+					where: { eventId, Members: { some: { id: userId } } },
+					select: { id: true },
+				});
+				if (!team) {
+					errors.push({
+						userId,
+						error: "Team not found for this user in the event",
+					});
+					return;
+				}
 				if (existing?.hasAttended) {
 					errors.push({ userId, error: "Attendance already marked" });
 					return;
@@ -223,6 +242,7 @@ export const markAttendanceByScan = protectedAction(
 					create: {
 						eventId,
 						userId,
+						teamId: team.id,
 						hasAttended: true,
 					},
 				});

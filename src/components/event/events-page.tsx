@@ -167,7 +167,8 @@ export function EventsPage({
 		setIsDetailOpen(false);
 	};
 
-	const handleManageDocuments = (event: ExtendedEvent) => {
+	const handleManageDocuments = (event: any) => {
+		console.log("Managing documents for event:", event);
 		setEditingEvent(event);
 		setActivePage("event-documents");
 		setIsDetailOpen(false);

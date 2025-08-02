@@ -6,6 +6,7 @@ import {
 	CreditCard,
 	FileText,
 	LayoutDashboard,
+	NewspaperIcon,
 	PaperclipIcon,
 	Settings,
 	Users,
@@ -41,7 +42,6 @@ export function AppSidebar({ activePage, setActivePage }: AppSidebarProps) {
 		{ title: "", icon: Calendar, id: "events" },
 		{ title: "", icon: FileText, id: "blogs" },
 		// { title: "", icon: ImageIcon, id: "gallery" },
-		{ title: "", icon: PaperclipIcon, id: "certificates" },
 		{ title: "", icon: CreditCard, id: "payments" },
 		...(hasPerm(
 			permissionKeys.MANAGE_USER_ROLES,
@@ -49,6 +49,7 @@ export function AppSidebar({ activePage, setActivePage }: AppSidebarProps) {
 		)
 			? [{ title: "", icon: Users, id: "users" }]
 			: []), // Users menu item only if user has permission
+		{ title: "", icon: NewspaperIcon, id: "certificates" },
 		{ title: "", icon: Settings, id: "settings" },
 	];
 

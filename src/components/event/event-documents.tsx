@@ -27,184 +27,140 @@ import {
 	FileText,
 	Calendar,
 	Trash2,
+	ViewIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { uploadFileToGoogleDrive } from "~/lib/googleDrive";
+import { api } from "~/lib/api";
+import { createEventDoc, deleteEventDoc, getEventDocs } from "~/actions/event";
+import type { ExtendedEvent } from "~/actions/event";
 
 type Document = {
 	id: string;
 	name: string;
-	uploadedAt: Date;
-	downloadUrl: string;
-	fileSize?: number;
+	url: string;
 	fileType?: string;
+	fileSize?: number;
+	createdAt?: Date;
 };
 
-type EventDocumentsProps = {
-	// biome-ignore lint/suspicious/noExplicitAny: <TODO>
-	editingEvent: any;
-};
-
-// Mock data for now - replace with actual API calls
-const mockDocuments: Document[] = [
-	{
-		id: "1",
-		name: "Event Guidelines.pdf",
-		uploadedAt: new Date("2024-01-15T10:30:00"),
-		downloadUrl: "/documents/event-guidelines.pdf",
-		fileSize: 245760, // 240 KB
-		fileType: "application/pdf",
-	},
-	{
-		id: "2",
-		name: "Participant List.xlsx",
-		uploadedAt: new Date("2024-01-20T14:15:00"),
-		downloadUrl: "/documents/participant-list.xlsx",
-		fileSize: 51200, // 50 KB
-		fileType:
-			"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-	},
-	{
-		id: "3",
-		name: "Event Photos.zip",
-		uploadedAt: new Date("2024-01-25T16:45:00"),
-		downloadUrl: "/documents/event-photos.zip",
-		fileSize: 15728640, // 15 MB
-		fileType: "application/zip",
-	},
-];
-
-export function EventDocuments({ editingEvent: event }: EventDocumentsProps) {
+export function EventDocuments(editingEvent: any) {
 	const [documents, setDocuments] = useState<Document[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+	const [fileName, setFileName] = useState<string | null>("");
+	const [fileDescription, setFileDescription] = useState<string | null>("");
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 	const [uploading, setUploading] = useState(false);
+	const event = editingEvent.editingEvent || null;
+
+	const getDocuments = async () => {
+		try {
+			setLoading(true);
+			console.log("Fetching documents for event:", event.id);
+			const eventDocs = await getEventDocs(event.id);
+			if (eventDocs.success) {
+				setDocuments(
+					(eventDocs.data || []).map((doc) => ({
+						...doc,
+						fileType: doc.fileType ?? undefined,
+						fileSize: doc.fileSize ?? undefined,
+						createdAt: doc.createdAt ?? undefined,
+					})),
+				);
+			} else {
+				toast.error(eventDocs.error || "Failed to load documents");
+			}
+		} catch (error) {
+			console.error("Error fetching event documents:", error);
+			toast.error("Failed to load documents");
+		} finally {
+			setLoading(false);
+		}
+	};
 
 	const inputRef = useRef<HTMLInputElement | null>(null);
 
 	const handleUploadClick = () => {
 		if (inputRef.current) {
-			// Reset the input so the same file can be selected again
 			inputRef.current.value = "";
 			inputRef.current.click();
 		}
 	};
 
-	const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-		const file = e.target.files?.[0];
-		if (!file) return;
+	const handleUpload = async () => {
+		const file = selectedFile;
+		if (!file) {
+			toast.error("Please select a file to upload");
+			return;
+		}
 
 		try {
-			const folderName = `EventDocuments/${event.id}`;
-			const arrayBuffer = await file.arrayBuffer();
-			const buffer = Buffer.from(arrayBuffer);
-			const base64 = buffer.toString("base64");
-
-			const response = await uploadFileToGoogleDrive(
-				{ buffer: base64, originalname: file.name },
-				folderName,
+			setUploading(true);
+			const response = await createEventDoc(
+				event.id,
+				file,
+				fileName || file.name,
+				fileDescription || "",
 			);
-
-			console.log("File uploaded successfully:", response);
+			if (!response.success) {
+				throw new Error(response.error || "Failed to upload file");
+			}
+			toast.success("File uploaded successfully");
+			if (response.data) {
+				setDocuments((prev) => [
+					...prev,
+					{
+						id: response.data.id,
+						name: response.data.name,
+						url: response.data.url,
+						fileType: response.data.fileType ?? undefined,
+						fileSize: response.data.fileSize ?? undefined,
+						createdAt: response.data.createdAt ?? undefined,
+					},
+				]);
+			}
+			setUploadDialogOpen(false);
 		} catch (error) {
 			console.error("Error uploading file:", error);
-			toast.error("Failed to upload document");
+			toast.error("Failed to upload file");
+		} finally {
+			setFileName("");
+			setFileDescription("");
+			setSelectedFile(null);
+			setUploading(false);
+			if (inputRef.current) {
+				inputRef.current.value = "";
+			}
 		}
 	};
 
-	// Mock data for now - replace with actual API calls
-	const mockDocuments: Document[] = [
-		{
-			id: "1",
-			name: "Event Guidelines.pdf",
-			uploadedAt: new Date("2024-01-15T10:30:00"),
-			downloadUrl: "/documents/event-guidelines.pdf",
-			fileSize: 245760, // 240 KB
-			fileType: "application/pdf",
-		},
-		{
-			id: "2",
-			name: "Participant List.xlsx",
-			uploadedAt: new Date("2024-01-20T14:15:00"),
-			downloadUrl: "/documents/participant-list.xlsx",
-			fileSize: 51200, // 50 KB
-			fileType:
-				"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-		},
-		{
-			id: "3",
-			name: "Event Photos.zip",
-			uploadedAt: new Date("2024-01-25T16:45:00"),
-			downloadUrl: "/documents/event-photos.zip",
-			fileSize: 15728640, // 15 MB
-			fileType: "application/zip",
-		},
-	];
-
-	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-	// biome-ignore lint/correctness/useHookAtTopLevel: <explanation>
+	// biome-ignore lint/correctness/useHookAtTopLevel: <its fine>
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <no need>
 	useEffect(() => {
-		// Load documents for the event
-		setLoading(true);
-		// Simulate API call
-		setTimeout(() => {
-			setDocuments(mockDocuments);
-			setLoading(false);
-		}, 500);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		getDocuments();
 	}, []);
 
 	const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0];
 		if (file) {
-			// Check file size (max 10MB for example)
 			if (file.size > 10 * 1024 * 1024) {
 				toast.error("File size must be less than 10MB");
+				setSelectedFile(null);
 				return;
 			}
 			setSelectedFile(file);
 		}
 	};
 
-	const handleUpload = async () => {
-		if (!selectedFile) {
-			toast.error("Please select a file to upload");
-			return;
-		}
-
-		setUploading(true);
-		try {
-			// Simulate upload API call
-			await new Promise((resolve) => setTimeout(resolve, 2000));
-
-			const newDocument: Document = {
-				id: Date.now().toString(),
-				name: selectedFile.name,
-				uploadedAt: new Date(),
-				downloadUrl: `/documents/${selectedFile.name}`,
-				fileSize: selectedFile.size,
-				fileType: selectedFile.type,
-			};
-
-			setDocuments((prev) => [newDocument, ...prev]);
-			setSelectedFile(null);
-			setUploadDialogOpen(false);
-			toast.success("Document uploaded successfully!");
-		} catch {
-			toast.error("Failed to upload document");
-		} finally {
-			setUploading(false);
-		}
-	};
-
 	const handleDelete = async (documentId: string) => {
 		try {
-			// Simulate delete API call
-			await new Promise((resolve) => setTimeout(resolve, 500));
-
+			const res = await deleteEventDoc(event.id, documentId);
+			if (!res.success) {
+				throw new Error(res.error || "Failed to delete document");
+			}
 			setDocuments((prev) => prev.filter((doc) => doc.id !== documentId));
-			toast.success("Document deleted successfully!");
+			toast.success("Document deleted successfully");
 		} catch {
 			toast.error("Failed to delete document");
 		}
@@ -228,7 +184,28 @@ export function EventDocuments({ editingEvent: event }: EventDocumentsProps) {
 		}).format(date);
 	};
 
+	const handleDownload = async (url: string, name: string) => {
+		try {
+			const response = await fetch(url);
+			if (!response.ok) {
+				throw new Error("Failed to download file");
+			}
+			const blob = await response.blob();
+			const link = document.createElement("a");
+			link.href = window.URL.createObjectURL(blob);
+			const customName = name;
+			link.download = customName || url.split("/").pop() || "download";
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+		} catch (error) {
+			console.error("Error downloading file:", error);
+			toast.error("Failed to download file");
+		}
+	};
+
 	const getFileIcon = (fileType: string) => {
+		console.log("File type:", fileType);
 		if (fileType?.includes("pdf"))
 			return <FileText className="w-4 h-4 text-red-500" />;
 		if (fileType?.includes("image"))
@@ -249,7 +226,7 @@ export function EventDocuments({ editingEvent: event }: EventDocumentsProps) {
 						<div>
 							<CardTitle className="flex items-center gap-2">
 								<FileText className="w-5 h-5" />
-								Document Management
+								Document Management - {event?.name || "Event"}
 							</CardTitle>
 							<p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
 								Manage documents for {event?.name}
@@ -266,23 +243,35 @@ export function EventDocuments({ editingEvent: event }: EventDocumentsProps) {
 					</div>
 				</CardHeader>
 				<CardContent>
-					<input
-						type="file"
-						ref={inputRef}
-						onChange={handleFileChange}
-						style={{ display: "none" }}
-					/>
-					<Button
-						onClick={() => handleUploadClick()}
-						className="w-full sm:w-auto"
-					>
-						<Plus className="w-4 h-4 mr-2" />
-						Add Document
-					</Button>
+					<div>
+						<input
+							type="file"
+							ref={inputRef}
+							onChange={(e) => handleFileSelect(e)}
+							style={{ display: "none" }}
+						/>
+						<Button
+							onClick={() => setUploadDialogOpen(true)}
+							className="w-full sm:w-auto"
+						>
+							<Plus className="w-4 h-4 mr-2" />
+							Add Document
+						</Button>
+					</div>
+					<div>
+						<p className="mt-4 text-sm text-gray-500">
+							Best Supported Formats: PDF, JPG, PNG, DOCX
+						</p>
+					</div>
+					<div>
+						<p className="mt-2 text-sm text-gray-400">
+							(For other formats, it's best to try downloading after upload to
+							check if it's working)
+						</p>
+					</div>
 				</CardContent>
 			</Card>
 
-			{/* Documents Table */}
 			<Card>
 				<CardHeader>
 					<CardTitle>Uploaded Documents</CardTitle>
@@ -322,7 +311,7 @@ export function EventDocuments({ editingEvent: event }: EventDocumentsProps) {
 											<TableCell>
 												<div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
 													<Calendar className="w-4 h-4" />
-													{formatDate(doc.uploadedAt)}
+													{formatDate(doc.createdAt || new Date())}
 												</div>
 											</TableCell>
 											<TableCell>
@@ -334,11 +323,22 @@ export function EventDocuments({ editingEvent: event }: EventDocumentsProps) {
 											</TableCell>
 											<TableCell>
 												<div className="flex items-center gap-2">
+													{/* <Button
+														variant="outline"
+														size="sm"
+														onClick={() => window.open(doc.url, "_blank")}
+													>
+														<ViewIcon className="w-4 h-4 mr-1" />
+														View
+													</Button> */}
 													<Button
 														variant="outline"
 														size="sm"
-														onClick={() =>
-															window.open(doc.downloadUrl, "_blank")
+														onClick={async () =>
+															await handleDownload(
+																doc.url,
+																doc.name.split(".")[0],
+															)
 														}
 													>
 														<Download className="w-4 h-4 mr-1" />
@@ -363,25 +363,63 @@ export function EventDocuments({ editingEvent: event }: EventDocumentsProps) {
 				</CardContent>
 			</Card>
 
-			{/* Upload Dialog */}
-			{/* <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
-				<DialogContent>
+			<Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+				<DialogContent
+					style={{
+						minWidth: "320px",
+						minHeight: "200px",
+						maxWidth: "80vw",
+						maxHeight: "80vh",
+						width: "auto",
+						height: "auto",
+					}}
+				>
 					<DialogHeader>
 						<DialogTitle>Upload Document</DialogTitle>
 					</DialogHeader>
 					<div className="space-y-4">
-						<div>
-							<Label htmlFor="file-upload">Select File</Label>
-							<Input
-								id="file-upload"
-								type="file"
-								onChange={handleFileSelect}
-								accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.jpg,.jpeg,.png,.gif"
-								className="mt-1"
-							/>
-							<p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-								Supported formats: PDF, DOC, XLS, PPT, ZIP, Images (Max 10MB)
-							</p>
+						<div className="space-y-6">
+							<div>
+								<Label htmlFor="title" className="mb-1 block">
+									Document Name (optional)
+								</Label>
+								<Input
+									id="title"
+									type="text"
+									value={fileName || ""}
+									onChange={(e) => setFileName(e.target.value)}
+									placeholder="Enter document name"
+								/>
+							</div>
+							<div>
+								<Label htmlFor="description" className="mb-1 block">
+									Description (optional)
+								</Label>
+								<Input
+									id="description"
+									type="text"
+									value={fileDescription || ""}
+									onChange={(e) => setFileDescription(e.target.value)}
+									placeholder="Enter a brief description of the document"
+								/>
+							</div>
+							<div>
+								<Label htmlFor="file-upload" className="mb-1 block">
+									Select File
+								</Label>
+								<Button
+									variant="outline"
+									className="w-full"
+									onClick={handleUploadClick}
+									disabled={uploading}
+								>
+									<Upload className="w-4 h-4 mr-2" />
+									{selectedFile ? selectedFile.name : "Choose File"}
+								</Button>
+								<p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+									Supported formats: PDF, DOC, XLS, PPT, ZIP, Images (Max 10MB)
+								</p>
+							</div>
 						</div>
 
 						{selectedFile && (
@@ -414,7 +452,7 @@ export function EventDocuments({ editingEvent: event }: EventDocumentsProps) {
 							>
 								{uploading ? (
 									<>
-										<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+										<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
 										Uploading...
 									</>
 								) : (
@@ -427,7 +465,7 @@ export function EventDocuments({ editingEvent: event }: EventDocumentsProps) {
 						</div>
 					</div>
 				</DialogContent>
-			</Dialog> */}
+			</Dialog>
 		</div>
 	);
 }
