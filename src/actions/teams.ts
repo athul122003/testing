@@ -57,6 +57,53 @@ export async function getTeamsForEvent(eventId: number) {
 	}));
 }
 
+export async function getAttendedTeamsForEvent(eventId: number) {
+	const teams = await db.team.findMany({
+		where: {
+			eventId,
+			hasAttended: true,
+		},
+		include: {
+			Leader: {
+				select: {
+					id: true,
+					name: true,
+				},
+			},
+			Members: {
+				select: {
+					id: true,
+					name: true,
+				},
+			},
+			Prize: {
+				select: {
+					prizeType: true,
+					flcPoints: true,
+				},
+			},
+		},
+	});
+
+	console.log("Attended Teams:", teams.length);
+
+	return teams.map((team) => ({
+		id: team.id,
+		name: team.name,
+		isConfirmed: team.isConfirmed,
+		leaderName: team.Leader?.name,
+		leaderId: team.Leader?.id,
+		members: team.Members.map((member) => ({
+			id: member.id,
+			name: member.name,
+		})),
+		Prize: {
+			prizeType: team.Prize?.prizeType,
+			flcPoints: team.Prize?.flcPoints,
+		},
+	}));
+}
+
 export async function deleteTeam(teamId: string) {
 	await db.team.delete({
 		where: { id: teamId },
@@ -129,6 +176,19 @@ export async function addMemberToTeam(teamId: string, userId: number) {
 		throw new Error("User is already a member of this team");
 	}
 
+	const isInOtherTeam = await db.team.findFirst({
+		where: {
+			Members: { some: { id: userId } },
+			Event: { id: team.Event.id },
+		},
+		select: { id: true },
+	});
+	if (isInOtherTeam) {
+		throw new Error(
+			`User is already in another team for this event (${team.Event.name}).`,
+		);
+	}
+
 	// 5. Add member
 	await db.team.update({
 		where: { id: teamId },
@@ -159,6 +219,12 @@ export const markAttendance = protectedAction(
 		if (!team) {
 			throw new Error("Team not found for this user in the event");
 		}
+		await db.team.update({
+			where: { id: team.id, eventId: eventId },
+			data: {
+				hasAttended: true,
+			},
+		});
 		const attendance = await db.attendance.upsert({
 			where: {
 				userId_eventId: {
@@ -377,7 +443,21 @@ export async function createTeam(input: CreateTeamInput) {
 				error: `This is a solo event: you cannot add members. Leader ID ${leaderId} will be the only participant.`,
 			};
 		}
-
+		for (const memberId of memberIds) {
+			const isInOtherTeam = await db.team.findFirst({
+				where: {
+					eventId,
+					Members: { some: { id: memberId } },
+				},
+				select: { id: true },
+			});
+			if (isInOtherTeam) {
+				return {
+					success: false,
+					error: `Member with ID ${memberId} is already in another team for this event`,
+				};
+			}
+		}
 		// Leader must be valid (double-check)
 		const leaderExists = await db.user.findUnique({
 			where: { id: leaderId },

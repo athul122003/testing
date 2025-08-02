@@ -319,7 +319,9 @@ export async function createTeam(
 		const existingTeam = await db.team.findFirst({
 			where: {
 				eventId,
-				leaderId: userId,
+				Members: {
+					some: { id: userId },
+				},
 			},
 		});
 
@@ -533,6 +535,20 @@ export async function joinTeam(
 			return {
 				success: false,
 				error: "User is already a member of this team",
+			};
+		}
+
+		const isInOtherTeam = await db.team.findFirst({
+			where: {
+				eventId: team.eventId,
+				OR: [{ leaderId: userId }, { Members: { some: { id: userId } } }],
+			},
+		});
+
+		if (isInOtherTeam) {
+			return {
+				success: false,
+				error: "User is already part of another team for this event",
 			};
 		}
 

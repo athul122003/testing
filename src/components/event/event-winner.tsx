@@ -16,7 +16,7 @@ import {
 import { Badge } from "~/components/ui/badge";
 import { Search, Plus, X } from "lucide-react";
 import { Input } from "~/components/ui/input";
-import { getTeamsForEvent } from "~/actions/teams";
+import { getAttendedTeamsForEvent } from "~/actions/teams";
 import { toast } from "sonner";
 import type { ExtendedEvent } from "~/actions/event";
 import { ComponentLoading } from "~/components/ui/component-loading";
@@ -49,7 +49,7 @@ export function EventParticipants({
 	const [searchQuery, setSearchQuery] = useState("");
 	const [teams, setTeams] = useState<Team[]>([]);
 	const [page, setPage] = useState(1);
-	const pageSize = 10;
+	const pageSize = 7;
 	const [newPrizesTeam, setNewPrizesTeam] = useState<Team[]>([]);
 
 	// helper to replace or remove a team’s assignment
@@ -118,7 +118,7 @@ export function EventParticipants({
 		}
 		setLoading(true);
 		try {
-			const data = await getTeamsForEvent(editingEvent.id);
+			const data = await getAttendedTeamsForEvent(editingEvent.id);
 			const teamsWithPrize: Team[] = data.map((t: any) => ({
 				...t,
 				Prize: t.Prize ?? { prizeType: undefined, flcPoints: 0 },
