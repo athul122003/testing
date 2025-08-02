@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { permissionKeys as perm } from "~/actions/middleware/routePermissions";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ExtendedEvent, toggleEventStatus } from "~/actions/event";
 import { toast } from "sonner";
 import { deleteEventAction, publishEventAction } from "~/actions/event";
@@ -50,28 +50,38 @@ export function EventsPage({
 	const [selectedEvent, setSelectedEvent] = useState<ExtendedEvent | null>(
 		null,
 	);
-	const [selectedYear, setSelectedYear] = useState("ALL");
+	const [allYears, setAllYears] = useState<string[]>([]);
+	const [selectedYear, setSelectedYear] = useState("2025");
 	const [statusModalOpen, setStatusModalOpen] = useState(false);
 	const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-	const { hasPerm, eventsQuery, refetchEvents, isOrganiser } =
+	const { hasPerm, eventsQuery, refetchEvents, isOrganiser, setEventYear } =
 		useDashboardData();
 	const canManageEvents = hasPerm(perm.MANAGE_EVENTS);
 	const { data: eventsData, isLoading } = eventsQuery;
 
 	const events = eventsData?.data || [];
 
-	const years = Array.from(
-		new Set(events.map((event) => new Date(event.fromDate).getFullYear())),
-	).sort((a, b) => b - a);
+	useEffect(() => {
+		if (eventsData?.success === true && Array.isArray(eventsData.years)) {
+			setAllYears(
+				new Set(eventsData.years).size > 0
+					? ["ALL", ...eventsData.years.map((year: number) => year.toString())]
+					: ["All"],
+			);
+		} else {
+			setAllYears(["2025"]);
+		}
+	}, [eventsData]);
 
-	const filteredEvents =
-		selectedYear === "ALL"
-			? events
-			: events.filter(
-					(event) =>
-						new Date(event.fromDate).getFullYear() === Number(selectedYear),
-				);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <no need of deps>
+	useEffect(() => {
+		if (selectedYear === "ALL") {
+			setEventYear(null);
+		} else {
+			setEventYear(Number(selectedYear));
+		}
+	}, [selectedYear]);
 
 	const handleCreateEvent = () => {
 		setEditingEvent(null);
@@ -162,6 +172,13 @@ export function EventsPage({
 		setIsDetailOpen(false);
 	};
 
+	const handleManageDocuments = (event: any) => {
+		console.log("Managing documents for event:", event);
+		setEditingEvent(event);
+		setActivePage("event-documents");
+		setIsDetailOpen(false);
+	};
+
 	const getStateColor = (state: string) => {
 		switch (state) {
 			case "PUBLISHED":
@@ -215,8 +232,7 @@ export function EventsPage({
 								<SelectValue placeholder="Year" />
 							</SelectTrigger>
 							<SelectContent>
-								<SelectItem value="ALL">All</SelectItem>
-								{years.map((year) => (
+								{allYears.map((year) => (
 									<SelectItem key={year} value={year.toString()}>
 										{year}
 									</SelectItem>
@@ -235,7 +251,7 @@ export function EventsPage({
 			</div>
 
 			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-				{filteredEvents.map((event) => (
+				{events.map((event) => (
 					<Card
 						key={event.id}
 						className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800 overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer group"
@@ -478,79 +494,67 @@ export function EventsPage({
 								</div>
 							</div>
 
-							<div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-gray-200 dark:border-slate-800">
-								{selectedEvent.state !== "COMPLETED" ? (
+							<div className="flex flex-col gap-3 pt-4 border-t border-gray-200 dark:border-slate-800">
+								<div className="flex flex-row justify-end gap-3">
 									<Button
-										type="button"
-										onClick={() => setStatusModalOpen(true)}
+										onClick={() => handleEditEvent(selectedEvent)}
 										className="bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-200 border border-gray-300 dark:border-slate-800"
 									>
-										{selectedEvent.state === "DRAFT"
-											? "Publish Event"
-											: selectedEvent.state === "PUBLISHED"
-												? "Mark as Live"
-												: selectedEvent.state === "LIVE"
-													? "Mark as Completed"
-													: null}
+										Edit Event
 									</Button>
-								) : (
-									<div>
-										<p className="text-green-700 dark:text-green-400 font-semibold bg-green-100 dark:bg-green-900/30 px-4 py-2 rounded-full">
-											Event is Completed
-										</p>
-									</div>
-								)}
-								{(selectedEvent.state === "LIVE" ||
-									selectedEvent.state === "COMPLETED") && (
+									<Button
+										onClick={() => handleDeleteEvent(selectedEvent.id)}
+										className="bg-red-100 dark:bg-red-900 hover:bg-red-200 dark:hover:bg-red-800 text-red-700 dark:text-red-200 border border-red-300 dark:border-red-800"
+									>
+										Delete Event
+									</Button>
+								</div>
+								<div className="flex flex-row justify-end gap-3">
 									<Button
 										type="button"
-										onClick={() => handleAssignWinner(selectedEvent)}
+										onClick={() => handleManageDocuments(selectedEvent)}
 										className="bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-200 border border-gray-300 dark:border-slate-800"
 									>
-										{selectedEvent.prizesAlloted
-											? "Edit Winners"
-											: "Assign Winners"}
+										Manage Documents
 									</Button>
-								)}
-								<Button
-									type="button"
-									onClick={() => handleViewParticipants(selectedEvent)}
-									className="bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-200 border border-gray-300 dark:border-slate-800"
-								>
-									View Participants
-								</Button>
-
-								{/* {selectedEvent.state === "DRAFT" && (
+									{selectedEvent.state !== "COMPLETED" ? (
+										<Button
+											type="button"
+											onClick={() => setStatusModalOpen(true)}
+											className="bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-200 border border-gray-300 dark:border-slate-800"
+										>
+											{selectedEvent.state === "DRAFT"
+												? "Publish Event"
+												: selectedEvent.state === "PUBLISHED"
+													? "Mark as Live"
+													: selectedEvent.state === "LIVE"
+														? "Mark as Completed"
+														: null}
+										</Button>
+									) : (
+										<div>
+											<p className="text-green-700 dark:text-green-400 font-semibold bg-green-100 dark:bg-green-900/30 px-4 py-2 rounded-full">
+												Event is Completed
+											</p>
+										</div>
+									)}
 									<Button
-										onClick={() => handlePublishEvent(selectedEvent.id)}
-										className="bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800 text-green-700 dark:text-green-200 border border-green-300 dark:border-green-800"
+										type="button"
+										onClick={() => handleViewParticipants(selectedEvent)}
+										className="bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-200 border border-gray-300 dark:border-slate-800"
 									>
-										Publish Event
+										View Participants
 									</Button>
-								)} */}
-
-								{(selectedEvent.state === "LIVE" ||
-									selectedEvent.state === "PUBLISHED") && (
-									<Button
-										onClick={() => handleAttendance(selectedEvent)}
-										className="bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800 text-green-700 dark:text-green-200 border border-green-300 dark:border-green-800"
-									>
-										Mark Attendance
-									</Button>
-								)}
-
-								<Button
-									onClick={() => handleEditEvent(selectedEvent)}
-									className="bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-200 border border-gray-300 dark:border-slate-800"
-								>
-									Edit Event
-								</Button>
-								<Button
-									onClick={() => handleDeleteEvent(selectedEvent.id)}
-									className="bg-red-100 dark:bg-red-900 hover:bg-red-200 dark:hover:bg-red-800 text-red-700 dark:text-red-200 border border-red-300 dark:border-red-800"
-								>
-									Delete Event
-								</Button>
+									{(selectedEvent.state === "LIVE" ||
+										selectedEvent.state === "PUBLISHED") && (
+										<Button
+											onClick={() => handleAttendance(selectedEvent)}
+											className="bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800 text-green-700 dark:text-green-200 border border-green-300 dark:border-green-800"
+										>
+											Mark Attendance
+										</Button>
+									)}
+								</div>
 							</div>
 						</div>
 					)}

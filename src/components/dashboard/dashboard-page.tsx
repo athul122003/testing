@@ -10,6 +10,7 @@ import { EventsPage } from "~/components/event/events-page";
 import { EventParticipants } from "~/components/event/event-participants";
 import { EventParticipants as EventWinner } from "~/components/event/event-winner";
 import { EventAttendance } from "~/components/event/event-attendance";
+import { EventDocuments } from "~/components/event/event-documents";
 import { GalleryPage } from "~/components/gallery/gallery-page";
 import { AppSidebar } from "~/components/othercomps/app-sidebar";
 import { TopBar } from "~/components/othercomps/top-bar";
@@ -21,6 +22,7 @@ import { UsersPage } from "~/components/user1/users-page";
 import { useDashboardData } from "~/providers/dashboardDataContext";
 import { permissionKeys as perm } from "~/actions/middleware/routePermissions";
 import { useIsMobile } from "~/hooks/use-mobile";
+import CertificatePage from "../certficates/certificate-page";
 
 export function Dashboard() {
 	const { hasPerm } = useDashboardData();
@@ -36,6 +38,7 @@ export function Dashboard() {
 				"blogs",
 				"gallery",
 				"users",
+				"certificates",
 				"settings",
 			];
 			if (storedPage && validPages.includes(storedPage)) {
@@ -44,6 +47,10 @@ export function Dashboard() {
 		}
 	}, []);
 	const [editingEvent, setEditingEvent] = useState(null);
+	useEffect(() => {
+		console.log("Editing event set to:", editingEvent);
+	}, [editingEvent]);
+
 	const [editingBlog, setEditingBlog] = useState<Blog | null>(null);
 	const isMobile = useIsMobile();
 
@@ -76,6 +83,8 @@ export function Dashboard() {
 				return <EventWinner editingEvent={editingEvent} />;
 			case "event-attendance":
 				return <EventAttendance editingEvent={editingEvent} />;
+			case "event-documents":
+				return <EventDocuments editingEvent={editingEvent} />;
 			case "blogs":
 				return (
 					<BlogsPage
@@ -95,6 +104,8 @@ export function Dashboard() {
 				return <GalleryPage />;
 			case "payments":
 				return <PaymentsPage />;
+			case "certificates":
+				return <CertificatePage />;
 			case "users":
 				if (hasPerm(perm.MANAGE_USER_ROLES, perm.MANAGE_ROLE_PERMISSIONS)) {
 					return <UsersPage />;

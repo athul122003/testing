@@ -8,6 +8,7 @@ import { DashboardDataProvider } from "~/providers/dashboardDataContext";
 import { ReactQueryProvider } from "~/providers/ReactQueryProvider";
 import { ThemeProvider } from "~/providers/theme-provider";
 import { NextAuthSessionProvider } from "./providers";
+import { CertificateProvider } from "~/providers/certificateContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,28 +30,30 @@ export default async function RootLayout({
 				<NextAuthSessionProvider session={session}>
 					<ReactQueryProvider>
 						<DashboardDataProvider>
-							<ThemeProvider
-								attribute="class"
-								defaultTheme="light"
-								enableSystem
-								disableTransitionOnChange
-							>
-								<Toaster
-									position="top-right"
-									richColors
-									closeButton
-									toastOptions={{
-										className:
-											"mt-11 sm:mt-11 md:mt-10 bg-white text-gray-800 shadow-lg dark:bg-gray-800 dark:text-gray-200",
-										style: {
-											borderRadius: "8px",
-											padding: "16px",
-											fontSize: "14px",
-										},
-									}}
-								/>
-								{children}
-							</ThemeProvider>
+							<CertificateProvider>
+								<ThemeProvider
+									attribute="class"
+									defaultTheme="light"
+									enableSystem
+									disableTransitionOnChange
+								>
+									<Toaster
+										position="top-right"
+										richColors
+										closeButton
+										toastOptions={{
+											className:
+												"mt-11 sm:mt-11 md:mt-10 bg-white text-gray-800 shadow-lg dark:bg-gray-800 dark:text-gray-200",
+											style: {
+												borderRadius: "8px",
+												padding: "16px",
+												fontSize: "14px",
+											},
+										}}
+									/>
+									{children}
+								</ThemeProvider>
+							</CertificateProvider>
 						</DashboardDataProvider>
 					</ReactQueryProvider>
 				</NextAuthSessionProvider>

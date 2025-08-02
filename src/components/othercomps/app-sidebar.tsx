@@ -6,6 +6,8 @@ import {
 	CreditCard,
 	FileText,
 	LayoutDashboard,
+	NewspaperIcon,
+	PaperclipIcon,
 	Settings,
 	Users,
 } from "lucide-react";
@@ -47,6 +49,7 @@ export function AppSidebar({ activePage, setActivePage }: AppSidebarProps) {
 		)
 			? [{ title: "", icon: Users, id: "users" }]
 			: []), // Users menu item only if user has permission
+		{ title: "", icon: NewspaperIcon, id: "certificates" },
 		{ title: "", icon: Settings, id: "settings" },
 	];
 

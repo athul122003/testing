@@ -164,12 +164,13 @@ model Event {
   isLegacy      Boolean    @default(false)
   prizesAlloted Boolean    @default(false)
 
-  Organiser   Organiser[]
-  Team        Team[]
-  Attendance  Attendance[]
-  Prize       Prize[]
-  Certificate Certificate[]
-  Feedback    Feedback[]
+  Organiser     Organiser[]
+  Team          Team[]
+  Attendance    Attendance[]
+  Prize         Prize[]
+  Certificate   Certificate[]
+  Feedback      Feedback[]
+  EventDocument EventDocument[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -180,10 +181,13 @@ model Attendance {
   hasAttended Boolean @default(false)
 
   eventId Int
-  Event   Event @relation(fields: [eventId], references: [id])
+  Event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   userId Int
   User   User @relation(fields: [userId], references: [id])
+
+  teamId String
+  Team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -220,9 +224,10 @@ model Team {
   leaderId Int
   Leader   User @relation("leaderOfTeam", fields: [leaderId], references: [id])
 
-  Members User[]
-  prizeId String?
-  Prize   Prize?  @relation(fields: [prizeId], references: [id])
+  Members    User[]
+  Attendance Attendance[]
+  prizeId    String?
+  Prize      Prize?       @relation(fields: [prizeId], references: [id])
 
   paymentId String?  @unique
   Payment   Payment? @relation(fields: [paymentId], references: [id])
@@ -284,11 +289,15 @@ model Certificate {
   issuedOn        DateTime
   certificateType CertificateType
 
+  link    String? // URL to certificate file
   eventId Int
-  Event   Event @relation(fields: [eventId], references: [id])
+  Event   Event   @relation(fields: [eventId], references: [id])
 
   userId Int
   User   User @relation(fields: [userId], references: [id])
+
+  statusOfMailing Boolean @default(false) //new: to check if the certificate is mailed or not
+  errorInMailing  Boolean @default(false) //new: to check if there was an error while mailing the certificate
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -314,6 +323,21 @@ model Blog {
 
   reviewState reviewState @default(PENDING) //new to notify the user whether the blog is approved rejected or pending review
   feedback    String? //new:feedback from the reviewer(admin) to the user(blog author)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EventDocument {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  fileUrl     String
+  fileType    String?
+  fileSize    Int?
+
+  eventId Int
+  Event   Event @relation(fields: [eventId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
