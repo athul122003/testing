@@ -23,6 +23,7 @@ import { useDashboardData } from "~/providers/dashboardDataContext";
 import { permissionKeys as perm } from "~/actions/middleware/routePermissions";
 import { useIsMobile } from "~/hooks/use-mobile";
 import CertificatePage from "../certficates/certificate-page";
+import type { ExtendedEvent } from "~/actions/event";
 
 export function Dashboard() {
 	const { hasPerm } = useDashboardData();
@@ -46,7 +47,7 @@ export function Dashboard() {
 			}
 		}
 	}, []);
-	const [editingEvent, setEditingEvent] = useState(null);
+	const [editingEvent, setEditingEvent] = useState<ExtendedEvent>();
 	useEffect(() => {
 		console.log("Editing event set to:", editingEvent);
 	}, [editingEvent]);

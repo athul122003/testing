@@ -14,14 +14,13 @@ import {
 	TableRow,
 } from "~/components/ui/table";
 import { Badge } from "~/components/ui/badge";
-import { Search, Plus, X, Component } from "lucide-react";
+import { Search, Plus, X } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { getTeamsForEvent } from "~/actions/teams";
 import { toast } from "sonner";
 import type { ExtendedEvent } from "~/actions/event";
 import { ComponentLoading } from "~/components/ui/component-loading";
 import { useDashboardData } from "~/providers/dashboardDataContext";
-import { set } from "lodash";
 type Member = {
 	id: number;
 	name: string;
@@ -43,7 +42,7 @@ type Team = {
 export function EventParticipants({
 	editingEvent,
 }: {
-	editingEvent: ExtendedEvent;
+	editingEvent: ExtendedEvent | undefined;
 }) {
 	const { refetchEvents } = useDashboardData();
 
@@ -51,7 +50,6 @@ export function EventParticipants({
 	const [teams, setTeams] = useState<Team[]>([]);
 	const [page, setPage] = useState(1);
 	const pageSize = 10;
-	// at the top
 	const [newPrizesTeam, setNewPrizesTeam] = useState<Team[]>([]);
 
 	// helper to replace or remove a team’s assignment
@@ -289,6 +287,10 @@ export function EventParticipants({
 			);
 			return;
 		}
+		if (!editingEvent) {
+			toast.error("Reload the page and select an event.");
+			return;
+		}
 
 		// 5️⃣ Alright—fire the mutation
 		savePrizeMutation.mutate({
@@ -322,7 +324,7 @@ export function EventParticipants({
 				<div className="w-1/2 bg-slate-200 dark:bg-slate-950 rounded-sm p-4">
 					{/* Left Column */}
 					<div className="grid gap-6 md:grid-cols-2">
-						<Card className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
+						<Card className="shadow-lg mb-4 bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
 							<CardHeader className="pb-3">
 								<div className="flex justify-between items-center">
 									<CardTitle className="text-sm text-gray-700 dark:text-slate-300">
@@ -497,7 +499,7 @@ export function EventParticipants({
 				<div className="w-1/2 bg-slate-200 dark:bg-slate-950 rounded-sm p-4">
 					{" "}
 					{/* Right Column */}
-					<div className="grid gap-2 md:grid-cols-3">
+					<div className="grid gap-2 md:grid-cols-3 mb-4">
 						{Object.values(PrizeType)
 							.filter((type) => type !== PrizeType.PARTICIPATION)
 							.map((type) => {
@@ -505,7 +507,7 @@ export function EventParticipants({
 								return (
 									<Card
 										key={type}
-										className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800 p-0 m-0"
+										className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800 pt-2 pl-2 m-0"
 									>
 										<CardHeader className="pb-1 p-2">
 											<div className="flex justify-between items-center">
@@ -584,36 +586,44 @@ const PrizeCard = ({ prizeType, teams, remove }: PrizeCardProps) => {
 								Leader
 							</TableHead>
 							<TableHead className="border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-								Remove
+								{"Remove"}
 							</TableHead>
 						</TableRow>
 					</TableHeader>
 					<TableBody>
-						{teams.map((team: Team) => (
-							<TableRow
-								key={team.id}
-								className="hover:bg-gray-50 dark:hover:bg-slate-900"
-							>
-								<TableCell className="font-medium text-gray-900 dark:text-slate-200">
-									{team.name}
-								</TableCell>
-								<TableCell>
-									<span className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300">
-										{team.leaderName || "Unknown Leader"}
-									</span>
-								</TableCell>
-								<TableCell>
-									<Button
-										variant="ghost"
-										size="sm"
-										onClick={() => remove(team)}
-										className="hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300"
-									>
-										<X className="h-4 w-4 text-red-700 dark:text-red-300 bg-red-opacity-10" />
-									</Button>
+						{teams.length === 0 ? (
+							<TableRow>
+								<TableCell colSpan={3} className="text-center text-gray-500">
+									No teams assigned
 								</TableCell>
 							</TableRow>
-						))}
+						) : (
+							teams.map((team: Team) => (
+								<TableRow
+									key={team.id}
+									className="hover:bg-gray-50 dark:hover:bg-slate-900"
+								>
+									<TableCell className="font-medium text-gray-900 dark:text-slate-200">
+										{team.name}
+									</TableCell>
+									<TableCell>
+										<span className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300">
+											{team.leaderName || "Unknown Leader"}
+										</span>
+									</TableCell>
+									<TableCell>
+										<Button
+											variant="ghost"
+											size="sm"
+											onClick={() => remove(team)}
+											className="hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300"
+										>
+											<X className="h-4 w-4 text-red-700 dark:text-red-300 bg-red-opacity-10" />
+										</Button>
+									</TableCell>
+								</TableRow>
+							))
+						)}
 					</TableBody>
 				</Table>
 			</CardContent>

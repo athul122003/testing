@@ -517,6 +517,15 @@ export function EventsPage({
 									>
 										Manage Documents
 									</Button>
+									{selectedEvent.state === "LIVE" && (
+										<Button
+											type="button"
+											onClick={() => handleAssignWinner(selectedEvent)}
+											className="bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-200 border border-blue-300 dark:border-blue-800"
+										>
+											Assign Winners
+										</Button>
+									)}
 									{selectedEvent.state !== "COMPLETED" ? (
 										<Button
 											type="button"

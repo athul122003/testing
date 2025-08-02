@@ -29,7 +29,12 @@ import {
 	Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { createEventDoc, deleteEventDoc, getEventDocs } from "~/actions/event";
+import {
+	createEventDoc,
+	deleteEventDoc,
+	ExtendedEvent,
+	getEventDocs,
+} from "~/actions/event";
 
 type Document = {
 	id: string;
@@ -40,7 +45,11 @@ type Document = {
 	createdAt?: Date;
 };
 
-export function EventDocuments(editingEvent: any) {
+export function EventDocuments({
+	editingEvent,
+}: {
+	editingEvent: ExtendedEvent | undefined;
+}) {
 	const [documents, setDocuments] = useState<Document[]>([]);
 	const [loading, setLoading] = useState(false);
 	const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -48,13 +57,16 @@ export function EventDocuments(editingEvent: any) {
 	const [fileDescription, setFileDescription] = useState<string | null>("");
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 	const [uploading, setUploading] = useState(false);
-	const event = editingEvent.editingEvent || null;
 
 	const getDocuments = async () => {
 		try {
+			if (!editingEvent) {
+				toast.error("Please select an event to view documents.");
+				return;
+			}
 			setLoading(true);
-			console.log("Fetching documents for event:", event.id);
-			const eventDocs = await getEventDocs(event.id);
+			console.log("Fetching documents for event:", editingEvent.id);
+			const eventDocs = await getEventDocs(editingEvent.id);
 			if (eventDocs.success) {
 				setDocuments(
 					(eventDocs.data || []).map((doc) => ({
@@ -90,11 +102,15 @@ export function EventDocuments(editingEvent: any) {
 			toast.error("Please select a file to upload");
 			return;
 		}
+		if (!editingEvent) {
+			toast.error("Please select an event to upload documents.");
+			return;
+		}
 
 		try {
 			setUploading(true);
 			const response = await createEventDoc(
-				event.id,
+				editingEvent.id,
 				file,
 				fileName || file.name,
 				fileDescription || "",
@@ -150,8 +166,12 @@ export function EventDocuments(editingEvent: any) {
 	};
 
 	const handleDelete = async (documentId: string) => {
+		if (!editingEvent) {
+			toast.error("Please select an event to delete documents.");
+			return;
+		}
 		try {
-			const res = await deleteEventDoc(event.id, documentId);
+			const res = await deleteEventDoc(editingEvent.id, documentId);
 			if (!res.success) {
 				throw new Error(res.error || "Failed to delete document");
 			}
@@ -222,10 +242,10 @@ export function EventDocuments(editingEvent: any) {
 						<div>
 							<CardTitle className="flex items-center gap-2">
 								<FileText className="w-5 h-5" />
-								Document Management - {event?.name || "Event"}
+								Document Management - {editingEvent?.name || "Event"}
 							</CardTitle>
 							<p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-								Manage documents for {event?.name}
+								Manage documents for {editingEvent?.name}
 							</p>
 						</div>
 						<div className="text-right">
