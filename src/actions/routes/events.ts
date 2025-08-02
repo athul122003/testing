@@ -1001,7 +1001,16 @@ export const getOrganisedEvents = protectedAction(
 				orderBy: { fromDate: "asc" },
 				include: {
 					Team: {
-						select: { id: true, isConfirmed: true },
+						select: {
+							id: true,
+							isConfirmed: true,
+							Prize: {
+								select: {
+									prizeType: true,
+									flcPoints: true,
+								},
+							},
+						},
 					},
 					Prize: true, // include Prize data
 				},
@@ -1027,4 +1036,138 @@ export const getOrganisedEvents = protectedAction(
 			};
 		}
 	},
+);
+
+import { PrizeType } from "@prisma/client";
+type Team = {
+	id: string;
+	name: string;
+	leaderId?: number;
+	isConfirmed: boolean;
+	leaderName?: string;
+	members: Member[];
+	Prize: {
+		prizeType: PrizeType;
+		flcPoints: number;
+	};
+};
+type Member = {
+	id: number;
+	name: string;
+};
+export const savePrize = protectedAction(
+	async (input: {
+		eventId: number;
+		newPrizesTeam: { teamId: string; prizeType: PrizeType }[];
+		teams: Team[];
+	}) => {
+		const { eventId, newPrizesTeam, teams } = input;
+		console.log(newPrizesTeam, teams);
+		//
+		// ── 1) Ensure a Prize row for every PrizeType ──────────────────────────
+		//
+		const existingPrizes = await db.prize.findMany({ where: { eventId } });
+		const prizeMetaMap = {} as Record<
+			PrizeType,
+			{ id: string; flcPoints: number }
+		>;
+
+		for (const type of Object.values(PrizeType)) {
+			let p = existingPrizes.find((x) => x.prizeType === type);
+			if (!p) {
+				p = await db.prize.create({
+					data: { eventId, prizeType: type, flcPoints: 0 },
+				});
+			}
+			prizeMetaMap[type] = { id: p.id, flcPoints: p.flcPoints };
+		}
+
+		//
+		// ── 2) Build old‑state lookup ─────────────────────────────────────────
+		//
+		type OldState = {
+			prizeType?: PrizeType;
+			flcPoints: number;
+			memberIds: number[];
+		};
+		const oldState = new Map<string, OldState>();
+		teams.forEach((t) =>
+			oldState.set(t.id, {
+				prizeType: t.Prize?.prizeType,
+				flcPoints: t.Prize?.flcPoints ?? 0,
+				memberIds: t.members.map((m) => m.id),
+			}),
+		);
+
+		//
+		// ── 3) Compute final assignments (default PARTICIPATION) ──────────────
+		//
+		const finalAssignments = teams.map((t) => {
+			const old = oldState.get(t.id)!;
+			const update = newPrizesTeam.find((u) => u.teamId === t.id);
+			const newType =
+				update && update.prizeType !== undefined
+					? update.prizeType
+					: (old.prizeType ?? PrizeType.PARTICIPATION);
+			return {
+				teamId: t.id,
+				oldType: old.prizeType,
+				newType,
+				memberIds: old.memberIds,
+			};
+		});
+		console.log(finalAssignments);
+
+		//
+		// ── 4) Link every team → its prizeId ─────────────────────────────────
+		//
+		await Promise.all(
+			finalAssignments.map(({ teamId, newType }) => {
+				const meta = prizeMetaMap[newType];
+				if (!meta) {
+					throw new Error(
+						`Missing prize row for PrizeType.${newType} (team ${teamId})`,
+					);
+				}
+				return db.team.update({
+					where: { id: teamId },
+					data: { prizeId: meta.id },
+				});
+			}),
+		);
+
+		//
+		// ── 5) Compute & apply user point deltas ─────────────────────────────
+		//
+		const userDeltas = new Map<number, number>();
+		finalAssignments.forEach(({ oldType, newType, memberIds }) => {
+			if (oldType === newType) return;
+			const oldPts = oldType ? prizeMetaMap[oldType].flcPoints : 0;
+			const newPts = prizeMetaMap[newType].flcPoints;
+			const delta = newPts - oldPts;
+			if (delta === 0) return;
+			memberIds.forEach((uid) =>
+				userDeltas.set(uid, (userDeltas.get(uid) ?? 0) + delta),
+			);
+		});
+		await Promise.all(
+			Array.from(userDeltas.entries()).map(([uid, delta]) =>
+				db.user.update({
+					where: { id: uid },
+					data: { totalActivityPoints: { increment: delta } },
+				}),
+			),
+		);
+
+		//
+		// ── 6) Mark the event as “prizes allotted” ───────────────────────────
+		//
+		await db.event.update({
+			where: { id: eventId },
+			data: { prizesAlloted: true },
+		});
+
+		// No return needed; success = no error thrown
+	},
+	{ actionName: "event.ALLPERM" },
 );

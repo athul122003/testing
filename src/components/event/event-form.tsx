@@ -694,12 +694,12 @@ export function AddOrganisersSection({ eventId }: { eventId: number }) {
 		setUsn("");
 	};
 
-	// ❌ Remove from staged list
+	// Remove from staged list
 	const handleRemoveStaged = (userId: number) => {
 		setStagedOrganisers((prev) => prev.filter((u) => u.id !== userId));
 	};
 
-	// 💾 Confirm & Add staged organisers to event
+	// Confirm & Add staged organisers to event
 	const handleSaveStaged = async () => {
 		if (stagedOrganisers.length === 0) return;
 
@@ -717,7 +717,7 @@ export function AddOrganisersSection({ eventId }: { eventId: number }) {
 		}
 	};
 
-	// ❌ Remove from existing organisers
+	// Remove from existing organisers
 	const handleRemoveOrganiser = async (userId: number) => {
 		const res = await api.event.removeOrganiser({ eventId, userId });
 

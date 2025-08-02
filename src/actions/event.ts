@@ -11,7 +11,6 @@ import { z } from "zod";
 import { db } from "~/server/db";
 import { createEventZ } from "~/zod/eventZ";
 import { protectedAction } from "./middleware/protectedAction";
-
 export type CreateEventInput = z.infer<typeof createEventZ>;
 export type EventsQuery = Awaited<ReturnType<typeof getAllEvents>>;
 
@@ -365,9 +364,18 @@ export async function getAllEvents(): Promise<
 			orderBy: { fromDate: "desc" },
 			include: {
 				Team: {
-					select: { id: true, isConfirmed: true },
+					select: {
+						id: true,
+						isConfirmed: true,
+						Prize: {
+							select: {
+								prizeType: true,
+								flcPoints: true,
+							},
+						},
+					},
 				},
-				Prize: true, // include Prize data
+				Prize: true, // include all event-level prizes if needed
 			},
 		});
 
