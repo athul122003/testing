@@ -6,6 +6,8 @@ import { razorPay } from "~/server/razorpay";
 import { PaymentType } from "@prisma/client";
 import { confirmTeam } from "./events";
 
+const envAmount = process.env.NEXT_PUBLIC_REGISTRATION_AMOUNT;
+
 const createOrderSchema = z.discriminatedUnion("paymentType", [
 	z.object({
 		paymentType: z.literal(PaymentType.EVENT),
@@ -207,7 +209,8 @@ export async function createOrder(input: CreateOrderInput) {
 			}
 		}
 
-		const AMOUNT_IN_INR = input.paymentType === "EVENT" ? amount : 1; // TODO [RAHUL] JUST HARDCODED PRVS YEAR VALUE, so have to check it again later
+		const AMOUNT_IN_INR =
+			input.paymentType === "EVENT" ? amount : parseInt(envAmount ?? "409"); // TODO [RAHUL] JUST HARDCODED PRVS YEAR VALUE, so have to check it again later
 		const CURRENCY = "INR";
 		const RECEIPT = input.paymentType.charAt(0) + "_" + uuidv4();
 		const PAYMENT_CAPTURE = true;
