@@ -14,7 +14,6 @@ import { protectedAction } from "./middleware/protectedAction";
 import mime from "mime";
 import {
 	deleteFileFromCloudinary,
-	detectTypeAndDelete,
 	uploadFileToCloudinary,
 } from "~/lib/cloudinaryFileUploader";
 
@@ -377,78 +376,85 @@ export const publishEventAction = protectedAction(async (eventId: number) => {
 	}
 });
 
-export async function getAllEvents({ year }: { year?: number }): Promise<
-	| {
-			success: true;
-			data: ExtendedEvent[];
-			years: number[];
-			error?: undefined;
-	  }
-	| {
-			success: false;
-			error: string;
-			data: [];
-	  }
-> {
-	try {
-		const events = await db.event.findMany({
-			where: year
-				? {
-						fromDate: {
-							gte: new Date(`${year}-01-01T00:00:00.000Z`),
-							lte: new Date(`${year}-12-31T23:59:59.999Z`),
-						},
-					}
-				: undefined,
-			orderBy: { fromDate: "desc" },
-			include: {
-				Team: {
-					select: {
-						id: true,
-						isConfirmed: true,
-						Prize: {
-							select: {
-								prizeType: true,
-								flcPoints: true,
+export const getAllEvents = protectedAction(
+	async ({
+		year,
+	}: {
+		year?: number;
+	}): Promise<
+		| {
+				success: true;
+				data: ExtendedEvent[];
+				years: number[];
+				error?: undefined;
+		  }
+		| {
+				success: false;
+				error: string;
+				data: [];
+		  }
+	> => {
+		try {
+			const events = await db.event.findMany({
+				where: year
+					? {
+							fromDate: {
+								gte: new Date(`${year}-01-01T00:00:00.000Z`),
+								lte: new Date(`${year}-12-31T23:59:59.999Z`),
+							},
+						}
+					: undefined,
+				orderBy: { fromDate: "desc" },
+				include: {
+					Team: {
+						select: {
+							id: true,
+							isConfirmed: true,
+							Prize: {
+								select: {
+									prizeType: true,
+									flcPoints: true,
+								},
 							},
 						},
 					},
+					Prize: true,
 				},
-				Prize: true,
-			},
-		});
+			});
 
-		// Get all unique years from events in DB
-		const yearsRaw = await db.event.findMany({
-			select: { fromDate: true },
-			orderBy: { fromDate: "desc" },
-		});
-		const years = Array.from(
-			new Set(yearsRaw.map((e) => e.fromDate.getFullYear())),
-		);
+			// Get all unique years from events in DB
+			const yearsRaw = await db.event.findMany({
+				select: { fromDate: true },
+				orderBy: { fromDate: "desc" },
+			});
+			const years = Array.from(
+				new Set(yearsRaw.map((e) => e.fromDate.getFullYear())),
+			);
 
-		const filteredEvents = events;
+			const filteredEvents = events;
 
-		const formattedEvents: ExtendedEvent[] = filteredEvents.map((event) => ({
-			...event,
-			confirmedTeams: event.Team.filter((team) => team.isConfirmed).length,
-			prizes: event.Prize ?? [],
-		}));
+			const formattedEvents: ExtendedEvent[] = filteredEvents.map((event) => ({
+				...event,
+				confirmedTeams: event.Team.filter((team) => team.isConfirmed).length,
+				prizes: event.Prize ?? [],
+			}));
 
-		return {
-			success: true,
-			data: formattedEvents,
-			years,
-		};
-	} catch (error) {
-		console.error("getAllEvents Error:", error);
-		return {
-			success: false,
-			error: "Failed to fetch events.",
-			data: [],
-		};
-	}
-}
+			return {
+				success: true,
+				data: formattedEvents,
+				years,
+			};
+		} catch (error) {
+			console.error("getAllEvents Error:", error);
+			return {
+				success: false,
+				error: "Failed to fetch events.",
+				data: [],
+			};
+		}
+	},
+	{ actionName: "event.getAll" },
+);
 
 export const getEventDocs = protectedAction(
 	async (eventId: number) => {
@@ -593,7 +599,6 @@ export async function deleteEventDoc(
 			extractPublicIdFromUrl({ url: doc.fileUrl, resType: resType }),
 			resourceType,
 		);
-		// const res = await detectTypeAndDelete(extractPublicIdFromUrl(doc.fileUrl));
 		if (!res) {
 			return { success: false, error: "Failed to delete file from Cloudinary" };
 		}

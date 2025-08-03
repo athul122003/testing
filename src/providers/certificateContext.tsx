@@ -9,6 +9,7 @@ import {
 } from "react";
 import type { ExtendedEvent } from "../actions/event";
 import type { Section, CSVData } from "../components/types";
+import { useDashboardData } from "./dashboardDataContext";
 
 interface CertificateContextType {
 	selectedEvent: ExtendedEvent | null;
@@ -69,6 +70,8 @@ interface CertificateContextType {
 const CertificateContext = createContext<CertificateContextType | null>(null);
 
 export function CertificateProvider({ children }: { children: ReactNode }) {
+	const { hasPerm } = useDashboardData();
+
 	const [selectedEvent, setSelectedEvent] = useState<ExtendedEvent | null>(
 		null,
 	);

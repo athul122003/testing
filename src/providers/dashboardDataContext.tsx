@@ -15,6 +15,7 @@ import {
 	type ReactNode,
 	useCallback,
 	useContext,
+	useEffect,
 	useState,
 } from "react";
 import { getAllEvents } from "~/actions/event";
@@ -25,13 +26,13 @@ import type {
 } from "~/actions/tanstackHooks/payment-queries";
 import { api } from "~/lib/api";
 import type { EventsQuery } from "~/actions/event";
-import { el } from "date-fns/locale";
 
 type DashboardDataContextType = {
 	paymentsQuery: UseQueryResult<PaymentWithUser>;
 	summaryStatsQuery: UseQueryResult<SummaryStats>;
 	rolesQuery?: UseQueryResult<Role[]>;
 	eventsQuery: UseQueryResult<EventsQuery>;
+	eventsForCerts?: UseQueryResult<EventsQuery>;
 	permissionsQuery?: UseQueryResult<Permission[]>;
 	usersQuery?: UseQueryResult<{
 		data: Array<{
@@ -64,6 +65,8 @@ type DashboardDataContextType = {
 	) => void;
 
 	setEventYear: (year: number | null) => void;
+
+	setEventYearForCert: (year: number | null) => void;
 
 	setUserParams?: (
 		query: string,
@@ -122,6 +125,7 @@ export const DashboardDataProvider = ({
 
 	const canManageEvents = hasPerm("MANAGE_EVENTS");
 	const canManagePayments = hasPerm("MANAGE_PAYMENTS");
+	const canManageCertificates = hasPerm("ISSUE_CERTIFICATE");
 
 	const isOrganiserQuery = useQuery<{ success: boolean; data: boolean }>({
 		queryKey: ["isUserOrganiser", user?.id],
@@ -137,7 +141,15 @@ export const DashboardDataProvider = ({
 
 	const isOrganiser = isOrganiserQuery.data?.data === true;
 
+	useEffect(() => {
+		console.log(isOrganiser);
+	}, [isOrganiser]);
+
 	const [eventYear, setEventYear] = useState<number | null>(
+		new Date().getFullYear(),
+	);
+
+	const [eventYearForCert, setEventYearForCert] = useState<number | null>(
 		new Date().getFullYear(),
 	);
 
@@ -263,12 +275,14 @@ export const DashboardDataProvider = ({
 		queryKey: ["events", eventYear],
 		queryFn: async () => {
 			if (canManageEvents) {
+				console.log("Fetching all events for admin");
 				if (eventYear !== null) {
 					return await getAllEvents({ year: eventYear });
 				} else {
 					return await getAllEvents({ year: undefined });
 				}
 			} else {
+				console.log("Fetching organised events for user");
 				const result = await api.event.getOrganisedEvents({
 					userId: Number(user?.id),
 				} as { userId: number });
@@ -304,10 +318,25 @@ export const DashboardDataProvider = ({
 		enabled: canManageEvents || isOrganiser,
 	});
 
+	const eventsForCerts = useQuery<EventsQuery>({
+		queryKey: ["eventsForCerts", eventYearForCert],
+		queryFn: async () => {
+			if (eventYearForCert !== null) {
+				return await getAllEvents({ year: eventYearForCert });
+			} else {
+				return await getAllEvents({ year: undefined });
+			}
+		},
+		refetchOnWindowFocus: false,
+		staleTime: 30_000,
+		enabled: canManageCertificates,
+	});
+
 	const value: DashboardDataContextType = {
 		paymentsQuery,
 		summaryStatsQuery,
 		eventsQuery: eventsQuery,
+		eventsForCerts: eventsForCerts,
 		rolesQuery: canManageRoles ? rolesQuery : undefined,
 		permissionsQuery: canManagePermissions ? permissionsQuery : undefined,
 		usersQuery: canManageUsers ? usersQuery : undefined,
@@ -318,6 +347,7 @@ export const DashboardDataProvider = ({
 		refetchRoles: canManageRoles ? rolesQuery.refetch : undefined,
 		setPaymentParams,
 		setEventYear,
+		setEventYearForCert,
 		setUserParams: canManageUsers ? setUserParams : undefined,
 		permissions,
 		role,

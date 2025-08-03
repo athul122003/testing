@@ -43,6 +43,7 @@ import { useDashboardData } from "../../providers/dashboardDataContext";
 import { useCertificateContext } from "../../providers/certificateContext";
 import { formatDateTime } from "../../lib/formatDateTime";
 import { getEventCertificateStatus } from "../../actions/certificate-management";
+import { AccessDenied } from "../othercomps/access-denied";
 
 type CertificateStep =
 	| "event-selection"
@@ -56,8 +57,8 @@ type CertificateStep =
 
 function CertificatePage() {
 	// Dashboard data
-	const { eventsQuery } = useDashboardData();
-
+	const { eventsForCerts, hasPerm } = useDashboardData();
+	const canIssueCertificates = hasPerm("ISSUE_CERTIFICATE");
 	// Certificate context
 	const {
 		selectedEvent,
@@ -89,12 +90,15 @@ function CertificatePage() {
 	>({});
 
 	// Load certificate statuses for all events
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <NO NEED>
 	useEffect(() => {
 		const loadCertificateStatuses = async () => {
-			if (eventsQuery.data?.success) {
-				const completedEvents = eventsQuery.data.data.filter(
+			if (eventsForCerts?.data?.success) {
+				const completedEvents = eventsForCerts?.data.data.filter(
 					(event) => event.state === "COMPLETED",
 				);
+
+				if (!canIssueCertificates) return;
 
 				const statusPromises = completedEvents.map(async (event) => {
 					try {
@@ -147,7 +151,7 @@ function CertificatePage() {
 		};
 
 		loadCertificateStatuses();
-	}, [eventsQuery.data]);
+	}, [eventsForCerts?.data]);
 
 	// Step configuration
 	const steps = [
@@ -285,7 +289,7 @@ function CertificatePage() {
 
 	// Render event selection step
 	const renderEventSelection = () => {
-		if (eventsQuery.isLoading) {
+		if (eventsForCerts?.isLoading) {
 			return (
 				<div className="flex items-center justify-center p-8">
 					<div className="text-center">
@@ -296,7 +300,7 @@ function CertificatePage() {
 			);
 		}
 
-		if (eventsQuery.isError || !eventsQuery.data?.success) {
+		if (eventsForCerts?.isError || !eventsForCerts?.data?.success) {
 			return (
 				<div className="text-center p-8">
 					<p className="text-red-500">Failed to load events</p>
@@ -304,7 +308,7 @@ function CertificatePage() {
 			);
 		}
 
-		const completedEvents = eventsQuery.data.data.filter(
+		const completedEvents = eventsForCerts?.data.data.filter(
 			(event) => event.state === "COMPLETED",
 		);
 
@@ -521,6 +525,17 @@ function CertificatePage() {
 				return null;
 		}
 	};
+
+	if (!canIssueCertificates) {
+		return (
+			<div className="flex flex-col items-center justify-center h-[60vh]">
+				<AccessDenied />
+				<p className="text-gray-500 dark:text-slate-400 text-center max-w-xs">
+					You do not have permission to issue certificates.
+				</p>
+			</div>
+		);
+	}
 
 	return (
 		<div className="space-y-6">

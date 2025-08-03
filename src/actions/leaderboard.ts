@@ -17,9 +17,9 @@ export async function getLeaderboardData() {
 		let currentRank = 1;
 		let lastPoints: number | null = null;
 
-		const leaderboard = leaderboardRaw.map((user, index) => {
+		const leaderboard = leaderboardRaw.map((user) => {
 			if (lastPoints !== null && user.totalActivityPoints !== lastPoints) {
-				currentRank = index + 1;
+				currentRank++;
 			}
 			const userWithRank = { ...user, rank: currentRank };
 			lastPoints = user.totalActivityPoints;

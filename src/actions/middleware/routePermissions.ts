@@ -64,6 +64,7 @@ export const permissionRoutes = [
 	[
 		"event.ALLPERM",
 		"user.searchByUsn",
+		"event.getAll",
 		"event.organiser.getAll",
 		"event.organiser.remove",
 		"event.organiser.add",
@@ -76,7 +77,7 @@ export const permissionRoutes = [
 	[],
 
 	// ISSUE_CERTIFICATE
-	[],
+	["certificate.ALLPERM", "event.getAll"],
 
 	// MANAGE_SETTINGS
 	["settings.ALLPERM"],
