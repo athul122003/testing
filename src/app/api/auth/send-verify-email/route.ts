@@ -64,6 +64,5 @@ const sendVerificationEmailMutation: (email: string) => Promise<void> = async (
 	const verificationToken = generateVerificationToken(existingUser, token);
 
 	const url = `${process.env.NEXT_PUBLIC_FRONTEND_URL}/auth/verify-email?token=${verificationToken}`;
-	console.log("At send-verify-email route");
 	await sendVerificationEmail(existingUser.email, url, existingUser.name);
 };

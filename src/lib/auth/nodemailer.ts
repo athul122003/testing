@@ -42,14 +42,12 @@ const sendVerificationEmail = async (
 	});
 
 	try {
-		console.log("BROOOOOOOOOOo");
 		const res = await transporter.sendMail({
 			from: '"Finite Loop Club" <flc@nmamit.in>',
 			to: email,
 			subject: "Verify your email",
 			html: htmlToSend,
 		});
-		console.log(res);
 	} catch (e) {
 		console.log(e);
 	}

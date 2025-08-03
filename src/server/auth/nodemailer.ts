@@ -48,7 +48,6 @@ const sendVerificationEmail = async (
 			subject: "Verify your email",
 			html: htmlToSend,
 		});
-		console.log(res);
 	} catch (e) {
 		console.log(e);
 	}
