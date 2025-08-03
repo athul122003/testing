@@ -15,7 +15,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const defaultTemplate = {
-	canonical_url: "https://finiteloop.co.in",
+	canonical_url: "https://finiteloop.club",
 	// TODO: Verify credentials
 	instagram: "https://www.instagram.com/finiteloop_club_nmamit/",
 	facebook: "https://www.facebook.com/FiniteLoopClub.Nmamit/",
@@ -42,6 +42,7 @@ const sendVerificationEmail = async (
 	});
 
 	try {
+		console.log("BROOOOOOOOOOo");
 		const res = await transporter.sendMail({
 			from: '"Finite Loop Club" <flc@nmamit.in>',
 			to: email,

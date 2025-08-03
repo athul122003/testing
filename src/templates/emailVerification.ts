@@ -167,7 +167,7 @@ export const emailVerificationTemplate = `<!doctype html>
                   align="center"
                 >
                   <a
-                    href="https://www.finiteloop.co.in/"
+                    href="https://www.finiteloop.club/"
                     style="color: #be0fb5; text-decoration: underline"
                     ><img
                       src="https://res.cloudinary.com/dfhg1joox/image/upload/v1724508456/tpgpvabxiwzyssx5sxwn.png"
