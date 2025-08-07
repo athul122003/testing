@@ -4,6 +4,8 @@ import { db } from "~/server/db";
 import { compareHashedPassword, getUserByEmail } from "./auth-util";
 import { hashToken } from "./hashToken";
 import { generateTokens } from "./jwt";
+import { generateVerificationToken } from "~/lib/auth/jwt";
+import { sendVerificationEmail } from "~/lib/auth/nodemailer";
 
 const addVerificationTokenToWhitelist = async ({
 	userId,
@@ -82,22 +84,24 @@ const addRefreshTokenToWhitelist = async ({
 
 const login = async (input: { email: string; password: string }) => {
 	try {
+		const errors: string[] = [];
 		const existingUser = await getUserByEmail(input.email);
 		if (!existingUser) {
-			console.error("User not found");
-			throw new Error("User not found");
+			errors.push("User not found");
+			throw new Error(JSON.stringify(errors));
 		}
 		const validPassword = await compareHashedPassword(
 			input.password,
 			existingUser.password,
 		);
 		if (!validPassword) {
-			console.error("Invalid password");
-			throw new Error("Invalid password");
+			errors.push("Invalid email or password");
 		}
 		if (!existingUser.emailVerified) {
-			console.error("Email not verified");
-			throw new Error("Email not verified");
+			errors.push(
+				"Email not verified, sent a verification mail to your email id",
+			);
+			await sendVerificationEmailMutation(existingUser.email);
 		}
 
 		const jti = uuidv4();
@@ -109,12 +113,12 @@ const login = async (input: { email: string; password: string }) => {
 		});
 
 		return {
+			errors,
 			refreshToken,
 			accessToken,
 		};
 	} catch (error) {
-		console.error(error);
-
+		console.error("Login error:", error);
 		throw error;
 	}
 };
@@ -148,6 +152,25 @@ const login = async (input: { email: string; password: string }) => {
 
 // 	console.log("cron job running: deleted revoked tokens");
 // });
+
+const sendVerificationEmailMutation: (email: string) => Promise<void> = async (
+	email,
+) => {
+	const existingUser = await getUserByEmail(email);
+
+	if (!existingUser) throw new Error("USER_NOT_FOUND");
+
+	if (existingUser.emailVerified) throw new Error("USER_ALREADY_VERIFIED");
+
+	const { id: token } = await addVerificationTokenToWhitelist({
+		userId: existingUser.id,
+	});
+
+	const verificationToken = generateVerificationToken(existingUser, token);
+
+	const url = `${process.env.NEXT_PUBLIC_FRONTEND_URL}/auth/verify-email?token=${verificationToken}`;
+	await sendVerificationEmail(existingUser.email, url, existingUser.name);
+};
 
 export {
 	addVerificationTokenToWhitelist,

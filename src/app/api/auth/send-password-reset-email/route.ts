@@ -36,12 +36,12 @@ export async function POST(req: Request) {
 			);
 		}
 
-		if (!existingUser.emailVerified) {
-			return NextResponse.json(
-				{ message: "User not verified. Please verify your email first." },
-				{ status: 400 },
-			);
-		}
+		// if (!existingUser.emailVerified) {
+		// 	return NextResponse.json(
+		// 		{ message: "User not verified. Please verify your email first." },
+		// 		{ status: 400 },
+		// 	);
+		// }
 
 		const { id: token } = await addPasswordResetTokenToWhitelist({
 			userId: existingUser.id,

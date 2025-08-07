@@ -33,8 +33,17 @@ export async function POST(req: Request) {
 		}
 
 		const { email, password } = parsed.data;
-		const { accessToken, refreshToken } = await login({ email, password });
-
+		const { errors, accessToken, refreshToken } = await login({
+			email,
+			password,
+		});
+		if (errors.length > 0) {
+			console.log(errors);
+			return new Response(JSON.stringify({ message: errors[0] }), {
+				status: 401,
+				headers: { "Content-Type": "application/json" },
+			});
+		}
 		const user = await getUserByEmail(email);
 		if (!user) {
 			return new Response(JSON.stringify({ message: "User not found" }), {
@@ -76,13 +85,10 @@ export async function POST(req: Request) {
 			{ status: 200, headers: { "Content-Type": "application/json" } },
 		);
 	} catch (error) {
-		console.error("Login error", error);
-		return new Response(
-			JSON.stringify({ message: "Invalid email or password" }),
-			{
-				status: 401,
-				headers: { "Content-Type": "application/json" },
-			},
-		);
+		console.log("Login error", error);
+		return new Response(JSON.stringify({ message: error }), {
+			status: 401,
+			headers: { "Content-Type": "application/json" },
+		});
 	}
 }
