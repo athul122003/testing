@@ -90,10 +90,13 @@ const login = async (input: { email: string; password: string }) => {
 			errors.push("User not found");
 			throw new Error(JSON.stringify(errors));
 		}
-		const validPassword = await compareHashedPassword(
-			input.password,
-			existingUser.password,
-		);
+		let validPassword = false;
+		try {
+			validPassword = await compareHashedPassword(
+				input.password,
+				existingUser.password,
+			);
+		} catch (e) {}
 		if (!validPassword) {
 			errors.push("Invalid email or password");
 		}
