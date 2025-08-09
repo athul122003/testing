@@ -1,6 +1,6 @@
 "use client";
 import { OctagonAlert, Save, Shield } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { changePasswordAction } from "~/actions/auth";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -13,14 +13,47 @@ import NukeSwitch from "../ui/switches/nukeSwitch";
 import { permissionKeys as perm } from "~/actions/middleware/routePermissions";
 import RegisterSwitch from "../ui/switches/regSwitch";
 import { AccessDenied } from "../othercomps/access-denied";
+import { getBannerSettings, updateBanner } from "~/actions/others";
+import { Switch } from "../ui/switch";
+import { ComponentLoading } from "../ui/component-loading";
 
 export function SettingsPage() {
+	const [globalLoading, setGlobalLoading] = useState(true);
 	const { user, hasPerm } = useDashboardData();
+	const [bannerSaveLoading, setBannerSaveLoading] = useState(false);
+	const [bannerEnabled, setBannerEnabled] = useState(false);
+	const [updatedBanner, setUpdatedBanner] = useState(false);
+	const [bannerDesc, setBannerDesc] = useState("");
 	const [currPass, setCurrPass] = useState("");
 	const [newPass, setNewPass] = useState("");
 	const [confirmPass, setConfirmPass] = useState("");
 	const [_isLoading, setIsLoading] = useState(false);
-
+	const fetchBannerSettings = async () => {
+		try {
+			setGlobalLoading(true);
+			const bannerSettings = await getBannerSettings();
+			if (bannerSettings) {
+				setBannerEnabled(bannerSettings.status);
+				setBannerDesc(bannerSettings.description || "");
+			}
+		} catch (error) {
+			console.error("Error fetching banner settings:", error);
+		} finally {
+			setUpdatedBanner(false);
+			setGlobalLoading(false);
+		}
+	};
+	const handleSaveBanner = async () => {
+		try {
+			setBannerSaveLoading(true);
+			await updateBanner(bannerEnabled, bannerDesc);
+		} catch (error) {
+			console.error("Error saving banner settings:", error);
+		} finally {
+			setUpdatedBanner(false);
+			setBannerSaveLoading(false);
+		}
+	};
 	const handleChangePassword = async () => {
 		if (newPass !== confirmPass) {
 			alert("Passwords do not match");
@@ -59,6 +92,11 @@ export function SettingsPage() {
 		}
 	};
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <no need>
+	useEffect(() => {
+		fetchBannerSettings();
+	}, []);
+
 	const canManageSettings = hasPerm(perm.MANAGE_SETTINGS);
 
 	if (!canManageSettings) {
@@ -70,6 +108,8 @@ export function SettingsPage() {
 				</p>
 			</div>
 		);
+	} else if (globalLoading) {
+		return <ComponentLoading message="Loading Settings" />;
 	}
 
 	return (
@@ -117,6 +157,65 @@ export function SettingsPage() {
 								</Label>
 								<NukeSwitch />
 							</div>
+						</div>
+					</CardContent>
+				</Card>
+				<Card className="border-0 shadow-lg bg-white dark:bg-slate-800">
+					<CardHeader>
+						<CardTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
+							Banner / Marquee Control
+						</CardTitle>
+					</CardHeader>
+					<CardContent className="space-y-6">
+						<div className="flex items-center gap-4">
+							<Label htmlFor="banner-toggle" className="text-base">
+								Show Banner
+							</Label>
+							<Switch
+								checked={bannerEnabled}
+								onCheckedChange={() => {
+									setBannerEnabled((prev) => !prev);
+									setUpdatedBanner(true);
+								}}
+								id="banner-toggle"
+							/>
+						</div>
+						<div
+							className={`transition-all duration-300 overflow-hidden ${
+								bannerEnabled || updatedBanner
+									? "max-h-40 opacity-100 mt-2"
+									: "max-h-0 opacity-0 pointer-events-none"
+							}`}
+						>
+							<div className="space-y-2">
+								<Label htmlFor="banner-desc">Banner Description</Label>
+								<Input
+									id="banner-desc"
+									value={bannerDesc}
+									className="ml-2 w-[90%]"
+									onChange={(e) => {
+										setBannerDesc(e.target.value);
+										setUpdatedBanner(true);
+									}}
+									placeholder="Enter banner/marquee text"
+									disabled={!bannerEnabled}
+								/>
+							</div>
+							<Button
+								className="w-fit bg-blue-900 text-white hover:bg-blue-700 mt-4"
+								disabled={bannerSaveLoading || !updatedBanner}
+								onClick={() => {
+									if (bannerEnabled && !bannerDesc.trim()) {
+										alert("Banner description cannot be blank.");
+										return;
+									}
+									handleSaveBanner();
+								}}
+							>
+								<Save className="mr-2 h-4 w-4" />
+								Save Banner Settings
+								{bannerSaveLoading && <ComponentLoading size="sm" message="" />}
+							</Button>
 						</div>
 					</CardContent>
 				</Card>
