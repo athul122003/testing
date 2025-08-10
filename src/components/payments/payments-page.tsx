@@ -3,13 +3,15 @@
 import {
 	AlertCircle,
 	Download,
-	Filter,
 	IndianRupee,
 	Search,
 	TrendingUp,
+	X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { getPaymentInfo } from "~/actions/payment-info";
+import { searchPayments } from "~/actions/payment-info";
+import { filterPaymentsByDate } from "~/actions/payment-info";
 //types
 import type {
 	PaymentWithUser,
@@ -26,13 +28,6 @@ import {
 	DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { Input } from "~/components/ui/input";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "~/components/ui/select";
 import {
 	Table,
 	TableBody,
@@ -58,33 +53,119 @@ type DateFilter = {
 type Payment = PaymentWithUser["payments"][number];
 
 export function PaymentsPage() {
-	const [searchTerm, setSearchTerm] = useState("");
+	const [searchInput, setSearchInput] = useState("");
 	const [statusFilter, setStatusFilter] = useState("all");
 	const [page, setPage] = useState(1);
 	const [dateFilter, setDateFilter] = useState<DateFilter>({
 		startDate: undefined,
 		endDate: undefined,
 	});
+	const [isSearching, setIsSearching] = useState(false);
+	const [isDateFiltering, setIsDateFiltering] = useState(false);
 
 	const pageSize = 20;
 	const { hasPerm, paymentsQuery, setPaymentParams, summaryStatsQuery } =
 		useDashboardData();
 	const canManagePayments = hasPerm(perm.MANAGE_PAYMENTS);
-	const {
-		data: paymentsData,
-		isLoading,
-		refetch: refetchPayments,
-	} = paymentsQuery;
+	const { data: paymentsData, isLoading } = paymentsQuery;
+
+	const [searchResults, setSearchResults] = useState<PaymentWithUser | null>(
+		null,
+	);
+	const [dateFilterResults, setDateFilterResults] =
+		useState<PaymentWithUser | null>(null);
+	const [searchError, setSearchError] = useState<string | null>(null);
+	const [dateFilterError, setDateFilterError] = useState<string | null>(null);
+
+	const handleSearch = async (e: FormEvent) => {
+		e.preventDefault();
+
+		if (!searchInput || searchInput.length < 2) {
+			setSearchError("Search term must be at least 2 characters");
+			return;
+		}
+
+		setIsSearching(true);
+		setSearchError(null);
+
+		try {
+			const results = await searchPayments({
+				searchTerm: searchInput,
+				page: 1,
+				pageSize,
+				startDate: dateFilter.startDate,
+				endDate: dateFilter.endDate,
+			});
+
+			setSearchResults(results);
+			setPage(1);
+		} catch (error) {
+			console.error("Search failed:", error);
+			setSearchError(error instanceof Error ? error.message : "Search failed");
+		} finally {
+			setIsSearching(false);
+		}
+	};
+
+	const handleDateFilter = async (e: FormEvent) => {
+		e.preventDefault();
+
+		if (!dateFilter.startDate && !dateFilter.endDate) {
+			setDateFilterError("Please select at least one date");
+			return;
+		}
+
+		setIsDateFiltering(true);
+		setDateFilterError(null);
+
+		try {
+			const results = await filterPaymentsByDate({
+				startDate: dateFilter.startDate,
+				endDate: dateFilter.endDate,
+				page: 1,
+				pageSize,
+			});
+
+			setDateFilterResults(results);
+			setSearchResults(null); // Clear any search results
+			setSearchInput(""); // Clear search input
+			setPage(1);
+		} catch (error) {
+			console.error("Date filtering failed:", error);
+			setDateFilterError(
+				error instanceof Error ? error.message : "Date filtering failed",
+			);
+		} finally {
+			setIsDateFiltering(false);
+		}
+	};
+
+	const resetFilters = () => {
+		setSearchInput("");
+		setSearchResults(null);
+		setSearchError(null);
+		setDateFilterResults(null);
+		setDateFilterError(null);
+		setDateFilter({
+			startDate: undefined,
+			endDate: undefined,
+		});
+		setPage(1);
+	};
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <no need of exhaustive deps here>
 	useEffect(() => {
-		setPaymentParams(page, pageSize, dateFilter);
-	}, [page, pageSize, dateFilter, setPaymentParams]);
+		// Only fetch from server if we don't have any active filters
+		if (!searchResults && !dateFilterResults) {
+			setPaymentParams(page, pageSize, dateFilter);
+		}
+	}, [page, pageSize, searchResults, dateFilterResults, setPaymentParams]);
 
 	//fetch payments data
-	const payments: PaymentWithUser["payments"] = paymentsData?.payments ?? [];
+	const displayedData = searchResults || dateFilterResults || paymentsData;
+	const payments: PaymentWithUser["payments"] = displayedData?.payments ?? [];
 	const totalPages: PaymentWithUser["totalPages"] =
-		paymentsData?.totalPages ?? 1;
+		displayedData?.totalPages ?? 1;
 
 	//fetch summary stats
 	const { data: summaryStatsData } = summaryStatsQuery;
@@ -99,21 +180,9 @@ export function PaymentsPage() {
 	//filtered Payments
 	const filteredPayments: PaymentWithUser["payments"] = payments.filter(
 		(payment: Payment) => {
-			const lowerSearch = searchTerm.toLowerCase();
-			const matchesSearch =
-				payment.User?.name.toLowerCase().includes(lowerSearch) ||
-				payment.User?.id?.toString().includes(lowerSearch) ||
-				payment.User?.email.includes(lowerSearch) ||
-				payment.id.toLowerCase().includes(lowerSearch) ||
-				payment.paymentType?.toLowerCase().includes(lowerSearch);
 			const matchesStatus =
 				statusFilter === "all" || getPaymentStatus(payment) === statusFilter;
-
-			const createdAt = new Date(payment.createdAt);
-			const matchesDateRange =
-				(!dateFilter.startDate || createdAt >= dateFilter.startDate) &&
-				(!dateFilter.endDate || createdAt <= dateFilter.endDate);
-			return matchesSearch && matchesStatus && matchesDateRange;
+			return matchesStatus;
 		},
 	);
 
@@ -296,7 +365,7 @@ export function PaymentsPage() {
 						</div>
 					</CardContent>
 				</Card>
-				<Card className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
+				{/* <Card className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
 					<CardHeader className="pb-3">
 						<div className="flex justify-between items-center">
 							<CardTitle className="text-sm text-gray-700 dark:text-slate-300">
@@ -321,7 +390,7 @@ export function PaymentsPage() {
 							In current view
 						</div>
 					</CardContent>
-				</Card>
+				</Card> */}
 				<Card className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
 					<CardHeader className="pb-3">
 						<div className="flex justify-between items-center">
@@ -361,50 +430,112 @@ export function PaymentsPage() {
 							Payment History
 						</CardTitle>
 						<div className="flex flex-col sm:flex-row gap-3">
-							<Input
-								type="date"
-								value={
-									dateFilter.startDate
-										? dateFilter.startDate.toISOString().split("T")[0]
-										: ""
-								}
-								onChange={(e) =>
-									setDateFilter((prev) => ({
-										...prev,
-										startDate: e.target.value
-											? new Date(e.target.value)
-											: undefined,
-									}))
-								}
-								className="w-full sm:w-[150px] bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-300"
-							/>
-							<Input
-								type="date"
-								value={
-									dateFilter.endDate
-										? dateFilter.endDate.toISOString().split("T")[0]
-										: ""
-								}
-								onChange={(e) =>
-									setDateFilter((prev) => ({
-										...prev,
-										endDate: e.target.value
-											? new Date(e.target.value)
-											: undefined,
-									}))
-								}
-								className="w-full sm:w-[150px] bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-300"
-							/>
-							<div className="relative w-full sm:w-auto">
-								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-slate-400" />
-								<Input
-									placeholder="Search payments..."
-									value={searchTerm}
-									onChange={(e) => setSearchTerm(e.target.value)}
-									className="pl-10 w-full sm:w-64 bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200"
-								/>
-							</div>
-							<Select value={statusFilter} onValueChange={setStatusFilter}>
+							<form
+								onSubmit={handleDateFilter}
+								className="flex items-center gap-2"
+							>
+								<div className="flex gap-2">
+									<Input
+										type="date"
+										value={
+											dateFilter.startDate
+												? dateFilter.startDate.toISOString().split("T")[0]
+												: ""
+										}
+										onChange={(e) =>
+											setDateFilter((prev) => ({
+												...prev,
+												startDate: e.target.value
+													? new Date(e.target.value)
+													: undefined,
+											}))
+										}
+										className="w-full sm:w-[150px] bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-300"
+										aria-label="Start date"
+									/>
+									<Input
+										type="date"
+										value={
+											dateFilter.endDate
+												? dateFilter.endDate.toISOString().split("T")[0]
+												: ""
+										}
+										onChange={(e) =>
+											setDateFilter((prev) => ({
+												...prev,
+												endDate: e.target.value
+													? new Date(e.target.value)
+													: undefined,
+											}))
+										}
+										className="w-full sm:w-[150px] bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-300"
+										aria-label="End date"
+									/>
+									<Button
+										type="submit"
+										className="bg-green-600 hover:bg-green-700 text-white"
+										disabled={
+											isDateFiltering ||
+											(!dateFilter.startDate && !dateFilter.endDate)
+										}
+									>
+										{isDateFiltering ? "Filtering..." : "Go"}
+									</Button>
+								</div>
+								{dateFilterResults && (
+									<Button
+										type="button"
+										onClick={resetFilters}
+										variant="outline"
+										size="sm"
+										className="bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700"
+									>
+										Clear Dates
+									</Button>
+								)}
+							</form>
+							{dateFilterError && (
+								<div className="text-sm text-red-500 mt-1">
+									{dateFilterError}
+								</div>
+							)}
+							<form
+								onSubmit={handleSearch}
+								className="flex gap-2 w-full sm:w-auto"
+							>
+								<div className="relative w-full">
+									<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-slate-400" />
+									<Input
+										placeholder="Search payments..."
+										value={searchInput}
+										onChange={(e) => setSearchInput(e.target.value)}
+										className="pl-10 w-full sm:w-64 bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200"
+										required
+										minLength={2}
+									/>
+								</div>
+								<Button
+									type="submit"
+									className="bg-blue-600 hover:bg-blue-700 text-white"
+									disabled={isSearching}
+								>
+									{isSearching ? "Searching..." : "Search"}
+								</Button>
+								{searchResults && (
+									<Button
+										type="button"
+										onClick={resetFilters}
+										variant="outline"
+										className="bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700"
+									>
+										Clear
+									</Button>
+								)}
+							</form>
+							{searchError && (
+								<div className="text-sm text-red-500 mt-1">{searchError}</div>
+							)}
+							{/* <Select value={statusFilter} onValueChange={setStatusFilter}>
 								<SelectTrigger className="w-full sm:w-40 bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200">
 									<Filter className="h-4 w-4 mr-2" />
 									<SelectValue placeholder="Status" />
@@ -414,10 +545,50 @@ export function PaymentsPage() {
 									<SelectItem value="success">Success</SelectItem>
 									<SelectItem value="failed">Failed</SelectItem>
 								</SelectContent>
-							</Select>
+							</Select> */}
 						</div>
 					</div>
 				</CardHeader>
+				{(searchResults || dateFilterResults) && (
+					<div className="px-6 py-2 bg-gray-50 dark:bg-slate-900/50 border-y border-gray-100 dark:border-slate-800">
+						<div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between">
+							<div className="text-sm">
+								{searchResults && searchInput.length >= 2 && (
+									<p className="font-medium text-gray-900 dark:text-slate-200">
+										Search results for:{" "}
+										<span className="text-blue-600 dark:text-blue-400">
+											"{searchInput}"
+										</span>
+									</p>
+								)}
+								{dateFilterResults && !searchResults && (
+									<p className="font-medium text-gray-900 dark:text-slate-200">
+										Date filter:{" "}
+										<span className="text-green-600 dark:text-green-400">
+											{dateFilter.startDate && dateFilter.endDate
+												? `${dateFilter.startDate.toLocaleDateString()} to ${dateFilter.endDate.toLocaleDateString()}`
+												: dateFilter.startDate
+													? `From ${dateFilter.startDate.toLocaleDateString()}`
+													: dateFilter.endDate
+														? `Until ${dateFilter.endDate.toLocaleDateString()}`
+														: ""}
+										</span>
+									</p>
+								)}
+							</div>
+							<Button
+								size="sm"
+								variant="outline"
+								onClick={resetFilters}
+								className="text-gray-600 dark:text-slate-400 border-gray-300 dark:border-slate-700"
+							>
+								<X className="h-3.5 w-3.5 mr-1" />
+								Clear All Filters
+							</Button>
+						</div>
+					</div>
+				)}
+
 				<CardContent>
 					<div className="overflow-x-auto">
 						<Table className="min-w-full bg-white dark:bg-black text-gray-900 dark:text-slate-200">
@@ -507,18 +678,80 @@ export function PaymentsPage() {
 
 					<div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
 						<Button
-							onClick={() => setPage((p) => Math.max(1, p - 1))}
-							disabled={page === 1}
+							onClick={() => {
+								if (page > 1) {
+									setPage(page - 1);
+
+									if (searchResults && searchInput.length >= 2) {
+										searchPayments({
+											searchTerm: searchInput,
+											page: page - 1,
+											pageSize,
+											startDate: dateFilter.startDate,
+											endDate: dateFilter.endDate,
+										})
+											.then(setSearchResults)
+											.catch((err) => setSearchError(err.message));
+									} else if (dateFilterResults) {
+										filterPaymentsByDate({
+											startDate: dateFilter.startDate,
+											endDate: dateFilter.endDate,
+											page: page - 1,
+											pageSize,
+										})
+											.then(setDateFilterResults)
+											.catch((err) => setDateFilterError(err.message));
+									}
+								}
+							}}
+							disabled={page === 1 || isSearching}
 							className="bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
 						>
 							⬅ Prev
 						</Button>
-						<span className="text-sm text-gray-500 dark:text-slate-400">
-							Page {page} of {totalPages}
-						</span>
+						<div className="flex items-center gap-2">
+							<span className="text-sm text-gray-500 dark:text-slate-400">
+								Page {page} of {totalPages}
+							</span>
+							{searchResults && (
+								<Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+									Search Results
+								</Badge>
+							)}
+							{dateFilterResults && !searchResults && (
+								<Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+									Date Filtered
+								</Badge>
+							)}
+						</div>
 						<Button
-							onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-							disabled={page === totalPages}
+							onClick={() => {
+								if (page < totalPages) {
+									setPage(page + 1);
+
+									if (searchResults && searchInput.length >= 2) {
+										searchPayments({
+											searchTerm: searchInput,
+											page: page + 1,
+											pageSize,
+											startDate: dateFilter.startDate,
+											endDate: dateFilter.endDate,
+										})
+											.then(setSearchResults)
+											.catch((err) => setSearchError(err.message));
+									} else if (dateFilterResults) {
+										filterPaymentsByDate({
+											startDate: dateFilter.startDate,
+											endDate: dateFilter.endDate,
+											page: page + 1,
+											pageSize,
+										})
+											.then(setDateFilterResults)
+											.catch((err) => setDateFilterError(err.message));
+									}
+								}
+							}}
+							disabled={page === totalPages || isSearching}
 							className="bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
 						>
 							Next ➡
