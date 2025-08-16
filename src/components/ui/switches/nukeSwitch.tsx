@@ -149,7 +149,7 @@ export default function NukeSwitch() {
 							tabIndex={showLaunchBtn ? 0 : -1}
 							aria-hidden={!showLaunchBtn}
 						>
-							{launched ? "GONE BRO" : "KILL"}
+							{launched ? "Redeployed" : "GO"}
 						</button>
 					)}
 				</div>

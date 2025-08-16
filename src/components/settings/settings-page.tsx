@@ -153,7 +153,7 @@ export function SettingsPage() {
 									htmlFor="nuke_switch"
 									className="text-xl font-bold self-center"
 								>
-									Nuke Website
+									Redeploy Website
 								</Label>
 								<NukeSwitch />
 							</div>
