@@ -403,6 +403,12 @@ export async function removeMember(
 				error: "Cannot remove the last member from the team",
 			};
 		}
+		if (team.isConfirmed === true) {
+			return {
+				success: false,
+				error: "Cannot remove members from a confirmed team",
+			};
+		}
 		if (team.Members.some((member) => member.id === memberId)) {
 			await db.team.update({
 				where: { id: teamId },
