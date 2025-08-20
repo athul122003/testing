@@ -618,6 +618,38 @@ export async function deleteEventDoc(
 export const deleteEventAction = protectedAction(
 	async (eventId: number) => {
 		try {
+			if (!eventId) {
+				return {
+					success: false,
+					error: "Event ID is required.",
+				};
+			}
+			const teamsCount = await db.team.count({
+				where: { eventId },
+			});
+			if (teamsCount > 0) {
+				return {
+					success: false,
+					error:
+						"Cannot delete event with existing teams. Please delete teams first.",
+				};
+			}
+			const certificatesCount = await db.certificate.count({
+				where: { eventId },
+			});
+			if (certificatesCount > 0) {
+				return {
+					success: false,
+					error:
+						"Cannot delete event with existing certificates. Please delete certificates first.",
+				};
+			}
+			await db.prize.deleteMany({
+				where: { eventId },
+			});
+			// await db.certificate.deleteMany({
+			// 	where: { eventId },
+			// });
 			const deleted = await db.event.delete({
 				where: { id: eventId },
 			});

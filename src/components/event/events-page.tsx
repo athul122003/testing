@@ -50,6 +50,9 @@ export function EventsPage({
 	const [selectedEvent, setSelectedEvent] = useState<ExtendedEvent | null>(
 		null,
 	);
+	const [deleteEventModal, setDeleteEventModal] = useState(false);
+	const [deleteEventId, setDeleteEventId] = useState<number | null>(null);
+	const [deletionLoading, setDeletionLoading] = useState(false);
 	const [allYears, setAllYears] = useState<string[]>([]);
 	const [selectedYear, setSelectedYear] = useState("2025");
 	const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -124,17 +127,32 @@ export function EventsPage({
 	};
 
 	const handleDeleteEvent = async (eventId: number) => {
-		const res = await deleteEventAction(eventId);
-		if (res.success) {
-			toast.success("Event deleted successfully.");
-			setIsDetailOpen(false);
-			if (refetchEvents) {
-				refetchEvents();
+		try {
+			setDeletionLoading(true);
+			const res = await deleteEventAction(eventId);
+			if (res.success) {
+				toast.success("Event deleted successfully.");
+				setIsDetailOpen(false);
+				if (refetchEvents) {
+					refetchEvents();
+				}
+			} else {
+				toast.error(res.error || "Failed to delete event");
 			}
-		} else {
-			toast.error(res.error || "Failed to delete event");
+		} catch (error) {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: typeof error === "string"
+						? error
+						: "Failed to delete event",
+			);
+			console.error("Delete event error:", error);
+		} finally {
+			setDeletionLoading(false);
+			setDeleteEventId(null);
+			setIsDetailOpen(false);
 		}
-		setIsDetailOpen(false);
 	};
 
 	const handlePublishEvent = async (eventId: number) => {
@@ -503,7 +521,10 @@ export function EventsPage({
 										Edit Event
 									</Button>
 									<Button
-										onClick={() => handleDeleteEvent(selectedEvent.id)}
+										onClick={() => {
+											setDeleteEventId(selectedEvent.id);
+											setDeleteEventModal(true);
+										}}
 										className="bg-red-100 dark:bg-red-900 hover:bg-red-200 dark:hover:bg-red-800 text-red-700 dark:text-red-200 border border-red-300 dark:border-red-800"
 									>
 										Delete Event
@@ -569,6 +590,44 @@ export function EventsPage({
 					)}
 				</DialogContent>
 			</Dialog>
+
+			{deleteEventModal && (
+				<Dialog open={deleteEventModal} onOpenChange={setDeleteEventModal}>
+					<DialogContent className="max-w-sm">
+						<DialogHeader>
+							<DialogTitle className="text-lg font-semibold text-gray-900 dark:text-slate-200">
+								Delete Event
+							</DialogTitle>
+						</DialogHeader>
+						<div className="space-y-4">
+							<p className="text-gray-600 dark:text-slate-400">
+								Are you sure you want to delete this event? This action cannot
+								be undone.
+							</p>
+							<div className="flex justify-end gap-2">
+								<Button
+									variant="outline"
+									onClick={() => setDeleteEventModal(false)}
+								>
+									Cancel
+								</Button>
+								<Button
+									variant="destructive"
+									disabled={deletionLoading}
+									onClick={() => {
+										if (deleteEventId !== null) {
+											handleDeleteEvent(deleteEventId);
+										}
+										setDeleteEventModal(false);
+									}}
+								>
+									{deletionLoading ? "Deleting..." : "Confirm Deletion"}
+								</Button>
+							</div>
+						</div>
+					</DialogContent>
+				</Dialog>
+			)}
 
 			{statusModalOpen && (
 				<Dialog open={statusModalOpen} onOpenChange={setStatusModalOpen}>
