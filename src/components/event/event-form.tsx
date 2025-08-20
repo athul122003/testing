@@ -197,6 +197,13 @@ export function EventForm({
 
 		const payload = {
 			...formData,
+			fromDate: formData.fromDate
+				? new Date(formData.fromDate).toISOString()
+				: "",
+			toDate: formData.toDate ? new Date(formData.toDate).toISOString() : "",
+			deadline: formData.deadline
+				? new Date(formData.deadline).toISOString()
+				: "",
 			maxTeams: Number(formData.maxTeams),
 			minTeamSize: Number(formData.minTeamSize),
 			maxTeamSize: Number(formData.maxTeamSize),

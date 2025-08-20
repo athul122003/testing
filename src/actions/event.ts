@@ -48,6 +48,14 @@ function extractPublicIdFromUrl({
 	}
 }
 
+function toUTC(date: string | Date | undefined): Date | undefined {
+	if (!date) return undefined;
+	if (typeof date === "string" && !date.endsWith("Z") && date.length >= 16) {
+		return new Date(date + "Z");
+	}
+	return new Date(date);
+}
+
 export const createEventAction = protectedAction(
 	async (values: CreateEventInput) => {
 		try {
@@ -107,11 +115,9 @@ export const createEventAction = protectedAction(
 					eventType: validated.eventType,
 					category: validated.category,
 					state: validated.state ?? EventState.DRAFT,
-					fromDate: new Date(validated.fromDate),
-					toDate: new Date(validated.toDate),
-					deadline: validated.deadline
-						? new Date(validated.deadline)
-						: undefined,
+					fromDate: toUTC(validated.fromDate) ?? new Date(),
+					toDate: toUTC(validated.toDate) ?? new Date(),
+					deadline: validated.deadline ? toUTC(validated.deadline) : undefined,
 					maxTeams: validated.maxTeams,
 					minTeamSize: validated.minTeamSize,
 					maxTeamSize: validated.maxTeamSize,
@@ -254,11 +260,9 @@ export const editEventAction = protectedAction(
 					eventType: validated.eventType,
 					category: validated.category,
 					state: validated.state ?? EventState.DRAFT,
-					fromDate: new Date(validated.fromDate),
-					toDate: new Date(validated.toDate),
-					deadline: validated.deadline
-						? new Date(validated.deadline)
-						: undefined,
+					fromDate: toUTC(validated.fromDate) ?? new Date(),
+					toDate: toUTC(validated.toDate) ?? new Date(),
+					deadline: validated.deadline ? toUTC(validated.deadline) : undefined,
 					maxTeams: validated.maxTeams,
 					minTeamSize: validated.minTeamSize,
 					maxTeamSize: validated.maxTeamSize,
