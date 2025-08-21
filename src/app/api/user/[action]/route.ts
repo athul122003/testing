@@ -51,6 +51,15 @@ export async function POST(req: NextRequest) {
 					...(await server.user.removeUserLink({ ...body, userId: userId })),
 				});
 			}
+			case "getEvents": {
+				const events = await server.user.getRegisteredEvents({
+					userId: body.userId,
+				});
+				return NextResponse.json({
+					success: true,
+					events,
+				});
+			}
 			default:
 				return NextResponse.json(
 					{ success: false, error: "Unknown action" },
@@ -71,7 +80,6 @@ export async function PATCH(req: NextRequest) {
 		const action = req.nextUrl.pathname.split("/").pop();
 		const body = await req.json();
 
-		console.log("PATCH action:", body);
 		switch (action) {
 			case "update-user": {
 				const customHeader = req.headers.get("authorization");
