@@ -391,3 +391,89 @@ export const isUserOrganiser = protectedAction(
 		};
 	},
 );
+
+export const getRegisteredEvents = async (input: { userId: number }) => {
+	const { userId } = input;
+
+	const user = await db.user.findUnique({
+		where: { id: userId },
+		select: {
+			Team: {
+				select: {
+					isConfirmed: true,
+					hasAttended: true,
+					Event: {
+						select: {
+							id: true,
+							name: true,
+							imgSrc: true,
+							state: true,
+							fromDate: true,
+						},
+					},
+				},
+			},
+			TeamLeader: {
+				select: {
+					isConfirmed: true,
+					hasAttended: true,
+					Event: {
+						select: {
+							id: true,
+							name: true,
+							imgSrc: true,
+							state: true,
+							fromDate: true,
+						},
+					},
+				},
+			},
+			Certificate: {
+				select: {
+					id: true,
+					issuedOn: true,
+					link: true,
+					eventId: true,
+					statusOfMailing: true,
+					createdAt: true,
+					updatedAt: true,
+				},
+			},
+		},
+	});
+
+	if (!user) throw new Error("User not found");
+
+	const extractEvents = (teams: typeof user.Team) =>
+		teams
+			.filter((team) => team.Event)
+			.map((team) => ({
+				id: team.Event.id,
+				name: team.Event.name,
+				imgSrc: team.Event.imgSrc,
+				state: team.Event.state,
+				fromDate: team.Event.fromDate,
+				isConfirmed: team.isConfirmed,
+				hasAttended: team.hasAttended,
+			}));
+
+	const teamEvents = extractEvents(user.Team);
+	const leaderEvents = extractEvents(user.TeamLeader);
+
+	const eventMap = new Map<number, ReturnType<typeof extractEvents>[number]>();
+	[...teamEvents, ...leaderEvents].forEach((event) => {
+		eventMap.set(event.id, event);
+	});
+
+	const certificatesByEventId = new Map<number, (typeof user.Certificate)[0]>();
+	user.Certificate.forEach((cert) => {
+		certificatesByEventId.set(cert.eventId, cert);
+	});
+
+	const eventsWithCertificates = Array.from(eventMap.values()).map((event) => ({
+		...event,
+		certificates: certificatesByEventId.get(event.id) ?? null,
+	}));
+
+	return { success: true, data: eventsWithCertificates };
+};

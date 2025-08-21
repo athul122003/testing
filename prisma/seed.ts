@@ -194,6 +194,11 @@ const main = async () => {
 				status: false,
 				description: "Maintenance Mode",
 			},
+			{
+				name: "notice",
+				status: false,
+				description: "Notice for all users",
+			},
 		];
 
 		for (const setting of settings) {
