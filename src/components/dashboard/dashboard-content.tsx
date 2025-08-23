@@ -1,8 +1,9 @@
 "use client";
 
 import {
-	Activity,
 	Calendar,
+	Eye,
+	EyeOff,
 	FileText,
 	ImageIcon,
 	IndianRupeeIcon,
@@ -11,6 +12,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { useDashboardData } from "~/providers/dashboardDataContext";
 import { ComponentLoading } from "../ui/loader";
 import { useEffect, useState } from "react";
+import { Button } from "~/components/ui/button";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "~/components/ui/tooltip";
 
 const stats = [
 	{
@@ -47,12 +55,13 @@ const stats = [
 	},
 ];
 
-const recentEvents: any[] = [];
-
-const recentActivity: any[] = [];
+// Commented out unused variables
+// const recentEvents: Array<{ name: string; date: string; attendees: number; status: string }> = [];
+// const recentActivity: Array<{ action: string; user: string; time: string; type: string }> = [];
 
 export function DashboardContent() {
 	const [isLoading, setIsLoading] = useState(true);
+	const [showRevenue, setShowRevenue] = useState(false);
 	const { summaryStatsQuery, eventsQuery, hasPerm } = useDashboardData();
 	const { data: summaryStatsData, isLoading: summaryLoading } =
 		summaryStatsQuery;
@@ -61,22 +70,25 @@ export function DashboardContent() {
 	};
 	const { data: eventsData, isLoading: eventsLoading } = eventsQuery;
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: <no need of exhaustive dependencies>
 	useEffect(() => {
 		if (!summaryLoading && !eventsLoading) {
 			setIsLoading(false);
 		}
 	}, [summaryLoading, eventsLoading]);
 
-	stats.find((stat) => stat.id === "payments")!.value =
-		summaryStats.totalRevenue.toLocaleString("en-IN", {
+	const paymentsStats = stats.find((stat) => stat.id === "payments");
+	if (paymentsStats) {
+		paymentsStats.value = summaryStats.totalRevenue.toLocaleString("en-IN", {
 			style: "currency",
 			currency: "INR",
 			minimumFractionDigits: 0,
 		});
+	}
 
-	stats.find((stat) => stat.id === "events")!.value =
-		eventsData?.data.length.toString() || "0";
+	const eventsStats = stats.find((stat) => stat.id === "events");
+	if (eventsStats) {
+		eventsStats.value = eventsData?.data.length.toString() || "0";
+	}
 
 	return (
 		<div className="space-y-8">
@@ -99,8 +111,31 @@ export function DashboardContent() {
 							className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-5`}
 						/>
 						<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-							<CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+							<CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
 								{stat.title}
+								{stat.id === "payments" && hasPerm(stat.perm) && (
+									<TooltipProvider>
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<Button
+													variant="ghost"
+													size="icon"
+													className="h-6 w-6 p-0.5 text-gray-500 hover:text-gray-800 dark:hover:text-gray-300 z-50"
+													onClick={() => setShowRevenue(!showRevenue)}
+												>
+													{showRevenue ? (
+														<EyeOff className="h-4 w-4" />
+													) : (
+														<Eye className="h-4 w-4" />
+													)}
+												</Button>
+											</TooltipTrigger>
+											<TooltipContent>
+												{showRevenue ? "Hide revenue" : "Show revenue"}
+											</TooltipContent>
+										</Tooltip>
+									</TooltipProvider>
+								)}
 							</CardTitle>
 							<div className={`p-2 rounded-lg bg-gradient-to-br ${stat.color}`}>
 								<stat.icon className="h-4 w-4 text-white" />
@@ -111,7 +146,11 @@ export function DashboardContent() {
 								{isLoading ? (
 									<ComponentLoading size="sm" />
 								) : hasPerm(stat.perm) ? (
-									stat.value
+									stat.id === "payments" && !showRevenue ? (
+										<span className="text-xl">••••••</span>
+									) : (
+										stat.value
+									)
 								) : (
 									<svg
 										xmlns="http://www.w3.org/2000/svg"

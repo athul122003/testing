@@ -19,7 +19,63 @@ import {
 } from "~/components/ui/table";
 import { Badge } from "~/components/ui/badge";
 import { Switch } from "~/components/ui/switch";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, Download } from "lucide-react";
+// Export printable table for teams and members
+function exportTeamsForPrint(teams: Team[]) {
+	const html = `
+		<html>
+		<head>
+			<title>Event Teams Export</title>
+			<style>
+				body { font-family: sans-serif; }
+				table { border-collapse: collapse; width: 100%; margin-top: 2rem; }
+				th, td { border: 1px solid #333; padding: 8px; text-align: left; }
+				th { background: #f3f3f3; }
+				.nowrap { white-space: nowrap; }
+			</style>
+		</head>
+		<body>
+			<h2>Event Teams Export</h2>
+			<table>
+				<thead>
+					<tr>
+						<th>Team Name</th>
+						<th>Leader Name</th>
+						<th>Member Name</th>
+						<th>Signature</th>
+					</tr>
+				</thead>
+				<tbody>
+					${teams
+						.map((team) => {
+							const members =
+								team.members.length > 0 ? team.members : [{ name: "-" }];
+							return members
+								.map(
+									(member, idx) => `
+							<tr>
+								${idx === 0 ? `<td rowspan="${members.length}" class="nowrap">${team.name}</td>` : ""}
+								${idx === 0 ? `<td rowspan="${members.length}" class="nowrap">${team.leaderName || "-"}</td>` : ""}
+								<td class="nowrap">${member.name}</td>
+								<td style="min-width:120px;"></td>
+							</tr>
+						`,
+								)
+								.join("");
+						})
+						.join("")}
+				</tbody>
+			</table>
+			<script>window.print()</script>
+		</body>
+		</html>
+	`;
+	const win = window.open("", "_blank");
+	if (win) {
+		win.document.write(html);
+		win.document.close();
+	}
+}
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import {
@@ -314,13 +370,24 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 						Track and manage participants
 					</p>
 				</div>
-				<Button
-					onClick={() => setCreateDialogOpen(true)}
-					className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg"
-				>
-					<Plus className="h-4 w-4 mr-2" />
-					Create Team
-				</Button>
+				<div className="flex gap-2">
+					<Button
+						onClick={() =>
+							exportTeamsForPrint(filteredTeams.filter((t) => t.isConfirmed))
+						}
+						className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg"
+					>
+						<Download className="h-4 w-4 mr-2" />
+						Export
+					</Button>
+					<Button
+						onClick={() => setCreateDialogOpen(true)}
+						className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg"
+					>
+						<Plus className="h-4 w-4 mr-2" />
+						Create Team
+					</Button>
+				</div>
 			</div>
 
 			<div className="grid gap-6 md:grid-cols-2">
