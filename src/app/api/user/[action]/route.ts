@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { server } from "~/actions/serverAction";
+import { getRegisteredEventCount } from "~/actions/teams";
+import { getUserById } from "~/lib/auth/auth-util";
 import { parseJwtFromAuthHeader } from "~/lib/utils";
 
 export async function POST(req: NextRequest) {
@@ -15,8 +17,25 @@ export async function POST(req: NextRequest) {
 				});
 			case "searchbyId": {
 				const slug = parseInt(body.userId, 10);
+				const user = await getUserById(slug);
+				if (!user) {
+					return NextResponse.json(
+						{ success: false, error: "User not found" },
+						{ status: 404 },
+					);
+				}
+				const attended = user?.Attendance?.length ?? 0;
+				const registeredCount = await getRegisteredEventCount(user.id);
+
+				const attendance =
+					attended === 0
+						? 0
+						: registeredCount > 0
+							? Math.floor((attended / registeredCount) * 100)
+							: 0;
 				return NextResponse.json({
 					success: true,
+					attendance,
 					...(await server.user.searchUserById({ userId: slug })),
 				});
 			}
