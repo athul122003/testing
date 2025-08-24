@@ -23,54 +23,72 @@ import { Search, Plus, Download } from "lucide-react";
 // Export printable table for teams and members
 function exportTeamsForPrint(event: any, teams: Team[]) {
 	console.log(event.name);
+	const confirmedCount = teams.length;
 	const html = `
-		<html>
-		<head>
-			<title>${event?.name ?? "Event Export"} - Confirmed Teams</title>
-			<style>
-				body { font-family: sans-serif; }
-				table { border-collapse: collapse; width: 100%; margin-top: 2rem; }
-				th, td { border: 1px solid #333; padding: 8px; text-align: left; }
-				th { background: #f3f3f3; }
-				.nowrap { white-space: nowrap; }
-			</style>
-		</head>
-		<body>
-			<h2>${event?.name ?? "Event Export"} - Confirmed Teams</h2>
-			<table>
-				<thead>
-					<tr>
-						<th>Team Name</th>
-						<th>Leader Name</th>
-						<th>Member Name</th>
-						<th>Signature</th>
-					</tr>
-				</thead>
-				<tbody>
-					${teams
-						.map((team) => {
-							const members =
-								team.members.length > 0 ? team.members : [{ name: "-" }];
-							return members
-								.map(
-									(member, idx) => `
-							<tr>
-								${idx === 0 ? `<td rowspan="${members.length}" class="nowrap">${team.name}</td>` : ""}
-								${idx === 0 ? `<td rowspan="${members.length}" class="nowrap">${team.leaderName || "-"}</td>` : ""}
-								<td class="nowrap">${member.name}</td>
-								<td style="min-width:120px;"></td>
-							</tr>
-						`,
-								)
-								.join("");
-						})
-						.join("")}
-				</tbody>
-			</table>
-			<script>window.print()</script>
-		</body>
-		</html>
-	`;
+	      <html>
+	      <head>
+		      <title>${event?.name ?? "Event Export"} - Attendance Sheet</title>
+		      <style>
+			      body { font-family: sans-serif; }
+			      table { border-collapse: collapse; width: 100%; margin-top: 2rem; }
+			      th, td { border: 1px solid #333; padding: 8px; text-align: left; }
+			      th { background: #f3f3f3; }
+			      .nowrap { white-space: nowrap; }
+		      </style>
+	      </head>
+	      <body>
+		      <h2>${event?.name ?? "Event Export"} - Attendance Sheet</h2>
+		      <table>
+			      <thead>
+				      <tr>
+					      <th>Team Name</th>
+					      <th>Leader Name</th>
+					      <th>Member Name</th>
+					      <th>Signature</th>
+				      </tr>
+			      </thead>
+			      <tbody>
+				      ${teams
+								.map((team) => {
+									const members =
+										team.members.length > 0 ? team.members : [{ name: "-" }];
+									return members
+										.map(
+											(member, idx) => `
+					       <tr>
+						       ${idx === 0 ? `<td rowspan="${members.length}" class="nowrap">${team.name}</td>` : ""}
+						       ${idx === 0 ? `<td rowspan="${members.length}" class="nowrap">${team.leaderName || "-"}</td>` : ""}
+						       <td class="nowrap">${member.name}</td>
+						       <td style="min-width:120px;"></td>
+					       </tr>
+				       `,
+										)
+										.join("");
+								})
+								.join("")}
+			      </tbody>
+		      </table>
+		      <br/><br/>
+		      <table>
+			      <thead>
+				      <tr>
+					      <th>Teams Confirmed</th>
+					      <th>Teams Attended</th>
+					      <th colspan="3">Operation Manager Signatures</th>
+				      </tr>
+			      </thead>
+			      <tbody>
+				      <tr>
+					      <td>${confirmedCount}</td>
+					      <td></td>
+					      <td colspan="3"></td>
+				      </tr>
+			      </tbody>
+		      </table>
+		      <script>window.print()</script>
+	      </body>
+	      </html>
+       `;
 	const win = window.open("", "_blank");
 	if (win) {
 		win.document.write(html);
