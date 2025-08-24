@@ -128,9 +128,9 @@ function exportTeamsForPrint(event: any, teams: Team[]) {
 				<table>
 				  <thead>
 					  <tr>
-						  <th>President</th>
-						  <th>Vice President</th>
-						  <th>Operations Manager</th>
+					  <th>Operations Manager</th>
+					  <th>Vice President</th>
+					  <th>President</th>
 						  <th>Faculty Coordinator</th>
 					  </tr>
 				  </thead>
