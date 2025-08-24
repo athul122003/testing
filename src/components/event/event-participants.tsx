@@ -21,11 +21,12 @@ import { Badge } from "~/components/ui/badge";
 import { Switch } from "~/components/ui/switch";
 import { Search, Plus, Download } from "lucide-react";
 // Export printable table for teams and members
-function exportTeamsForPrint(teams: Team[]) {
+function exportTeamsForPrint(event: any, teams: Team[]) {
+	console.log(event.name);
 	const html = `
 		<html>
 		<head>
-			<title>Event Teams Export</title>
+			<title>${event?.name ?? "Event Export"} - Confirmed Teams</title>
 			<style>
 				body { font-family: sans-serif; }
 				table { border-collapse: collapse; width: 100%; margin-top: 2rem; }
@@ -35,7 +36,7 @@ function exportTeamsForPrint(teams: Team[]) {
 			</style>
 		</head>
 		<body>
-			<h2>Event Teams Export</h2>
+			<h2>${event?.name ?? "Event Export"} - Confirmed Teams</h2>
 			<table>
 				<thead>
 					<tr>
@@ -373,7 +374,10 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 				<div className="flex gap-2">
 					<Button
 						onClick={() =>
-							exportTeamsForPrint(filteredTeams.filter((t) => t.isConfirmed))
+							exportTeamsForPrint(
+								editingEvent,
+								filteredTeams.filter((t) => t.isConfirmed),
+							)
 						}
 						className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg"
 					>

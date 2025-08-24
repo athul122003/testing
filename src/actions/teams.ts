@@ -45,6 +45,7 @@ export async function getTeamsForEvent(eventId: number) {
 		name: team.name,
 		isConfirmed: team.isConfirmed,
 		leaderName: team.Leader?.name,
+		hasAttended: team.hasAttended,
 		leaderId: team.Leader?.id,
 		members: team.Members.map((member) => ({
 			id: member.id,
@@ -328,6 +329,81 @@ export const markAttendanceByScan = protectedAction(
 		if (errors.length > 0) {
 			throw errors;
 		}
+	},
+	{ actionName: "event.ALLPERM" },
+);
+
+export const unmarkAttendance = protectedAction(
+	async (eventId: number, userId: number) => {
+		await db.attendance.delete({
+			where: {
+				userId_eventId: {
+					userId,
+					eventId,
+				},
+			},
+		});
+
+		const team = await db.team.findFirst({
+			where: {
+				eventId,
+				Members: { some: { id: userId } },
+			},
+			include: {
+				Members: {
+					select: {
+						id: true,
+					},
+				},
+			},
+		});
+
+		const anymembersHaveAttendance = await db.attendance.findFirst({
+			where: {
+				eventId,
+				userId: { in: team?.Members.map((m) => m.id) },
+				hasAttended: true,
+			},
+		});
+
+		if (!anymembersHaveAttendance) {
+			await db.team.update({
+				where: { id: team?.id },
+				data: {
+					hasAttended: false,
+				},
+			});
+		} else {
+			await db.team.update({
+				where: { id: team?.id },
+				data: {
+					hasAttended: true,
+				},
+			});
+		}
+
+		if (!team) {
+			throw new Error("Team not found for this user in the event");
+		}
+
+		const attendances = await db.attendance.findMany({
+			where: {
+				eventId,
+				userId: { in: team.Members.map((m) => m.id) },
+				hasAttended: true,
+			},
+		});
+
+		if (attendances.length === 0) {
+			await db.team.update({
+				where: { id: team.id },
+				data: {
+					hasAttended: false,
+				},
+			});
+		}
+
+		return { success: true };
 	},
 	{ actionName: "event.ALLPERM" },
 );
