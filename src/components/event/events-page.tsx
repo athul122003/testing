@@ -1,9 +1,11 @@
 "use client";
 
 import {
+	Activity,
 	Calendar,
 	Clock,
 	DollarSign,
+	Download,
 	Eye,
 	IndianRupee,
 	MapPin,
@@ -16,6 +18,8 @@ import { useEffect, useState } from "react";
 import { ExtendedEvent, toggleEventStatus } from "~/actions/event";
 import { toast } from "sonner";
 import { deleteEventAction, publishEventAction } from "~/actions/event";
+import { getEventReportData } from "~/actions/report";
+import { generateEventReport } from "~/lib/generate-event-report";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
@@ -195,6 +199,32 @@ export function EventsPage({
 		setEditingEvent(event);
 		setActivePage("event-documents");
 		setIsDetailOpen(false);
+	};
+
+	const handleGenerateReport = async (event: ExtendedEvent) => {
+		try {
+			toast.loading("Generating report...");
+			const reportData = await getEventReportData(event.id);
+
+			if (!reportData.success || !reportData.data) {
+				toast.error("Failed to generate report. No data available.");
+				return;
+			}
+
+			const pdfDataUri = generateEventReport(event.name, reportData.data);
+
+			const link = document.createElement("a");
+			link.href = pdfDataUri;
+			link.download = `${event.name.replace(/\s+/g, "-")}-Report.pdf`;
+			link.click();
+
+			toast.dismiss();
+			toast.success("Report generated successfully");
+		} catch (error) {
+			console.error("Error generating report:", error);
+			toast.dismiss();
+			toast.error("Failed to generate report");
+		}
 	};
 
 	const getStateColor = (state: string) => {
@@ -562,10 +592,17 @@ export function EventsPage({
 														: null}
 										</Button>
 									) : (
-										<div>
+										<div className="flex items-center gap-2">
 											<p className="text-green-700 dark:text-green-400 font-semibold bg-green-100 dark:bg-green-900/30 px-4 py-2 rounded-full">
 												Event is Completed
 											</p>
+											<Button
+												type="button"
+												onClick={() => handleGenerateReport(selectedEvent)}
+												className="bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-200 border border-blue-300 dark:border-blue-800"
+											>
+												Download Final Report
+											</Button>
 										</div>
 									)}
 									<Button

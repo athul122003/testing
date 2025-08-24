@@ -65,6 +65,10 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 							return { ...member, hasAttended: attended };
 						}),
 					);
+					membersWithAttendance.sort((a, b) => {
+						if (a.hasAttended === b.hasAttended) return 0;
+						return a.hasAttended ? -1 : 1;
+					});
 					return {
 						...team,
 						members: membersWithAttendance,
