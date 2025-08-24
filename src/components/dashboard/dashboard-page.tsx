@@ -11,6 +11,7 @@ import { EventParticipants } from "~/components/event/event-participants";
 import { EventParticipants as EventWinner } from "~/components/event/event-winner";
 import { EventAttendance } from "~/components/event/event-attendance";
 import { EventDocuments } from "~/components/event/event-documents";
+import { EventFinalReport } from "~/components/event/event-final-report";
 import { GalleryPage } from "~/components/gallery/gallery-page";
 import { AppSidebar } from "~/components/othercomps/app-sidebar";
 import { TopBar } from "~/components/othercomps/top-bar";
@@ -86,6 +87,13 @@ export function Dashboard() {
 				return <EventAttendance editingEvent={editingEvent} />;
 			case "event-documents":
 				return <EventDocuments editingEvent={editingEvent} />;
+			case "event-final-report":
+				return (
+					<EventFinalReport
+						editingEvent={editingEvent}
+						onBack={() => setActivePage("events")}
+					/>
+				);
 			case "blogs":
 				return (
 					<BlogsPage

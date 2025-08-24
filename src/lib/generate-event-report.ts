@@ -24,8 +24,90 @@ type Team = {
 	flcPoints: number;
 };
 
-export function generateEventReport(eventName: string, teams: Team[]): string {
+type CustomPrizeType = {
+	id: string;
+	name: string;
+	teams: {
+		id: string;
+		name: string;
+		leaderName?: string;
+		members: { id: number; name: string }[];
+	}[];
+};
+
+type ReportData = {
+	customPrizeTypes?: CustomPrizeType[];
+	participatingTeams?: any[];
+} & Team[];
+
+export function generateEventReport(
+	eventName: string,
+	teams: Team[] | any,
+): string {
 	const doc = new jsPDF();
+
+	let teamsArray: Team[] = [];
+	if (
+		typeof teams === "object" &&
+		!Array.isArray(teams) &&
+		"customPrizeTypes" in teams
+	) {
+		const { customPrizeTypes, participatingTeams } = teams;
+
+		customPrizeTypes.forEach((prizeType: CustomPrizeType) => {
+			prizeType.teams.forEach((team: any) => {
+				teamsArray.push({
+					id: team.id,
+					name: team.name,
+					leader: team.leaderName
+						? {
+								id: 0,
+								name: team.leaderName,
+								email: "",
+								usn: "",
+							}
+						: null,
+					members: team.members.map((member: any, index: number) => ({
+						id: member.id,
+						name: member.name,
+						email: member.email || "",
+						usn: member.usn || "",
+						hasAttended: true,
+						isLeader: index === 0,
+					})),
+					prizeType: prizeType.name.toUpperCase().replace(/\s+/g, "_"),
+					flcPoints: 0,
+				});
+			});
+		});
+
+		participatingTeams.forEach((team: any) => {
+			teamsArray.push({
+				id: team.id,
+				name: team.name,
+				leader: team.leaderName
+					? {
+							id: 0,
+							name: team.leaderName,
+							email: "",
+							usn: "",
+						}
+					: null,
+				members: team.members.map((member: any, index: number) => ({
+					id: member.id,
+					name: member.name,
+					email: member.email || "",
+					usn: member.usn || "",
+					hasAttended: true,
+					isLeader: index === 0,
+				})),
+				prizeType: "PARTICIPATION",
+				flcPoints: 0,
+			});
+		});
+	} else {
+		teamsArray = Array.isArray(teams) ? teams : [];
+	}
 
 	doc.setProperties({
 		title: `${eventName} - Event Report`,
@@ -54,9 +136,9 @@ export function generateEventReport(eventName: string, teams: Team[]): string {
 		day: "numeric",
 	});
 
-	doc.text(`Total Teams: ${teams.length}`, 15, 57);
+	doc.text(`Total Teams: ${teamsArray.length}`, 15, 57);
 	doc.text(
-		`Total Members: ${teams.reduce((sum, team) => sum + team.members.length, 0)}`,
+		`Total Members: ${teamsArray.reduce((sum: number, team: Team) => sum + team.members.length, 0)}`,
 		15,
 		64,
 	);
@@ -66,40 +148,58 @@ export function generateEventReport(eventName: string, teams: Team[]): string {
 	doc.setFont("helvetica", "bold");
 	doc.text("Prize Distribution:", 120, 50);
 
-	const prizeOrder = [
-		"Winner",
-		"Runner Up",
-		"Second Runner Up",
-		"Participation",
-	];
-	const prizeCounts: Record<string, number> = {};
+	const prizeTypeCounts: Record<string, number> = {};
 
-	const normalizedCounts: Record<string, number> = {
-		Winner: 0,
-		"Runner Up": 0,
-		"Second Runner Up": 0,
-		Participation: 0,
-	};
+	teamsArray.forEach((team: Team) => {
+		const prizeType = team.prizeType;
+		prizeTypeCounts[prizeType] = (prizeTypeCounts[prizeType] || 0) + 1;
+	});
 
-	const normalizePrizeType = (prize: string): string => {
-		const lowerPrize = prize.toLowerCase();
-		console.log("Normalizing prize type:", prize.toLowerCase());
-		if (lowerPrize.includes("winner")) {
-			return "Winner";
-		} else if (lowerPrize.startsWith("runner_up")) {
-			return "Runner Up";
-		} else if (lowerPrize.startsWith("second")) {
-			return "Second Runner Up";
-		} else if (lowerPrize.includes("participation")) {
-			return "Participation";
-		} else {
-			return "";
+	const getPrizeDisplayName = (prizeType: string): string => {
+		switch (prizeType) {
+			case "WINNER":
+				return "Winner";
+			case "RUNNER_UP":
+				return "Runner Up";
+			case "SECOND_RUNNER_UP":
+				return "Second Runner Up";
+			case "PARTICIPATION":
+				return "Participation";
+			default:
+				return prizeType
+					.split("_")
+					.map(
+						(word) =>
+							word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+					)
+					.join(" ");
 		}
 	};
 
-	teams.forEach((team) => {
-		const normalizedType = normalizePrizeType(team.prizeType);
-		normalizedCounts[normalizedType]++;
+	const getPrizeOrder = (prizeType: string): number => {
+		switch (prizeType) {
+			case "WINNER":
+				return 1;
+			case "RUNNER_UP":
+				return 2;
+			case "SECOND_RUNNER_UP":
+				return 3;
+			case "PARTICIPATION":
+				return 1000;
+			default:
+				return 500;
+		}
+	};
+
+	const sortedPrizeTypes = Object.keys(prizeTypeCounts).sort((a, b) => {
+		const aOrder = getPrizeOrder(a);
+		const bOrder = getPrizeOrder(b);
+
+		if (aOrder === bOrder) {
+			return a.localeCompare(b);
+		}
+
+		return aOrder - bOrder;
 	});
 
 	doc.setFontSize(10);
@@ -107,23 +207,20 @@ export function generateEventReport(eventName: string, teams: Team[]): string {
 	doc.setFont("helvetica", "normal");
 
 	let yPos = 57;
-	prizeOrder.forEach((prizeType) => {
-		console.log(normalizedCounts);
-		if (normalizedCounts[prizeType] > 0) {
-			doc.text(`${prizeType}: ${normalizedCounts[prizeType]}`, 120, yPos);
+	sortedPrizeTypes.forEach((prizeType) => {
+		const count = prizeTypeCounts[prizeType];
+		if (count > 0) {
+			const displayName = getPrizeDisplayName(prizeType);
+			doc.text(`${displayName}: ${count}`, 120, yPos);
 			yPos += 7;
 		}
 	});
 
-	Object.entries(prizeCounts).forEach(([prizeType, count]) => {
-		doc.text(`${prizeType}: ${count}`, 120, yPos);
-		yPos += 7;
-	});
-
+	const titleYPos = Math.max(80, yPos + 8);
 	doc.setFontSize(14);
 	doc.setTextColor(20, 23, 45);
 	doc.setFont("helvetica", "bold");
-	doc.text("Teams and Attendance Details", 105, 90, { align: "center" });
+	doc.text("Teams and Attendance Details", 105, titleYPos, { align: "center" });
 
 	const tableData: (
 		| string
@@ -136,18 +233,30 @@ export function generateEventReport(eventName: string, teams: Team[]): string {
 		  }
 	)[][] = [];
 
-	const sortedTeams = [...teams].sort((a, b) => {
-		const prizeOrder: { [key: string]: number } = {
-			WINNER: 1,
-			RUNNER_UP: 2,
-			SECOND_RUNNER_UP: 3,
-			PARTICIPATION: 4,
+	const sortedTeams = [...teamsArray].sort((a, b) => {
+		const getPrizeOrder = (prizeType: string): number => {
+			switch (prizeType) {
+				case "WINNER":
+					return 1;
+				case "RUNNER_UP":
+					return 2;
+				case "SECOND_RUNNER_UP":
+					return 3;
+				case "PARTICIPATION":
+					return 1000;
+				default:
+					return 500;
+			}
 		};
 
-		const aOrder = prizeOrder[a.prizeType] || 5;
-		const bOrder = prizeOrder[b.prizeType] || 5;
+		const aOrder = getPrizeOrder(a.prizeType);
+		const bOrder = getPrizeOrder(b.prizeType);
 
 		if (aOrder === bOrder) {
+			if (aOrder === 500) {
+				const prizeCompare = a.prizeType.localeCompare(b.prizeType);
+				if (prizeCompare !== 0) return prizeCompare;
+			}
 			return a.name.localeCompare(b.name);
 		}
 
@@ -165,14 +274,29 @@ export function generateEventReport(eventName: string, teams: Team[]): string {
 	});
 
 	const prizeTypes = Object.keys(teamsByPrize).sort((a, b) => {
-		const prizeOrder: { [key: string]: number } = {
-			WINNER: 1,
-			RUNNER_UP: 2,
-			SECOND_RUNNER_UP: 3,
-			PARTICIPATION: 4,
+		const getPrizeOrder = (prizeType: string): number => {
+			switch (prizeType) {
+				case "WINNER":
+					return 1;
+				case "RUNNER_UP":
+					return 2;
+				case "SECOND_RUNNER_UP":
+					return 3;
+				case "PARTICIPATION":
+					return 1000;
+				default:
+					return 500;
+			}
 		};
 
-		return (prizeOrder[a] || 5) - (prizeOrder[b] || 5);
+		const aOrder = getPrizeOrder(a);
+		const bOrder = getPrizeOrder(b);
+
+		if (aOrder === bOrder) {
+			return a.localeCompare(b);
+		}
+
+		return aOrder - bOrder;
 	});
 
 	prizeTypes.forEach((prizeType) => {
@@ -215,7 +339,7 @@ export function generateEventReport(eventName: string, teams: Team[]): string {
 			["Team Name", "Team Members", "USN", "Attendance", "Prize Category"],
 		],
 		body: tableData,
-		startY: 95,
+		startY: titleYPos + 2,
 		margin: { left: 10, right: 10, bottom: 20 },
 		rowPageBreak: "avoid",
 		pageBreak: "auto",

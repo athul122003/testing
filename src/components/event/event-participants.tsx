@@ -30,8 +30,8 @@ function exportTeamsForPrint(event: any, teams: Team[]) {
 		      <title>${event?.name ?? "Event Export"} - Attendance Sheet</title>
 		      <style>
 			      body { font-family: sans-serif; }
-			      table { border-collapse: collapse; width: 100%; margin-top: 2rem; }
-			      th, td { border: 1px solid #333; padding: 8px; text-align: left; }
+			      table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+			      th, td { border: 1px solid #333; padding: 8px; text-align: center; }
 			      th { background: #f3f3f3; }
 			      .nowrap { white-space: nowrap; }
 		      </style>
@@ -43,6 +43,7 @@ function exportTeamsForPrint(event: any, teams: Team[]) {
 				      <tr>
 					      <th>Team Name</th>
 					      <th>Leader Name</th>
+						<th>FLC Id</th>
 					      <th>Member Name</th>
 					      <th>Signature</th>
 				      </tr>
@@ -51,13 +52,16 @@ function exportTeamsForPrint(event: any, teams: Team[]) {
 				      ${teams
 								.map((team) => {
 									const members =
-										team.members.length > 0 ? team.members : [{ name: "-" }];
+										team.members.length > 0
+											? team.members
+											: [{ name: "-", id: 0 }];
 									return members
 										.map(
 											(member, idx) => `
 					       <tr>
 						       ${idx === 0 ? `<td rowspan="${members.length}" class="nowrap">${team.name}</td>` : ""}
 						       ${idx === 0 ? `<td rowspan="${members.length}" class="nowrap">${team.leaderName || "-"}</td>` : ""}
+							   <td class="nowrap">${member.id || "-"}</td>
 						       <td class="nowrap">${member.name}</td>
 						       <td style="min-width:120px;"></td>
 					       </tr>
@@ -68,20 +72,39 @@ function exportTeamsForPrint(event: any, teams: Team[]) {
 								.join("")}
 			      </tbody>
 		      </table>
-		      <br/><br/>
+			  <br>
+				<h3 style="text-align:center">Summary</h3>
 		      <table>
 			      <thead>
 				      <tr>
 					      <th>Teams Confirmed</th>
 					      <th>Teams Attended</th>
-					      <th colspan="3">Operation Manager Signatures</th>
 				      </tr>
 			      </thead>
 			      <tbody>
 				      <tr>
 					      <td>${confirmedCount}</td>
 					      <td></td>
-					      <td colspan="3"></td>
+				      </tr>
+			      </tbody>
+		      </table>
+			  <br>
+								<h3 style="text-align:center">Signatures</h3>
+			    <table>
+			      <thead>
+				      <tr>
+					      <th>President</th>
+					      <th>Vice President</th>
+					      <th>Operations Manager</th>
+					      <th>Faculty Coordinator</th>
+				      </tr>
+			      </thead>
+			      <tbody>
+				      <tr style="height: 60px;">
+					      <td></td>
+					      <td></td>
+					      <td></td>
+					      <td></td>
 				      </tr>
 			      </tbody>
 		      </table>
