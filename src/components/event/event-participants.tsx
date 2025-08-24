@@ -20,6 +20,38 @@ import {
 import { Badge } from "~/components/ui/badge";
 import { Switch } from "~/components/ui/switch";
 import { Search, Plus, Download } from "lucide-react";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import {
+	getTeamsForEvent,
+	deleteTeam,
+	updateTeamName,
+	removeMemberFromTeam,
+	addMemberToTeam,
+	confirmTeam,
+	createTeam,
+	unConfirmTeam,
+} from "~/actions/teams";
+import { toast } from "sonner";
+
+type Member = {
+	id: number;
+	name: string;
+};
+
+type Team = {
+	id: string;
+	name: string;
+	leaderId?: number;
+	isConfirmed: boolean;
+	leaderName?: string;
+	members: Member[];
+};
+
+type EventParticipantsProps = {
+	editingEvent: any;
+};
+
 // Export printable table for teams and members
 function exportTeamsForPrint(event: any, teams: Team[]) {
 	console.log(event.name);
@@ -28,13 +60,16 @@ function exportTeamsForPrint(event: any, teams: Team[]) {
 	      <html>
 	      <head>
 		      <title>${event?.name ?? "Event Export"} - Attendance Sheet</title>
-		      <style>
-			      body { font-family: sans-serif; }
-			      table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
-			      th, td { border: 1px solid #333; padding: 8px; text-align: center; }
-			      th { background: #f3f3f3; }
-			      .nowrap { white-space: nowrap; }
-		      </style>
+					<style>
+									body { font-family: sans-serif; }
+									table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+									th, td { border: 1px solid #333; padding: 8px; text-align: center; }
+									th { background: #f3f3f3; }
+									.nowrap { white-space: nowrap; }
+									@media print {
+										.page-break { page-break-before: always; break-before: page; }
+									}
+					</style>
 	      </head>
 	      <body>
 		      <h2>${event?.name ?? "Event Export"} - Attendance Sheet</h2>
@@ -72,42 +107,43 @@ function exportTeamsForPrint(event: any, teams: Team[]) {
 								.join("")}
 			      </tbody>
 		      </table>
-			  <br>
+			  <div class="page-break">
 				<h3 style="text-align:center">Summary</h3>
-		      <table>
-			      <thead>
-				      <tr>
-					      <th>Teams Confirmed</th>
-					      <th>Teams Attended</th>
-				      </tr>
-			      </thead>
-			      <tbody>
-				      <tr>
-					      <td>${confirmedCount}</td>
-					      <td></td>
-				      </tr>
-			      </tbody>
-		      </table>
-			  <br>
-								<h3 style="text-align:center">Signatures</h3>
-			    <table>
-			      <thead>
-				      <tr>
-					      <th>President</th>
-					      <th>Vice President</th>
-					      <th>Operations Manager</th>
-					      <th>Faculty Coordinator</th>
-				      </tr>
-			      </thead>
-			      <tbody>
-				      <tr style="height: 60px;">
-					      <td></td>
-					      <td></td>
-					      <td></td>
-					      <td></td>
-				      </tr>
-			      </tbody>
-		      </table>
+				<table>
+				  <thead>
+					  <tr>
+						  <th>Teams Confirmed</th>
+						  <th>Teams Attended</th>
+					  </tr>
+				  </thead>
+				  <tbody>
+					  <tr>
+						  <td>${confirmedCount}</td>
+						  <td></td>
+					  </tr>
+				  </tbody>
+				</table>
+				<br>
+				<h3 style="text-align:center">Signatures</h3>
+				<table>
+				  <thead>
+					  <tr>
+						  <th>President</th>
+						  <th>Vice President</th>
+						  <th>Operations Manager</th>
+						  <th>Faculty Coordinator</th>
+					  </tr>
+				  </thead>
+				  <tbody>
+					  <tr style="height: 60px;">
+						  <td></td>
+						  <td></td>
+						  <td></td>
+						  <td></td>
+					  </tr>
+				  </tbody>
+				</table>
+			  </div>
 		      <script>window.print()</script>
 	      </body>
 	      </html>
@@ -118,37 +154,6 @@ function exportTeamsForPrint(event: any, teams: Team[]) {
 		win.document.close();
 	}
 }
-import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
-import {
-	getTeamsForEvent,
-	deleteTeam,
-	updateTeamName,
-	removeMemberFromTeam,
-	addMemberToTeam,
-	confirmTeam,
-	createTeam,
-	unConfirmTeam,
-} from "~/actions/teams";
-import { toast } from "sonner";
-
-type Member = {
-	id: number;
-	name: string;
-};
-
-type Team = {
-	id: string;
-	name: string;
-	leaderId?: number;
-	isConfirmed: boolean;
-	leaderName?: string;
-	members: Member[];
-};
-
-type EventParticipantsProps = {
-	editingEvent: any;
-};
 
 export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 	const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
