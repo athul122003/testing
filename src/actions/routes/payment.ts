@@ -38,6 +38,7 @@ const verifyAndSavePaymentSchema = z.discriminatedUnion("paymentType", [
 		razorpayOrderId: z.string(),
 		razorpayPaymentId: z.string(),
 		razorpaySignature: z.string(),
+		amount: z.number(),
 		sessionUserId: z.number(),
 	}),
 ]);
@@ -252,7 +253,7 @@ export async function savePayment(input: VerifyAndSavePaymentInput) {
 					},
 				}
 			: {
-					amount: parseInt(envAmount ?? "410"), // TODO [RAHUL] Just hardcoded previous year value, so have to check it again later
+					amount: input.amount ?? 410, // TODO [RAHUL] Just hardcoded previous year value, so have to check it again later
 					User: {
 						connect: {
 							id: input.sessionUserId,
