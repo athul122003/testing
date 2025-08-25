@@ -6,7 +6,7 @@ import { razorPay } from "~/server/razorpay";
 import { PaymentType } from "@prisma/client";
 import { confirmTeam } from "./events";
 
-const envAmount = process.env.NEXT_PUBLIC_REGISTRATION_AMOUNT;
+const envAmount = process.env.REGISTRATION_AMOUNT;
 
 const createOrderSchema = z.discriminatedUnion("paymentType", [
 	z.object({
