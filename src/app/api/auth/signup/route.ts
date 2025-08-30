@@ -50,7 +50,7 @@ export async function POST(req: Request) {
 
 		if (existingUser && !existingUser.emailVerified) {
 			return NextResponse.json(
-				{ message: "Please verify your email and Login" },
+				{ message: "Please check your mail to verify email and login" },
 				{ status: 400 },
 			);
 		}
