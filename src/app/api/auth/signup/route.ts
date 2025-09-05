@@ -48,9 +48,25 @@ export async function POST(req: Request) {
 
 		const existingUser = await getUserByEmail(email);
 
+		const existingUsn = await db.user.findFirst({
+			where: {
+				usn: {
+					equals: usn,
+					mode: "insensitive",
+				},
+			},
+		});
+
 		if (existingUser && !existingUser.emailVerified) {
 			return NextResponse.json(
 				{ message: "Please check your mail to verify email and login" },
+				{ status: 400 },
+			);
+		}
+
+		if (existingUsn) {
+			return NextResponse.json(
+				{ message: "USN already exists with another account" },
 				{ status: 400 },
 			);
 		}

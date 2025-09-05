@@ -105,11 +105,14 @@ export async function getAttendedTeamsForEvent(eventId: number) {
 	}));
 }
 
-export async function deleteTeam(teamId: string) {
-	await db.team.delete({
-		where: { id: teamId },
-	});
-}
+export const deleteTeam = protectedAction(
+	async (teamId: string) => {
+		await db.team.delete({
+			where: { id: teamId },
+		});
+	},
+	{ actionName: "event.ALLPERM" },
+);
 
 export const removeMemberFromTeam = protectedAction(
 	async (teamId: string, userId: number) => {
@@ -211,202 +214,193 @@ export async function addMemberToTeam(teamId: string, userId: number) {
 	return updatedTeam?.Members || [];
 }
 
-export const markAttendance = protectedAction(
-	async (eventId: number, userId: number) => {
-		const team = await db.team.findFirst({
-			where: { eventId, Members: { some: { id: userId } } },
-			select: { id: true },
-		});
-		if (!team) {
-			throw new Error("Team not found for this user in the event");
-		}
-		await db.team.update({
-			where: { id: team.id, eventId: eventId },
-			data: {
-				hasAttended: true,
-			},
-		});
-		const attendance = await db.attendance.upsert({
-			where: {
-				userId_eventId: {
-					userId,
-					eventId,
-				},
-			},
-			update: {
-				hasAttended: true,
-			},
-			create: {
-				eventId,
+export async function markAttendance(eventId: number, userId: number) {
+	const team = await db.team.findFirst({
+		where: { eventId, Members: { some: { id: userId } } },
+		select: { id: true },
+	});
+	if (!team) {
+		throw new Error("Team not found for this user in the event");
+	}
+	await db.team.update({
+		where: { id: team.id, eventId: eventId },
+		data: {
+			hasAttended: true,
+		},
+	});
+	const attendance = await db.attendance.upsert({
+		where: {
+			userId_eventId: {
 				userId,
-				teamId: team.id,
-				hasAttended: true,
+				eventId,
 			},
-		});
-		return attendance;
-	},
-	{ actionName: "event.ALLPERM" },
-);
+		},
+		update: {
+			hasAttended: true,
+		},
+		create: {
+			eventId,
+			userId,
+			teamId: team.id,
+			hasAttended: true,
+		},
+	});
+	return attendance;
+}
 
-export const markAttendanceByScan = protectedAction(
-	async (eventId: number, teamId: string) => {
-		const team = await db.team.findUnique({
-			where: { id: teamId, eventId: eventId },
-			include: {
-				Members: {
-					select: {
-						id: true,
-					},
+export async function markAttendanceByScan(eventId: number, teamId: string) {
+	const team = await db.team.findUnique({
+		where: { id: teamId, eventId: eventId },
+		include: {
+			Members: {
+				select: {
+					id: true,
 				},
-				Leader: {
-					select: {
-						id: true,
-					},
+			},
+			Leader: {
+				select: {
+					id: true,
 				},
 			},
-		});
-		if (!team) {
-			throw new Error("Team not found");
-		}
+		},
+	});
+	if (!team) {
+		throw new Error("Team not found");
+	}
 
-		const memberIds = team.Members.map((member) => member.id);
-		const uniqueUserIds = Array.from(new Set([...memberIds]));
+	const memberIds = team.Members.map((member) => member.id);
+	const uniqueUserIds = Array.from(new Set([...memberIds]));
 
-		const errors: { userId: number; error: string }[] = [];
+	const errors: { userId: number; error: string }[] = [];
 
-		await db.team.update({
-			where: { id: teamId, eventId: eventId },
-			data: {
-				hasAttended: true,
-			},
-		});
+	await db.team.update({
+		where: { id: teamId, eventId: eventId },
+		data: {
+			hasAttended: true,
+		},
+	});
 
-		await Promise.all(
-			uniqueUserIds.map(async (userId) => {
-				const existing = await db.attendance.findUnique({
-					where: {
-						userId_eventId: {
-							userId,
-							eventId,
-						},
-					},
-				});
-				const team = await db.team.findFirst({
-					where: { eventId, Members: { some: { id: userId } } },
-					select: { id: true },
-				});
-				if (!team) {
-					errors.push({
+	await Promise.all(
+		uniqueUserIds.map(async (userId) => {
+			const existing = await db.attendance.findUnique({
+				where: {
+					userId_eventId: {
 						userId,
-						error: "Team not found for this user in the event",
-					});
-					return;
-				}
-				if (existing?.hasAttended) {
-					errors.push({ userId, error: "Attendance already marked" });
-					return;
-				}
-				await db.attendance.upsert({
-					where: {
-						userId_eventId: {
-							userId,
-							eventId,
-						},
-					},
-					update: {
-						hasAttended: true,
-					},
-					create: {
 						eventId,
-						userId,
-						teamId: team.id,
-						hasAttended: true,
 					},
-				});
-			}),
-		);
-
-		if (errors.length > 0) {
-			throw errors;
-		}
-	},
-	{ actionName: "event.ALLPERM" },
-);
-
-export const unmarkAttendance = protectedAction(
-	async (eventId: number, userId: number) => {
-		await db.attendance.delete({
-			where: {
-				userId_eventId: {
-					userId,
-					eventId,
-				},
-			},
-		});
-
-		const team = await db.team.findFirst({
-			where: {
-				eventId,
-				Members: { some: { id: userId } },
-			},
-			include: {
-				Members: {
-					select: {
-						id: true,
-					},
-				},
-			},
-		});
-
-		const anymembersHaveAttendance = await db.attendance.findFirst({
-			where: {
-				eventId,
-				userId: { in: team?.Members.map((m) => m.id) },
-				hasAttended: true,
-			},
-		});
-
-		if (!anymembersHaveAttendance) {
-			await db.team.update({
-				where: { id: team?.id },
-				data: {
-					hasAttended: false,
 				},
 			});
-		} else {
-			await db.team.update({
-				where: { id: team?.id },
-				data: {
+			const team = await db.team.findFirst({
+				where: { eventId, Members: { some: { id: userId } } },
+				select: { id: true },
+			});
+			if (!team) {
+				errors.push({
+					userId,
+					error: "Team not found for this user in the event",
+				});
+				return;
+			}
+			if (existing?.hasAttended) {
+				errors.push({ userId, error: "Attendance already marked" });
+				return;
+			}
+			await db.attendance.upsert({
+				where: {
+					userId_eventId: {
+						userId,
+						eventId,
+					},
+				},
+				update: {
+					hasAttended: true,
+				},
+				create: {
+					eventId,
+					userId,
+					teamId: team.id,
 					hasAttended: true,
 				},
 			});
-		}
+		}),
+	);
 
-		if (!team) {
-			throw new Error("Team not found for this user in the event");
-		}
+	if (errors.length > 0) {
+		throw errors;
+	}
+}
 
-		const attendances = await db.attendance.findMany({
-			where: {
+export async function unmarkAttendance(eventId: number, userId: number) {
+	await db.attendance.delete({
+		where: {
+			userId_eventId: {
+				userId,
 				eventId,
-				userId: { in: team.Members.map((m) => m.id) },
+			},
+		},
+	});
+
+	const team = await db.team.findFirst({
+		where: {
+			eventId,
+			Members: { some: { id: userId } },
+		},
+		include: {
+			Members: {
+				select: {
+					id: true,
+				},
+			},
+		},
+	});
+
+	const anymembersHaveAttendance = await db.attendance.findFirst({
+		where: {
+			eventId,
+			userId: { in: team?.Members.map((m) => m.id) },
+			hasAttended: true,
+		},
+	});
+
+	if (!anymembersHaveAttendance) {
+		await db.team.update({
+			where: { id: team?.id },
+			data: {
+				hasAttended: false,
+			},
+		});
+	} else {
+		await db.team.update({
+			where: { id: team?.id },
+			data: {
 				hasAttended: true,
 			},
 		});
+	}
 
-		if (attendances.length === 0) {
-			await db.team.update({
-				where: { id: team.id },
-				data: {
-					hasAttended: false,
-				},
-			});
-		}
+	if (!team) {
+		throw new Error("Team not found for this user in the event");
+	}
 
-		return { success: true };
-	},
-	{ actionName: "event.ALLPERM" },
-);
+	const attendances = await db.attendance.findMany({
+		where: {
+			eventId,
+			userId: { in: team.Members.map((m) => m.id) },
+			hasAttended: true,
+		},
+	});
+
+	if (attendances.length === 0) {
+		await db.team.update({
+			where: { id: team.id },
+			data: {
+				hasAttended: false,
+			},
+		});
+	}
+
+	return { success: true };
+}
 
 export async function hasAttended(
 	eventId: number,

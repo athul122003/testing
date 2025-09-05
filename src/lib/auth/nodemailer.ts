@@ -41,16 +41,12 @@ const sendVerificationEmail = async (
 		...defaultTemplate,
 	});
 
-	try {
-		const res = await transporter.sendMail({
-			from: '"Finite Loop Club" <flc@nmamit.in>',
-			to: email,
-			subject: "Verify your email",
-			html: htmlToSend,
-		});
-	} catch (e) {
-		console.log(e);
-	}
+	const res = await transporter.sendMail({
+		from: '"Finite Loop Club" <flc@nmamit.in>',
+		to: email,
+		subject: "Verify your email",
+		html: htmlToSend,
+	});
 };
 
 const sendPasswordResetEmail = async (

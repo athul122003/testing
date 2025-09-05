@@ -87,8 +87,10 @@ const login = async (input: { email: string; password: string }) => {
 		const errors: string[] = [];
 		const existingUser = await getUserByEmail(input.email);
 		if (!existingUser) {
-			errors.push("User not found");
-			throw new Error(JSON.stringify(errors));
+			// errors.push("User not found");
+			// throw new Error(JSON.stringify(errors));
+			errors.push("Invalid email or password");
+			return { errors, accessToken: null, refreshToken: null };
 		}
 		let validPassword = false;
 		try {
