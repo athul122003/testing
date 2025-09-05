@@ -35,9 +35,7 @@ export async function getTeamsForEvent(eventId: number) {
 				},
 			},
 		},
-		orderBy: {
-			isConfirmed: "desc", // confirmed teams first
-		},
+		orderBy: [{ isConfirmed: "desc" }, { name: "asc" }],
 	});
 
 	return teams.map((team) => ({

@@ -23,6 +23,11 @@ import { Search, Plus, Download } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import {
+	Dialog as ExportDialog,
+	DialogContent as ExportDialogContent,
+} from "~/components/ui/dialog";
+import { exportParticipantsDocx } from "~/lib/exportEventsDoc";
+import {
 	getTeamsForEvent,
 	deleteTeam,
 	updateTeamName,
@@ -156,6 +161,8 @@ function exportTeamsForPrint(event: any, teams: Team[]) {
 }
 
 export function EventParticipants({ editingEvent }: EventParticipantsProps) {
+	const [exportDialogOpen, setExportDialogOpen] = useState(false);
+	const [exportLoading, setExportLoading] = useState(false);
 	const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [teams, setTeams] = useState<Team[]>([]);
@@ -406,6 +413,21 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 		}
 	}
 
+	async function handleExport(format: "pdf" | "docx") {
+		setExportLoading(true);
+		try {
+			const teamsToExport = filteredTeams.filter((t) => t.isConfirmed);
+			if (format === "pdf") {
+				exportTeamsForPrint(editingEvent, teamsToExport);
+			} else {
+				await exportParticipantsDocx(editingEvent, teamsToExport);
+			}
+		} finally {
+			setExportLoading(false);
+			setExportDialogOpen(false);
+		}
+	}
+
 	return (
 		<div className="space-y-8">
 			<div className="flex justify-between items-center mb-6">
@@ -419,17 +441,36 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 				</div>
 				<div className="flex gap-2">
 					<Button
-						onClick={() =>
-							exportTeamsForPrint(
-								editingEvent,
-								filteredTeams.filter((t) => t.isConfirmed),
-							)
-						}
+						onClick={() => setExportDialogOpen(true)}
 						className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg"
 					>
 						<Download className="h-4 w-4 mr-2" />
 						Export
 					</Button>
+					<ExportDialog
+						open={exportDialogOpen}
+						onOpenChange={setExportDialogOpen}
+					>
+						<ExportDialogContent className="sm:max-w-xs">
+							<div className="flex flex-col gap-4 items-center p-2">
+								<h2 className="text-lg font-semibold mb-2">Export Format</h2>
+								<Button
+									className="w-full"
+									disabled={exportLoading}
+									onClick={() => handleExport("pdf")}
+								>
+									PDF
+								</Button>
+								<Button
+									className="w-full"
+									disabled={exportLoading}
+									onClick={() => handleExport("docx")}
+								>
+									DOCX
+								</Button>
+							</div>
+						</ExportDialogContent>
+					</ExportDialog>
 					<Button
 						onClick={() => setCreateDialogOpen(true)}
 						className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg"
