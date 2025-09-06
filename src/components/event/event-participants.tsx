@@ -27,6 +27,7 @@ import {
 	DialogContent as ExportDialogContent,
 } from "~/components/ui/dialog";
 import { exportParticipantsDocx } from "~/lib/exportEventsDoc";
+import { saveAs } from "file-saver";
 import {
 	getTeamsForEvent,
 	deleteTeam,
@@ -42,6 +43,7 @@ import { toast } from "sonner";
 type Member = {
 	id: number;
 	name: string;
+	email: string;
 };
 
 type Team = {
@@ -56,6 +58,21 @@ type Team = {
 type EventParticipantsProps = {
 	editingEvent: any;
 };
+
+function exportEmails(teams: Team[]) {
+	const emails = new Set<string>();
+	teams.forEach((team) => {
+		team.members.forEach((member) => {
+			console.log(member);
+			if ((member as any).email) {
+				emails.add((member as any).email);
+			}
+		});
+	});
+	const emailList = Array.from(emails).join("\n");
+	const blob = new Blob([emailList], { type: "text/plain;charset=utf-8" });
+	saveAs(blob, "event-emails.txt");
+}
 
 // Export printable table for teams and members
 function exportTeamsForPrint(event: any, teams: Team[]) {
@@ -446,6 +463,12 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 					>
 						<Download className="h-4 w-4 mr-2" />
 						Export
+					</Button>
+					<Button
+						onClick={() => exportEmails(teams)}
+						className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg"
+					>
+						Export Emails
 					</Button>
 					<ExportDialog
 						open={exportDialogOpen}

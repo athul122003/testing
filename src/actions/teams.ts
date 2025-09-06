@@ -141,7 +141,7 @@ export async function addMemberToTeam(teamId: string, userId: number) {
 	const team = await db.team.findUnique({
 		where: { id: teamId },
 		include: {
-			Members: { select: { id: true, name: true } },
+			Members: { select: { id: true, name: true, email: true } },
 			Event: { select: { id: true, name: true, maxTeamSize: true } },
 		},
 	});
@@ -207,7 +207,7 @@ export async function addMemberToTeam(teamId: string, userId: number) {
 	const updatedTeam = await db.team.findUnique({
 		where: { id: teamId },
 		include: {
-			Members: { select: { id: true, name: true } },
+			Members: { select: { id: true, name: true, email: true } },
 		},
 	});
 
