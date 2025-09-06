@@ -37,6 +37,7 @@ import {
 	TableRow,
 } from "~/components/ui/table";
 import { convertPaymentsToCSV, downloadCSV } from "~/lib/exportPaymentData";
+import { saveAs } from "file-saver";
 import { formatCurrency } from "~/lib/formatCurrency";
 import { formatDateTime } from "~/lib/formatDateTime";
 import { useDashboardData } from "~/providers/dashboardDataContext";
@@ -106,6 +107,25 @@ export function PaymentsPage() {
 			setIsSearching(false);
 		}
 	};
+
+	async function exportMembershipEmails() {
+		const data = await getPaymentInfo({
+			page: 1,
+			pageSize: 10000,
+		});
+		const data2 = data.payments;
+		const emails = Array.from(
+			new Set(
+				data2
+					.filter((p) => p.paymentType === "MEMBERSHIP" && p.User?.email)
+					.map((p) => p?.User?.email),
+			),
+		);
+		const blob = new Blob([emails.join("\n")], {
+			type: "text/plain;charset=utf-8",
+		});
+		saveAs(blob, "membership-emails.txt");
+	}
 
 	const handleDateFilter = async (e: FormEvent) => {
 		e.preventDefault();
@@ -307,6 +327,12 @@ export function PaymentsPage() {
 							className="hover:bg-gray-100 dark:hover:bg-gray-800"
 						>
 							Export All Records
+						</DropdownMenuItem>
+						<DropdownMenuItem
+							onClick={() => exportMembershipEmails()}
+							className="hover:bg-gray-100 dark:hover:bg-gray-800"
+						>
+							Export Membership Emails
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>
