@@ -26,6 +26,7 @@ export async function getTeamsForEvent(eventId: number) {
 				select: {
 					id: true,
 					name: true,
+					email: true,
 				},
 			},
 			Prize: {
@@ -48,6 +49,7 @@ export async function getTeamsForEvent(eventId: number) {
 		members: team.Members.map((member) => ({
 			id: member.id,
 			name: member.name,
+			email: member.email,
 		})),
 		Prize: {
 			prizeType: team.Prize?.prizeType,

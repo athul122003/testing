@@ -27,11 +27,30 @@ import {
 } from "~/components/ui/table";
 import { QRCodeScanner } from "../othercomps/qrCodeScanner";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import {
+	Dialog as ExportDialog,
+	DialogContent as ExportDialogContent,
+} from "../ui/dialog";
+import { saveAs } from "file-saver";
+
+function exportEmails(
+	members: Array<Member & { email?: string }>,
+	filename: string,
+) {
+	const emails = Array.from(
+		new Set(members.map((m) => m.email).filter(Boolean)),
+	);
+	const blob = new Blob([emails.join("\n")], {
+		type: "text/plain;charset=utf-8",
+	});
+	saveAs(blob, filename);
+}
 
 type Member = {
 	id: number;
 	name: string;
 	hasAttended?: boolean;
+	email?: string;
 };
 
 type Team = {
@@ -212,6 +231,7 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 		if (!selectedTeam) setMemberAttendance([]);
 	}, [selectedTeam]);
 
+	const [exportDialogOpen, setExportDialogOpen] = useState(false);
 	return (
 		<div className="space-y-8 p-6 max-w-screen-xl mx-auto bg-white dark:bg-slate-900 rounded-lg shadow-lg">
 			<div className="flex flex-col gap-6">
@@ -222,6 +242,43 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 						</h1>
 					</div>
 					<div className="flex items-center gap-2">
+						<Button onClick={() => setExportDialogOpen(true)} variant="outline">
+							Export Emails
+						</Button>
+						<ExportDialog
+							open={exportDialogOpen}
+							onOpenChange={setExportDialogOpen}
+						>
+							<ExportDialogContent className="sm:max-w-xs">
+								<div className="flex flex-col gap-4 items-center p-2">
+									<h2 className="text-lg font-semibold mb-2">Export Emails</h2>
+									<Button
+										className="w-full"
+										onClick={() => {
+											const present = teams.flatMap((t) =>
+												t.members.filter((m) => m.hasAttended),
+											);
+											exportEmails(present, "present-emails.txt");
+											setExportDialogOpen(false);
+										}}
+									>
+										Present People Emails
+									</Button>
+									<Button
+										className="w-full"
+										onClick={() => {
+											const absent = teams.flatMap((t) =>
+												t.members.filter((m) => !m.hasAttended),
+											);
+											exportEmails(absent, "absent-emails.txt");
+											setExportDialogOpen(false);
+										}}
+									>
+										Absent People Emails
+									</Button>
+								</div>
+							</ExportDialogContent>
+						</ExportDialog>
 						<Button
 							variant="outline"
 							onClick={refreshTeams}
