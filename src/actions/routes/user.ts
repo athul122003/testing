@@ -446,7 +446,7 @@ export const getRegisteredEvents = async (input: { userId: number }) => {
 
 	const extractEvents = (teams: typeof user.Team) =>
 		teams
-			.filter((team) => team.Event)
+			.filter((team) => team.Event && team.isConfirmed)
 			.map((team) => ({
 				id: team.Event.id,
 				name: team.Event.name,
