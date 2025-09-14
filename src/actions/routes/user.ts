@@ -84,6 +84,7 @@ export const searchUser = protectedAction(
 					usn: true,
 					memberSince: true,
 					email: true,
+					phone: true,
 					role: {
 						select: {
 							id: true,

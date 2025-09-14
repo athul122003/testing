@@ -917,8 +917,12 @@ export function UsersPage() {
 																			<TableHead className="min-w-[120px] bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
 																				Name
 																			</TableHead>
+
 																			<TableHead className="min-w-[180px] bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
 																				Email
+																			</TableHead>
+																			<TableHead className="min-w-[180px] bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+																				Phone
 																			</TableHead>
 																			<TableHead className="min-w-[200px] bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
 																				Role
@@ -965,7 +969,11 @@ export function UsersPage() {
 																						{user.email}
 																					</div>
 																				</TableCell>
-
+																				<TableCell className="text-gray-500 dark:text-slate-400">
+																					<div className="truncate max-w-[180px]">
+																						{user.phone}
+																					</div>
+																				</TableCell>
 																				<TableCell>
 																					{editingRoles[user.id] ? (
 																						<div className="flex gap-2 items-center min-w-[200px]">

@@ -41,6 +41,7 @@ type DashboardDataContextType = {
 			usn: string;
 			memberSince: Date | null;
 			email: string;
+			phone: string | null;
 			role: {
 				id: number | string;
 				name: string;
