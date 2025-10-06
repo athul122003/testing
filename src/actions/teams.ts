@@ -55,6 +55,7 @@ export async function getTeamsForEvent(eventId: number) {
 			prizeType: team.Prize?.prizeType,
 			flcPoints: team.Prize?.flcPoints,
 		},
+		yearOfStudy: team.yearOfStudy,
 	}));
 }
 

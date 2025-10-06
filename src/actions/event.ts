@@ -465,6 +465,7 @@ export const getAllEvents = protectedAction(
 									flcPoints: true,
 								},
 							},
+							yearOfStudy: true,
 						},
 					},
 					Prize: true,
