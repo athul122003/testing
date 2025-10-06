@@ -160,9 +160,11 @@ model Event {
   flcAmount     Int     @default(0)
   nonFlcAmount  Int     @default(0)
 
-  state         EventState @default(DRAFT)
-  isLegacy      Boolean    @default(false)
-  prizesAlloted Boolean    @default(false)
+  state                    EventState @default(DRAFT)
+  isLegacy                 Boolean    @default(false)
+  prizesAlloted            Boolean    @default(false)
+  statusOfBatchRestriction Boolean    @default(false)
+  batchRestriction         Batch[]
 
   Organiser     Organiser[]
   Team          Team[]
@@ -174,6 +176,16 @@ model Event {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Batch {
+  id   String @id @default(cuid())
+  year Int
+
+  maxCapacity Int @default(0)
+
+  eventId Int
+  events  Event @relation(fields: [eventId], references: [id])
 }
 
 model Attendance {
@@ -217,6 +229,7 @@ model Team {
   name        String
   isConfirmed Boolean @default(false)
   hasAttended Boolean @default(false)
+  yearOfStudy Int?
 
   eventId Int
   Event   Event @relation(fields: [eventId], references: [id])
@@ -397,6 +410,7 @@ model Payment {
 model Settings {
   id          String  @id @default(cuid())
   name        String
+  value       String?
   status      Boolean
   description String?
 

@@ -75,6 +75,8 @@ export function EventForm({
 		maxTeams: "",
 		minTeamSize: "1",
 		maxTeamSize: "1",
+		statusOfBatchRestriction: false,
+		batchRestriction: [] as { year: number; maxCapacity: number }[],
 		isMembersOnly: false,
 		flcAmount: "",
 		nonFlcAmount: "",
@@ -101,6 +103,9 @@ export function EventForm({
 				maxTeams: editingEvent.maxTeams?.toString() || "",
 				minTeamSize: editingEvent.minTeamSize?.toString() || "1",
 				maxTeamSize: editingEvent.maxTeamSize?.toString() || "1",
+				statusOfBatchRestriction:
+					editingEvent.statusOfBatchRestriction || false,
+				batchRestriction: editingEvent.batchRestriction || [],
 				isMembersOnly: editingEvent.isMembersOnly || false,
 				flcAmount: editingEvent.flcAmount?.toString() || "",
 				nonFlcAmount: editingEvent.nonFlcAmount?.toString() || "",
@@ -143,6 +148,31 @@ export function EventForm({
 				return;
 			}
 		}
+		if (formData.statusOfBatchRestriction === true) {
+			if (formData.batchRestriction.length === 0) {
+				toast.error("At least one year-based team restriction must be added.");
+				return;
+			}
+			for (let i = 0; i < formData.batchRestriction.length; i++) {
+				const restriction = formData.batchRestriction[i];
+				if (restriction.maxCapacity <= 0) {
+					toast.error("Max teams in year restrictions must be at least 1.");
+					return;
+				}
+			}
+			const totalMaxTeams = formData.batchRestriction.reduce(
+				(sum, restriction) => sum + (restriction.maxCapacity || 0),
+				0,
+			);
+			if (totalMaxTeams === 0) {
+				toast.error(
+					"Total max teams from year restrictions must be at least 1.",
+				);
+				return;
+			}
+			formData.maxTeams = totalMaxTeams.toString();
+		}
+
 		if (parseInt(formData.nonFlcAmount) > 0 && formData.isMembersOnly) {
 			toast.error("Non-FLC amount cannot be set for members-only events.");
 			return;
@@ -207,6 +237,8 @@ export function EventForm({
 			maxTeams: Number(formData.maxTeams),
 			minTeamSize: Number(formData.minTeamSize),
 			maxTeamSize: Number(formData.maxTeamSize),
+			statusOfBatchRestriction: formData.statusOfBatchRestriction,
+			batchRestriction: formData.batchRestriction,
 			flcAmount: Number(formData.flcAmount),
 			nonFlcAmount: Number(formData.nonFlcAmount),
 			prizes: formData.prizes.map((p) => ({
@@ -396,19 +428,7 @@ export function EventForm({
 							/>
 						</div>
 					</div>
-					<div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-						<div className="space-y-2">
-							<Label htmlFor="maxTeams">Max Teams</Label>
-							<Input
-								id="maxTeams"
-								type="number"
-								placeholder="Maximum teams"
-								value={formData.maxTeams}
-								onChange={(e) =>
-									setFormData({ ...formData, maxTeams: e.target.value })
-								}
-							/>
-						</div>
+					<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 						<div className="space-y-2">
 							<Label htmlFor="minTeamSize">Min Team Size</Label>
 							<Input
@@ -431,6 +451,187 @@ export function EventForm({
 								}
 							/>
 						</div>
+					</div>
+					<div className="space-y-4">
+						<div className="flex items-center space-x-2">
+							<Switch
+								id="enableYearRestriction"
+								checked={formData.statusOfBatchRestriction}
+								onCheckedChange={(checked) =>
+									setFormData({
+										...formData,
+										statusOfBatchRestriction: checked,
+									})
+								}
+							/>
+							<Label htmlFor="enableYearRestriction">
+								Enable Year-based Team Restrictions
+							</Label>
+						</div>
+
+						{formData.statusOfBatchRestriction ? (
+							<div className="space-y-4">
+								<div className="flex items-center justify-between">
+									<h4 className="font-medium">Year-based Team Restrictions</h4>
+									<Button
+										size="sm"
+										onClick={() => {
+											const availableYears = [1, 2, 3, 4].filter(
+												(y) =>
+													!formData.batchRestriction?.some((r) => r.year === y),
+											);
+											if (availableYears.length === 0) {
+												toast.error("All year restrictions have been added");
+												return;
+											}
+
+											const newRestriction = {
+												year: availableYears[0],
+												maxCapacity: 0,
+											};
+
+											setFormData({
+												...formData,
+												batchRestriction: [
+													...(formData.batchRestriction || []),
+													newRestriction,
+												],
+											});
+										}}
+									>
+										Add Restriction
+									</Button>
+								</div>
+
+								{formData.batchRestriction?.length > 0 ? (
+									<>
+										<div className="space-y-2">
+											{formData.batchRestriction.map((restriction, index) => (
+												<div
+													// biome-ignore lint/suspicious/noArrayIndexKey: <its fine>
+													key={index}
+													className="grid grid-cols-3 gap-4 items-center"
+												>
+													<div>
+														<Label htmlFor={`year-${index}`}>
+															Year of Study
+														</Label>
+														<Select
+															value={restriction.year.toString()}
+															onValueChange={(value) => {
+																const newRestrictions = [
+																	...(formData.batchRestriction || []),
+																];
+																newRestrictions[index] = {
+																	...newRestrictions[index],
+																	year: parseInt(value),
+																};
+																setFormData({
+																	...formData,
+																	batchRestriction: newRestrictions,
+																});
+															}}
+														>
+															<SelectTrigger id={`year-${index}`}>
+																<SelectValue />
+															</SelectTrigger>
+															<SelectContent>
+																{[1, 2, 3, 4].map((year) => {
+																	const isSelected =
+																		formData.batchRestriction?.some(
+																			(r, i) => r.year === year && i !== index,
+																		);
+																	return (
+																		<SelectItem
+																			key={year}
+																			value={year.toString()}
+																			disabled={isSelected}
+																		>
+																			Year {year}
+																		</SelectItem>
+																	);
+																})}
+															</SelectContent>
+														</Select>
+													</div>
+													<div>
+														<Label htmlFor={`maxTeams-${index}`}>
+															Max Teams
+														</Label>
+														<Input
+															id={`maxTeams-${index}`}
+															type="number"
+															min="0"
+															value={restriction.maxCapacity.toString()}
+															onChange={(e) => {
+																const newRestrictions = [
+																	...(formData.batchRestriction || []),
+																];
+																newRestrictions[index] = {
+																	...newRestrictions[index],
+																	maxCapacity: parseInt(e.target.value) || 0,
+																};
+																setFormData({
+																	...formData,
+																	batchRestriction: newRestrictions,
+																});
+															}}
+														/>
+													</div>
+													<div className="flex items-end">
+														<Button
+															variant="ghost"
+															size="icon"
+															className="mt-6"
+															onClick={() => {
+																const newRestrictions =
+																	formData.batchRestriction?.filter(
+																		(_, i) => i !== index,
+																	);
+																setFormData({
+																	...formData,
+																	batchRestriction: newRestrictions,
+																});
+															}}
+														>
+															<Trash2 className="h-4 w-4 text-red-500" />
+														</Button>
+													</div>
+												</div>
+											))}
+										</div>
+										<div className="mt-4 p-3 bg-muted rounded-md">
+											<p className="text-sm font-medium">
+												Total Max Teams:{" "}
+												{formData.batchRestriction.reduce(
+													(sum, restriction) =>
+														sum + (restriction.maxCapacity || 0),
+													0,
+												)}
+											</p>
+										</div>
+									</>
+								) : (
+									<p className="text-sm text-muted-foreground">
+										No year restrictions added yet. Click "Add Restriction" to
+										set limits for specific years.
+									</p>
+								)}
+							</div>
+						) : (
+							<div className="space-y-2">
+								<Label htmlFor="maxTeams">Maximum Teams</Label>
+								<Input
+									id="maxTeams"
+									type="number"
+									placeholder="Maximum number of teams"
+									value={formData.maxTeams}
+									onChange={(e) =>
+										setFormData({ ...formData, maxTeams: e.target.value })
+									}
+								/>
+							</div>
+						)}
 					</div>
 					<div className="flex items-center space-x-2">
 						<Switch

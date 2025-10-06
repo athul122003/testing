@@ -22,11 +22,15 @@ export async function getAllEvents() {
 						},
 					},
 				},
+				batchRestriction: true,
 			},
 		});
 
 		const filteredEvents = events.map((event) => ({
 			...event,
+			batchRestriction: event.batchRestriction.map((br) => ({
+				year: br.year,
+			})),
 			Organiser: Array.isArray(event.Organiser)
 				? event.Organiser.map((org) => ({
 						name: org.User?.name ?? null,
@@ -246,11 +250,15 @@ export async function createTeam(
 	userId: number,
 	eventId: number,
 	teamName: string,
+	yearOfStudy?: number,
 ) {
 	try {
 		// Check if the event exists and is a solo event
 		const event = await db.event.findUnique({
 			where: { id: eventId },
+			include: {
+				batchRestriction: true,
+			},
 		});
 
 		if (!event) {
@@ -282,6 +290,38 @@ export async function createTeam(
 				success: false,
 				error: "Maximum number of teams reached for this event",
 			};
+		}
+		if (event.statusOfBatchRestriction && event.batchRestriction.length > 0) {
+			if (!yearOfStudy) {
+				return {
+					success: false,
+					error: "Year of study is required for this event",
+				};
+			}
+			const batchRestriction = event.batchRestriction.find(
+				(restriction) => restriction.year === yearOfStudy,
+			);
+			if (!batchRestriction) {
+				return {
+					success: false,
+					error: "Year of study is not eligible for this event",
+				};
+			}
+			if (batchRestriction.maxCapacity) {
+				const teamsInThisBatch = await db.team.count({
+					where: {
+						eventId,
+						yearOfStudy: yearOfStudy,
+						isConfirmed: true,
+					},
+				});
+				if (teamsInThisBatch >= batchRestriction.maxCapacity) {
+					return {
+						success: false,
+						error: `Maximum number of teams reached for year ${yearOfStudy}`,
+					};
+				}
+			}
 		}
 
 		const userInfo = await db.user.findUnique({
@@ -346,23 +386,45 @@ export async function createTeam(
 			};
 		}
 
-		const team = await db.team.create({
-			data: {
-				name: teamName,
-				eventId,
-				leaderId: userId,
-				Members: {
-					connect: [{ id: userId }],
-				},
-			},
-		});
+		// BAD CODING SORRY
 
-		return {
-			success: true,
-			data: {
-				teamId: team.id,
-			},
-		};
+		if (event.statusOfBatchRestriction === true) {
+			const team = await db.team.create({
+				data: {
+					name: teamName,
+					eventId,
+					leaderId: userId,
+					yearOfStudy: yearOfStudy,
+					Members: {
+						connect: [{ id: userId }],
+					},
+				},
+			});
+			return {
+				success: true,
+				data: {
+					teamId: team.id,
+				},
+			};
+		} else {
+			const team = await db.team.create({
+				data: {
+					name: teamName,
+					eventId,
+					leaderId: userId,
+
+					Members: {
+						connect: [{ id: userId }],
+					},
+				},
+			});
+			return {
+				success: true,
+				data: {
+					teamId: team.id,
+				},
+			};
+		}
 	} catch (error) {
 		console.error("createTeam Error:", error);
 		return {
@@ -675,7 +737,11 @@ export async function confirmTeam(userId: number, teamId: string) {
 			where: { id: teamId },
 			include: {
 				Members: true,
-				Event: true,
+				Event: {
+					include: {
+						batchRestriction: true,
+					},
+				},
 			},
 		});
 
@@ -697,6 +763,44 @@ export async function confirmTeam(userId: number, teamId: string) {
 				success: false,
 				error: "Maximum number of teams reached for this event",
 			};
+		}
+
+		if (
+			team.Event.statusOfBatchRestriction &&
+			team.Event.batchRestriction.length > 0
+		) {
+			if (!team.yearOfStudy) {
+				return {
+					success: false,
+					error:
+						"Year of study is required for this event, contact team for more info",
+				};
+			}
+			const batchRestriction = team.Event.batchRestriction.find(
+				(restriction) => restriction.year === team.yearOfStudy,
+			);
+			if (!batchRestriction) {
+				return {
+					success: false,
+					error:
+						"Year of study is not eligible for this event, contact team for more info",
+				};
+			}
+			if (batchRestriction.maxCapacity) {
+				const teamsInThisBatch = await db.team.count({
+					where: {
+						eventId: team.Event.id,
+						yearOfStudy: team.yearOfStudy,
+						isConfirmed: true,
+					},
+				});
+				if (teamsInThisBatch >= batchRestriction.maxCapacity) {
+					return {
+						success: false,
+						error: `Maximum number of teams reached for year ${team.yearOfStudy}, contact team for more info`,
+					};
+				}
+			}
 		}
 
 		if (team.leaderId !== userId) {

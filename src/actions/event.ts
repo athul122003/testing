@@ -68,6 +68,23 @@ export const createEventAction = protectedAction(
 					error: "From date must be before To date.",
 				};
 			}
+			if (validated.statusOfBatchRestriction === true) {
+				if (
+					!validated.batchRestriction ||
+					validated.batchRestriction.length === 0
+				) {
+					return {
+						success: false,
+						error:
+							"Batch restrictions are enabled but no batch restrictions provided.",
+					};
+				}
+				const totalMaxTeams = validated.batchRestriction.reduce(
+					(sum, restriction) => sum + (restriction.maxCapacity || 0),
+					0,
+				);
+				validated.maxTeams = totalMaxTeams;
+			}
 			if (
 				validated.deadline &&
 				(validated.deadline > validated.fromDate ||
@@ -122,10 +139,22 @@ export const createEventAction = protectedAction(
 					minTeamSize: validated.minTeamSize,
 					maxTeamSize: validated.maxTeamSize,
 					isMembersOnly: validated.isMembersOnly,
+					statusOfBatchRestriction: validated.statusOfBatchRestriction,
+					// yearRestrictions: validated.yearRestrictions?.map((yr) => ({
 					flcAmount: validated.flcAmount,
 					nonFlcAmount: validated.nonFlcAmount,
 				},
 			});
+
+			if (validated.statusOfBatchRestriction && validated.batchRestriction) {
+				await db.batch.createMany({
+					data: validated.batchRestriction.map((batch) => ({
+						year: batch.year,
+						maxCapacity: batch.maxCapacity,
+						eventId: event.id,
+					})),
+				});
+			}
 
 			// Step 2: Create Prizes (all 4 types)
 			const prizeTypes: PrizeType[] = Object.values(PrizeType);
@@ -267,10 +296,25 @@ export const editEventAction = protectedAction(
 					minTeamSize: validated.minTeamSize,
 					maxTeamSize: validated.maxTeamSize,
 					isMembersOnly: validated.isMembersOnly,
+					statusOfBatchRestriction: validated.statusOfBatchRestriction,
 					flcAmount: validated.flcAmount,
 					nonFlcAmount: validated.nonFlcAmount,
 				},
 			});
+
+			await db.batch.deleteMany({
+				where: { eventId },
+			});
+
+			if (validated.statusOfBatchRestriction && validated.batchRestriction) {
+				await db.batch.createMany({
+					data: validated.batchRestriction.map((batch) => ({
+						year: batch.year,
+						maxCapacity: batch.maxCapacity,
+						eventId: eventId,
+					})),
+				});
+			}
 
 			// Step 2: Update prizes (ONLY if changed)
 			const existingPrizes = await db.prize.findMany({
@@ -410,6 +454,7 @@ export const getAllEvents = protectedAction(
 					: undefined,
 				orderBy: { fromDate: "desc" },
 				include: {
+					batchRestriction: true,
 					Team: {
 						select: {
 							id: true,

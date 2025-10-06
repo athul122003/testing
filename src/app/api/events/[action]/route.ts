@@ -73,9 +73,10 @@ export async function POST(req: NextRequest) {
 			}
 
 			case "createTeam": {
-				const { eventId, teamName } = body as {
+				const { eventId, teamName, yearOfStudy } = body as {
 					eventId: number;
 					teamName: string;
+					yearOfStudy?: number;
 				};
 
 				const customHeader = req.headers.get("authorization");
@@ -91,6 +92,7 @@ export async function POST(req: NextRequest) {
 					data.userId,
 					eventId,
 					teamName,
+					yearOfStudy,
 				);
 				return NextResponse.json(result, {
 					status: result.success ? 200 : 400,

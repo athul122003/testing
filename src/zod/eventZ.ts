@@ -21,6 +21,15 @@ const createEventZ = z.object({
 	toDate: z.string().min(1, "To date is required"),
 	deadline: z.string().optional(),
 
+	statusOfBatchRestriction: z.boolean().optional().default(false),
+	batchRestriction: z
+		.array(
+			z.object({
+				year: z.number().nonnegative(),
+				maxCapacity: z.number().nonnegative(),
+			}),
+		)
+		.optional(),
 	maxTeams: z.number().nonnegative(),
 	minTeamSize: z.number().min(1),
 	maxTeamSize: z.number().min(1),
