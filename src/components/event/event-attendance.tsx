@@ -158,20 +158,32 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 		if (!event?.id) return;
 		const team = teams.find((t) => t.id === teamId);
 		if (!team) return toast.error("Team not found");
-		if (confirm(`Confirm attendance for ${team.name}?`)) {
-			setLoading(true);
-			try {
-				await Promise.all(
-					team.members.map((member) => markAttendance(event.id, member.id)),
-				);
-				toast.success(`Attendance confirmed for ${team.name}`);
-				await refreshTeams();
-			} catch (err) {
-				console.error("Error confirming attendance:", err);
-				toast.error("Failed to confirm attendance.");
-			} finally {
-				setLoading(false);
-			}
+
+		setConfirmAction({
+			type: "mark",
+			teamId,
+			teamName: team.name,
+		});
+		setConfirmDialogOpen(true);
+	}
+
+	async function executeConfirmSolo(teamId: string) {
+		if (!event?.id) return;
+		const team = teams.find((t) => t.id === teamId);
+		if (!team) return toast.error("Team not found");
+
+		setLoading(true);
+		try {
+			await Promise.all(
+				team.members.map((member) => markAttendance(event.id, member.id)),
+			);
+			toast.success(`Attendance confirmed for ${team.name}`);
+			await refreshTeams();
+		} catch (err) {
+			console.error("Error confirming attendance:", err);
+			toast.error("Failed to confirm attendance.");
+		} finally {
+			setLoading(false);
 		}
 	}
 
@@ -179,22 +191,34 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 		if (!event?.id) return;
 		const team = teams.find((t) => t.id === teamId);
 		if (!team) return toast.error("Team not found");
-		if (confirm(`Remove attendance for ${team.name}?`)) {
-			setLoading(true);
-			try {
-				await Promise.all(
-					team.members
-						.filter((member) => member.hasAttended)
-						.map((member) => unmarkAttendance(event.id, member.id)),
-				);
-				toast.success(`Attendance removed for ${team.name}`);
-				await refreshTeams();
-			} catch (err) {
-				console.error("Error unmarking attendance:", err);
-				toast.error("Failed to unmark attendance.");
-			} finally {
-				setLoading(false);
-			}
+
+		setConfirmAction({
+			type: "unmark",
+			teamId,
+			teamName: team.name,
+		});
+		setConfirmDialogOpen(true);
+	}
+
+	async function executeUnmarkSolo(teamId: string) {
+		if (!event?.id) return;
+		const team = teams.find((t) => t.id === teamId);
+		if (!team) return toast.error("Team not found");
+
+		setLoading(true);
+		try {
+			await Promise.all(
+				team.members
+					.filter((member) => member.hasAttended)
+					.map((member) => unmarkAttendance(event.id, member.id)),
+			);
+			toast.success(`Attendance removed for ${team.name}`);
+			await refreshTeams();
+		} catch (err) {
+			console.error("Error unmarking attendance:", err);
+			toast.error("Failed to unmark attendance.");
+		} finally {
+			setLoading(false);
 		}
 	}
 
@@ -232,25 +256,38 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 	}, [selectedTeam]);
 
 	const [exportDialogOpen, setExportDialogOpen] = useState(false);
+	const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+	const [confirmAction, setConfirmAction] = useState<{
+		type: "mark" | "unmark";
+		teamId: string;
+		teamName: string;
+	} | null>(null);
 	return (
-		<div className="space-y-8 p-6 max-w-screen-xl mx-auto bg-white dark:bg-slate-900 rounded-lg shadow-lg">
-			<div className="flex flex-col gap-6">
-				<div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+		<div className="space-y-4 sm:space-y-6 lg:space-y-8 p-2 sm:p-4 lg:p-6 min-h-screen">
+			<div className="flex flex-col gap-4 sm:gap-6">
+				<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 					<div>
-						<h1 className="text-3xl font-bold text-slate-800 dark:text-white">
-							Event Attendance - {event?.name}
+						<h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-800 dark:text-white mb-2">
+							Event Attendance
 						</h1>
+						<p className="text-sm sm:text-base text-gray-600 dark:text-slate-400">
+							{event?.name || "Track team attendance"}
+						</p>
 					</div>
-					<div className="flex items-center gap-2">
-						<Button onClick={() => setExportDialogOpen(true)} variant="outline">
+					<div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+						<Button
+							onClick={() => setExportDialogOpen(true)}
+							variant="outline"
+							className="w-full sm:w-auto text-sm py-2"
+						>
 							Export Emails
 						</Button>
 						<ExportDialog
 							open={exportDialogOpen}
 							onOpenChange={setExportDialogOpen}
 						>
-							<ExportDialogContent className="sm:max-w-xs">
-								<div className="flex flex-col gap-4 items-center p-2">
+							<ExportDialogContent className="w-[95vw] max-w-xs mx-auto">
+								<div className="flex flex-col gap-4 items-center p-4">
 									<h2 className="text-lg font-semibold mb-2">Export Emails</h2>
 									<Button
 										className="w-full"
@@ -283,15 +320,21 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 							variant="outline"
 							onClick={refreshTeams}
 							disabled={refreshing}
+							className="w-full sm:w-auto text-sm py-2"
 						>
-							Refresh
+							{refreshing ? "Refreshing..." : "Refresh"}
 						</Button>
 
 						<Dialog>
 							<DialogTrigger asChild>
-								<Button variant="default">Scan QR Code</Button>
+								<Button
+									variant="default"
+									className="w-full sm:w-auto text-sm py-2"
+								>
+									Scan QR Code
+								</Button>
 							</DialogTrigger>
-							<DialogContent>
+							<DialogContent className="w-[95vw] max-w-md mx-auto">
 								<DialogHeader>
 									<DialogTitle>Scan Team QR Code</DialogTitle>
 								</DialogHeader>
@@ -304,28 +347,28 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 					</div>
 				</div>
 
-				<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-					<Card className="shadow-sm bg-white dark:bg-slate-900 border border-black/80 dark:border-slate-600">
-						<CardHeader className="pb-2">
-							<CardTitle className="text-sm font-medium text-gray-700 dark:text-slate-300">
+				<div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+					<Card className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
+						<CardHeader className="pb-2 sm:pb-3">
+							<CardTitle className="text-sm sm:text-base text-gray-700 dark:text-slate-300">
 								Total Teams
 							</CardTitle>
 						</CardHeader>
-						<CardContent>
-							<div className="text-2xl font-bold text-slate-800 dark:text-white">
+						<CardContent className="pt-0">
+							<div className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white">
 								{teams.length}
 							</div>
 						</CardContent>
 					</Card>
 
-					<Card className="shadow-sm bg-white dark:bg-slate-900 border-green-500 dark:border-green-600">
-						<CardHeader className="pb-2">
-							<CardTitle className="text-sm font-medium text-gray-700 dark:text-slate-300">
+					<Card className="shadow-lg bg-white dark:bg-black border border-green-500 dark:border-green-600">
+						<CardHeader className="pb-2 sm:pb-3">
+							<CardTitle className="text-sm sm:text-base text-gray-700 dark:text-slate-300">
 								Fully Present Teams
 							</CardTitle>
 						</CardHeader>
-						<CardContent>
-							<div className="text-2xl font-bold text-green-600 dark:text-green-400">
+						<CardContent className="pt-0">
+							<div className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">
 								{
 									teams.filter((team) =>
 										team.members.every((m) => m.hasAttended),
@@ -335,14 +378,14 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 						</CardContent>
 					</Card>
 
-					<Card className="shadow-sm bg-white dark:bg-slate-900 border-yellow-500 dark:border-yellow-600">
-						<CardHeader className="pb-2">
-							<CardTitle className="text-sm font-medium text-gray-700 dark:text-slate-300">
+					<Card className="shadow-lg bg-white dark:bg-black border border-yellow-500 dark:border-yellow-600">
+						<CardHeader className="pb-2 sm:pb-3">
+							<CardTitle className="text-sm sm:text-base text-gray-700 dark:text-slate-300">
 								Partially Present Teams
 							</CardTitle>
 						</CardHeader>
-						<CardContent>
-							<div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+						<CardContent className="pt-0">
+							<div className="text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400">
 								{
 									teams.filter(
 										(team) =>
@@ -354,14 +397,14 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 						</CardContent>
 					</Card>
 
-					<Card className="shadow-sm bg-white dark:bg-slate-900 border-red-500 dark:border-red-600">
-						<CardHeader className="pb-2">
-							<CardTitle className="text-sm font-medium text-gray-700 dark:text-slate-300">
+					<Card className="shadow-lg bg-white dark:bg-black border border-red-500 dark:border-red-600">
+						<CardHeader className="pb-2 sm:pb-3">
+							<CardTitle className="text-sm sm:text-base text-gray-700 dark:text-slate-300">
 								Absent Teams
 							</CardTitle>
 						</CardHeader>
-						<CardContent>
-							<div className="text-2xl font-bold text-red-600 dark:text-red-400">
+						<CardContent className="pt-0">
+							<div className="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">
 								{
 									teams.filter(
 										(team) => !team.members.some((m) => m.hasAttended),
@@ -373,157 +416,310 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 				</div>
 			</div>
 
-			<div className="flex flex-col md:flex-row gap-4 items-center">
-				<Input
-					placeholder="Search teams..."
-					value={search}
-					onChange={(e) => setSearch(e.target.value)}
-					className="w-full md:w-1/3"
-				/>
-			</div>
-
-			<Table className="rounded-l</DialogTrigger>g overflow-hidden border">
-				<TableHeader>
-					<TableRow className="bg-slate-100 dark:bg-slate-800">
-						<TableHead>Team</TableHead>
-						<TableHead>Leader</TableHead>
-						<TableHead>Members</TableHead>
-						<TableHead>Status</TableHead>
-						<TableHead>
-							<button
-								type="button"
-								className="flex items-center gap-2 cursor-pointer bg-transparent border-0 p-0 font-semibold text-inherit"
-								onClick={() =>
-									setSortOrder(sortOrder === "default" ? "reversed" : "default")
-								}
-								aria-label={
-									sortOrder === "default"
-										? "Sort with present teams first"
-										: "Sort with absent teams first"
-								}
+			<Card className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
+				<CardHeader className="pb-3 sm:pb-4">
+					<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+						<CardTitle className="text-lg sm:text-xl text-gray-900 dark:text-slate-200">
+							Team Attendance
+						</CardTitle>
+						<div className="relative w-full sm:w-64">
+							<Input
+								placeholder="Search teams..."
+								value={search}
+								onChange={(e) => setSearch(e.target.value)}
+								className="text-sm bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-400"
+							/>
+						</div>
+					</div>
+				</CardHeader>
+				<CardContent className="px-0 sm:px-6">
+					<div className="block sm:hidden space-y-3 px-4">
+						{filteredTeams.map((team) => (
+							<Card
+								key={team.id}
+								className={`border ${
+									team.members.every((m) => m.hasAttended)
+										? "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20"
+										: team.members.some((m) => m.hasAttended)
+											? "border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20"
+											: "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20"
+								}`}
 							>
-								Attendance
-								<span className="inline-flex items-center justify-center w-5 h-5 bg-slate-200 dark:bg-slate-700 rounded-full">
-									{sortOrder === "default" ? "↑" : "↓"}
-								</span>
-								<span className="text-xs text-slate-500 dark:text-slate-400">
-									{sortOrder === "default"}
-								</span>
-							</button>
-						</TableHead>
-						<TableHead>Mark</TableHead>
-					</TableRow>
-				</TableHeader>
-				<TableBody>
-					{filteredTeams.map((team) => (
-						<TableRow
-							key={team.id}
-							className={
-								team.members.every((m) => m.hasAttended)
-									? "bg-green-50 dark:bg-green-900/30"
-									: team.members.some((m) => m.hasAttended)
-										? "bg-yellow-50 dark:bg-yellow-900/20"
-										: "bg-red-50 dark:bg-red-900/20"
-							}
-						>
-							<TableCell className="font-semibold">{team.name}</TableCell>
-							<TableCell>
-								{team.leaderName ?? "N/A"}
-								{team.leaderId && (
-									<span className="ml-2 text-xs text-slate-500">
-										({team.leaderId})
-									</span>
-								)}
-							</TableCell>
-							<TableCell>
-								<div className="flex flex-wrap gap-1">
-									{team.members.map((m) => (
-										<span
-											key={m.id}
-											className={`inline-flex items-center px-2 py-1 text-xs rounded ${
-												m.hasAttended
-													? "bg-green-200 dark:bg-green-700 text-green-900 dark:text-green-100 border border-green-400"
-													: "bg-red-200 dark:bg-red-700 text-red-900 dark:text-red-100 border border-red-400"
-											}`}
-										>
-											{m.name}
+								<CardContent className="p-4">
+									<div className="space-y-3">
+										<div className="flex justify-between items-start">
+											<h3 className="font-medium text-gray-900 dark:text-slate-200 text-sm break-words flex-1 mr-2">
+												{team.name}
+											</h3>
+											<Badge
+												variant={team.isConfirmed ? "default" : "secondary"}
+												className="text-xs shrink-0"
+											>
+												{team.isConfirmed ? "Confirmed" : "Pending"}
+											</Badge>
+										</div>
 
-											<span className="ml-1 text-xs text-slate-500 dark:text-slate-400">
-												({m.id})
+										<div>
+											<span className="text-xs text-gray-500 dark:text-slate-400">
+												Leader:
 											</span>
-										</span>
-									))}
-								</div>
-							</TableCell>
-							<TableCell>
-								<Badge variant={team.isConfirmed ? "default" : "secondary"}>
-									{team.isConfirmed ? "Confirmed" : "Pending"}
-								</Badge>
-							</TableCell>
-							<TableCell>
-								{team.members.every((m) => m.hasAttended) ? (
-									<span className="bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 font-semibold flex items-center gap-1 px-3 py-1 rounded-full">
-										All Present
-										<span>✔</span>
-									</span>
-								) : team.members.some((m) => m.hasAttended) ? (
-									<span className="bg-yellow-200 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200 font-semibold flex items-center gap-1 px-3 py-1 rounded-full">
-										Partially Present
-										<span>✔</span>
-									</span>
-								) : (
-									<span className="bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200 font-semibold flex items-center gap-1 px-3 py-1 rounded-full">
-										Absent
-										<span>❌</span>
-									</span>
-								)}
-							</TableCell>
-							<TableCell>
-								<div className="flex gap-2">
-									<Button
-										size="sm"
-										variant={team.isConfirmed ? "default" : "outline"}
-										disabled={
-											loading || team.members.every((m) => m.hasAttended)
-										}
-										onClick={() => {
-											if (event.eventType === "SOLO")
-												handleConfirmSolo(team.id);
-											else {
-												setSelectedTeam(team);
-											}
-										}}
-									>
-										{team.members.every((m) => m.hasAttended)
-											? "✅ Marked"
-											: "Mark"}
-									</Button>
+											<div className="mt-1">
+												<span className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300">
+													{team.leaderName ?? "N/A"}
+													{team.leaderId && (
+														<span className="ml-1 text-xs text-slate-500">
+															({team.leaderId})
+														</span>
+													)}
+												</span>
+											</div>
+										</div>
 
-									{team.members.some((m) => m.hasAttended) && (
-										<Button
-											size="sm"
-											variant="destructive"
-											disabled={loading}
-											onClick={() => {
-												if (event.eventType === "SOLO")
-													handleUnmarkSolo(team.id);
-												else setSelectedTeam({ ...team, isUnmarking: true });
-											}}
+										<div>
+											<span className="text-xs text-gray-500 dark:text-slate-400">
+												Attendance:
+											</span>
+											<div className="mt-1">
+												{team.members.every((m) => m.hasAttended) ? (
+													<span className="bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 font-semibold flex items-center gap-1 px-3 py-1 rounded-full text-xs w-fit">
+														All Present ✔
+													</span>
+												) : team.members.some((m) => m.hasAttended) ? (
+													<span className="bg-yellow-200 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200 font-semibold flex items-center gap-1 px-3 py-1 rounded-full text-xs w-fit">
+														Partially Present ✔
+													</span>
+												) : (
+													<span className="bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200 font-semibold flex items-center gap-1 px-3 py-1 rounded-full text-xs w-fit">
+														Absent ❌
+													</span>
+												)}
+											</div>
+										</div>
+
+										<div>
+											<span className="text-xs text-gray-500 dark:text-slate-400">
+												Members:
+											</span>
+											<div className="flex flex-wrap gap-1 mt-1">
+												{team.members.map((m) => (
+													<span
+														key={m.id}
+														className={`inline-flex items-center px-2 py-1 text-xs rounded ${
+															m.hasAttended
+																? "bg-green-200 dark:bg-green-700 text-green-900 dark:text-green-100 border border-green-400"
+																: "bg-red-200 dark:bg-red-700 text-red-900 dark:text-red-100 border border-red-400"
+														}`}
+													>
+														{m.name}
+														<span className="ml-1 text-xs text-slate-500 dark:text-slate-400">
+															({m.id})
+														</span>
+													</span>
+												))}
+											</div>
+										</div>
+
+										<div className="pt-2 border-t border-gray-200 dark:border-slate-700 flex gap-2">
+											<Button
+												size="sm"
+												variant={team.isConfirmed ? "default" : "outline"}
+												disabled={
+													loading || team.members.every((m) => m.hasAttended)
+												}
+												onClick={() => {
+													if (event.eventType === "SOLO")
+														handleConfirmSolo(team.id);
+													else {
+														setSelectedTeam(team);
+													}
+												}}
+												className="flex-1 text-xs"
+											>
+												{team.members.every((m) => m.hasAttended)
+													? "✅ Marked"
+													: "Mark"}
+											</Button>
+
+											{team.members.some((m) => m.hasAttended) && (
+												<Button
+													size="sm"
+													variant="destructive"
+													disabled={loading}
+													onClick={() => {
+														if (event.eventType === "SOLO")
+															handleUnmarkSolo(team.id);
+														else
+															setSelectedTeam({ ...team, isUnmarking: true });
+													}}
+													className="flex-1 text-xs"
+												>
+													Unmark
+												</Button>
+											)}
+										</div>
+									</div>
+								</CardContent>
+							</Card>
+						))}
+					</div>
+
+					<div className="hidden sm:block overflow-x-auto">
+						<Table className="bg-white dark:bg-black text-gray-900 dark:text-slate-200">
+							<TableHeader>
+								<TableRow className="bg-gray-50 dark:bg-slate-900">
+									<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+										Team
+									</TableHead>
+									<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+										Leader
+									</TableHead>
+									<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+										Members
+									</TableHead>
+									<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+										Status
+									</TableHead>
+									<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+										<button
+											type="button"
+											className="flex items-center gap-2 cursor-pointer bg-transparent border-0 p-0 font-semibold text-inherit"
+											onClick={() =>
+												setSortOrder(
+													sortOrder === "default" ? "reversed" : "default",
+												)
+											}
+											aria-label={
+												sortOrder === "default"
+													? "Sort with present teams first"
+													: "Sort with absent teams first"
+											}
 										>
-											Unmark
-										</Button>
-									)}
-								</div>
-							</TableCell>
-						</TableRow>
-					))}
-				</TableBody>
-			</Table>
+											Attendance
+											<span className="inline-flex items-center justify-center w-5 h-5 bg-slate-200 dark:bg-slate-700 rounded-full">
+												{sortOrder === "default" ? "↑" : "↓"}
+											</span>
+										</button>
+									</TableHead>
+									<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+										Mark
+									</TableHead>
+								</TableRow>
+							</TableHeader>
+							<TableBody>
+								{filteredTeams.map((team) => (
+									<TableRow
+										key={team.id}
+										className={`hover:bg-gray-50 dark:hover:bg-slate-900 ${
+											team.members.every((m) => m.hasAttended)
+												? "bg-green-50 dark:bg-green-900/30"
+												: team.members.some((m) => m.hasAttended)
+													? "bg-yellow-50 dark:bg-yellow-900/20"
+													: "bg-red-50 dark:bg-red-900/20"
+										}`}
+									>
+										<TableCell className="font-semibold">{team.name}</TableCell>
+										<TableCell>
+											{team.leaderName ?? "N/A"}
+											{team.leaderId && (
+												<span className="ml-2 text-xs text-slate-500">
+													({team.leaderId})
+												</span>
+											)}
+										</TableCell>
+										<TableCell>
+											<div className="flex flex-wrap gap-1">
+												{team.members.map((m) => (
+													<span
+														key={m.id}
+														className={`inline-flex items-center px-2 py-1 text-xs rounded ${
+															m.hasAttended
+																? "bg-green-200 dark:bg-green-700 text-green-900 dark:text-green-100 border border-green-400"
+																: "bg-red-200 dark:bg-red-700 text-red-900 dark:text-red-100 border border-red-400"
+														}`}
+													>
+														{m.name}
+														<span className="ml-1 text-xs text-slate-500 dark:text-slate-400">
+															({m.id})
+														</span>
+													</span>
+												))}
+											</div>
+										</TableCell>
+										<TableCell>
+											<Badge
+												variant={team.isConfirmed ? "default" : "secondary"}
+											>
+												{team.isConfirmed ? "Confirmed" : "Pending"}
+											</Badge>
+										</TableCell>
+										<TableCell>
+											{team.members.every((m) => m.hasAttended) ? (
+												<span className="bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 font-semibold flex items-center gap-1 px-3 py-1 rounded-full">
+													All Present
+													<span>✔</span>
+												</span>
+											) : team.members.some((m) => m.hasAttended) ? (
+												<span className="bg-yellow-200 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200 font-semibold flex items-center gap-1 px-3 py-1 rounded-full">
+													Partially Present
+													<span>✔</span>
+												</span>
+											) : (
+												<span className="bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200 font-semibold flex items-center gap-1 px-3 py-1 rounded-full">
+													Absent
+													<span>❌</span>
+												</span>
+											)}
+										</TableCell>
+										<TableCell>
+											<div className="flex gap-2">
+												<Button
+													size="sm"
+													variant={team.isConfirmed ? "default" : "outline"}
+													disabled={
+														loading || team.members.every((m) => m.hasAttended)
+													}
+													onClick={() => {
+														if (event.eventType === "SOLO")
+															handleConfirmSolo(team.id);
+														else {
+															setSelectedTeam(team);
+														}
+													}}
+												>
+													{team.members.every((m) => m.hasAttended)
+														? "✅ Marked"
+														: "Mark"}
+												</Button>
+
+												{team.members.some((m) => m.hasAttended) && (
+													<Button
+														size="sm"
+														variant="destructive"
+														disabled={loading}
+														onClick={() => {
+															if (event.eventType === "SOLO")
+																handleUnmarkSolo(team.id);
+															else
+																setSelectedTeam({ ...team, isUnmarking: true });
+														}}
+													>
+														Unmark
+													</Button>
+												)}
+											</div>
+										</TableCell>
+									</TableRow>
+								))}
+							</TableBody>
+						</Table>
+					</div>
+				</CardContent>
+			</Card>
 
 			<Dialog open={!!selectedTeam} onOpenChange={() => setSelectedTeam(null)}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>
+				<DialogContent className="w-[95vw] max-w-md mx-auto p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+					<DialogHeader className="pb-3 sm:pb-4">
+						<DialogTitle className="text-base sm:text-lg break-words">
 							{selectedTeam?.isUnmarking
 								? "Unmark Attendance: "
 								: "Mark Attendance: "}
@@ -539,7 +735,7 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 							return (
 								<div
 									key={member.id}
-									className={`flex justify-between items-center border p-2 rounded ${
+									className={`flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border p-2 rounded ${
 										member.hasAttended
 											? selectedTeam.isUnmarking
 												? "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-800"
@@ -547,7 +743,7 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 											: ""
 									}`}
 								>
-									<span className="font-medium">
+									<span className="font-medium text-sm break-words flex-1">
 										{member.name}
 										<span className="ml-2 text-xs text-slate-500">
 											({member.id})
@@ -561,6 +757,7 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 									{selectedTeam.isUnmarking ? (
 										member.hasAttended ? (
 											<Button
+												size="sm"
 												variant={
 													memberAttendance.includes(member.id)
 														? "destructive"
@@ -573,18 +770,20 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 															: [...prev, member.id],
 													);
 												}}
+												className="w-full sm:w-auto text-xs"
 											>
 												{memberAttendance.includes(member.id)
 													? "❌ Absent"
 													: "Mark Absent"}
 											</Button>
 										) : (
-											<span className="text-slate-500 px-4 py-2">
+											<span className="text-slate-500 px-4 py-2 text-xs">
 												Not Marked
 											</span>
 										)
 									) : (
 										<Button
+											size="sm"
 											variant={present ? "default" : "secondary"}
 											disabled={member.hasAttended}
 											onClick={() => {
@@ -594,6 +793,7 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 														: [...prev, member.id],
 												);
 											}}
+											className="w-full sm:w-auto text-xs"
 										>
 											{present ? "✅ Present" : "❌ Absent"}
 										</Button>
@@ -629,7 +829,7 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 										setLoading(false);
 									}
 								}}
-								className="w-full mt-4 bg-red-600 hover:bg-red-700"
+								className="w-full mt-4 bg-red-600 hover:bg-red-700 text-sm py-2"
 								disabled={loading || memberAttendance.length === 0}
 							>
 								{loading ? "Unmarking..." : "Unmark Selected Attendance"}
@@ -637,7 +837,7 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 						) : (
 							<Button
 								onClick={() => handleConfirmMembers(memberAttendance)}
-								className="w-full mt-4"
+								className="w-full mt-4 text-sm py-2"
 								disabled={
 									loading ||
 									memberAttendance.length === 0 ||
@@ -648,6 +848,60 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 								{loading ? "Confirming..." : "Confirm Selected"}
 							</Button>
 						)}
+					</div>
+				</DialogContent>
+			</Dialog>
+			<Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+				<DialogContent className="w-[95vw] max-w-sm mx-auto p-4 sm:p-6">
+					<DialogHeader className="pb-3 sm:pb-4">
+						<DialogTitle className="text-base sm:text-lg break-words">
+							{confirmAction?.type === "mark"
+								? "Confirm Attendance"
+								: "Remove Attendance"}
+						</DialogTitle>
+					</DialogHeader>
+					<div className="space-y-4">
+						<p className="text-sm text-gray-600 dark:text-slate-400 break-words">
+							{confirmAction?.type === "mark"
+								? `Are you sure you want to mark attendance for "${confirmAction?.teamName}"?`
+								: `Are you sure you want to remove attendance for "${confirmAction?.teamName}"?`}
+						</p>
+						<div className="flex flex-col sm:flex-row gap-2">
+							<Button
+								variant="outline"
+								onClick={() => {
+									setConfirmDialogOpen(false);
+									setConfirmAction(null);
+								}}
+								className="w-full sm:w-auto text-sm py-2"
+							>
+								Cancel
+							</Button>
+							<Button
+								variant={
+									confirmAction?.type === "mark" ? "default" : "destructive"
+								}
+								onClick={async () => {
+									if (confirmAction) {
+										if (confirmAction.type === "mark") {
+											await executeConfirmSolo(confirmAction.teamId);
+										} else {
+											await executeUnmarkSolo(confirmAction.teamId);
+										}
+									}
+									setConfirmDialogOpen(false);
+									setConfirmAction(null);
+								}}
+								disabled={loading}
+								className="w-full sm:w-auto text-sm py-2"
+							>
+								{loading
+									? "Processing..."
+									: confirmAction?.type === "mark"
+										? "Confirm"
+										: "Unmark"}
+							</Button>
+						</div>
 					</div>
 				</DialogContent>
 			</Dialog>
