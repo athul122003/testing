@@ -37,6 +37,7 @@ import {
 	confirmTeam,
 	createTeam,
 	unConfirmTeam,
+	makeLeader,
 } from "~/actions/teams";
 import { toast } from "sonner";
 
@@ -287,6 +288,35 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 		}
 	}
 
+	async function handleMakeLeader(teamId: string, userId: number) {
+		try {
+			await makeLeader(teamId, userId);
+			if (!selectedTeam) {
+				toast.error("No team selected");
+				return;
+			}
+
+			const updatedMembers = selectedTeam.members.map((member) => ({
+				...member,
+				id: member.id,
+				name: member.name,
+				email: (member as any).email,
+				isLeader: member.id === userId,
+			}));
+
+			const updatedTeam = {
+				...selectedTeam,
+				leaderId: userId,
+				leaderName: updatedMembers.find((m) => m.id === userId)?.name,
+				members: updatedMembers,
+			};
+			updateTeamInList(updatedTeam);
+			toast.success("Leader updated successfully");
+		} catch {
+			toast.error("Failed to update leader");
+		}
+	}
+
 	async function handleRemoveMember(teamId: string, userId: number) {
 		try {
 			await removeMemberFromTeam(teamId, userId);
@@ -496,7 +526,7 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 						className="w-full sm:w-auto bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg text-sm py-2"
 					>
 						<Download className="h-4 w-4 mr-2" />
-						Export
+						Export Signature Sheet
 					</Button>
 					<Button
 						onClick={() => exportEmails(teams)}
@@ -942,6 +972,16 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 												<span className="text-sm break-words flex-1">
 													{member.name}
 												</span>
+												<Button
+													variant="default"
+													size="sm"
+													onClick={() =>
+														handleMakeLeader(selectedTeam.id, member.id)
+													}
+													className="w-full sm:w-auto text-xs py-1"
+												>
+													Make Leader
+												</Button>
 												<Button
 													variant="outline"
 													size="sm"

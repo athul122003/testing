@@ -64,6 +64,7 @@ export async function getAttendedTeamsForEvent(eventId: number) {
 		where: {
 			eventId,
 			hasAttended: true,
+			isConfirmed: true,
 		},
 		include: {
 			Leader: {
@@ -123,6 +124,40 @@ export const removeMemberFromTeam = protectedAction(
 				Members: {
 					disconnect: { id: userId },
 				},
+			},
+		});
+	},
+	{ actionName: "event.ALLPERM" },
+);
+
+export const makeLeader = protectedAction(
+	async (teamId: string, userId: number) => {
+		const team = await db.team.findUnique({
+			where: { id: teamId },
+			include: {
+				Members: { select: { id: true } },
+				Leader: { select: { id: true } },
+				Event: { select: { id: true } },
+			},
+		});
+
+		if (!team) {
+			throw new Error("Team not found");
+		}
+
+		const isMember = team.Members.some((member) => member.id === userId);
+		if (!isMember) {
+			throw new Error("User is not a member of the team");
+		}
+
+		if (team.Leader && team.Leader.id === userId) {
+			throw new Error("User is already the leader of the team");
+		}
+
+		await db.team.update({
+			where: { id: teamId },
+			data: {
+				leaderId: userId,
 			},
 		});
 	},
@@ -422,7 +457,7 @@ export async function hasAttended(
 }
 export async function getTeamMembersWithAttendance(eventId: number) {
 	const teams = await db.team.findMany({
-		where: { eventId },
+		where: { eventId, isConfirmed: true },
 		include: {
 			Members: {
 				select: {
