@@ -55,6 +55,7 @@ export function EventsPage({
 	const [deleteEventModal, setDeleteEventModal] = useState(false);
 	const [deleteEventId, setDeleteEventId] = useState<number | null>(null);
 	const [deletionLoading, setDeletionLoading] = useState(false);
+	const [deleteConfirmationText, setDeleteConfirmationText] = useState("");
 	const [allYears, setAllYears] = useState<string[]>([]);
 	const [selectedYear, setSelectedYear] = useState("2025");
 	const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -619,21 +620,58 @@ export function EventsPage({
 								Are you sure you want to delete this event? This action cannot
 								be undone.
 							</p>
+
+							<div className="space-y-2">
+								<div className="text-sm font-medium text-gray-900 dark:text-slate-200">
+									Event to delete:
+								</div>
+								<div className="p-3 bg-gray-100 dark:bg-slate-800 rounded-md border border-gray-300 dark:border-slate-700">
+									<p className="text-sm font-medium text-gray-900 dark:text-slate-200 select-none">
+										{selectedEvent?.name} (ID: {selectedEvent?.id})
+									</p>
+								</div>
+							</div>
+
+							<div className="space-y-2">
+								<label
+									htmlFor="delete-confirmation"
+									className="text-sm font-medium text-gray-900 dark:text-slate-200"
+								>
+									Type exactly as above to confirm deletion:
+								</label>
+								<input
+									id="delete-confirmation"
+									type="text"
+									value={deleteConfirmationText}
+									onChange={(e) => setDeleteConfirmationText(e.target.value)}
+									className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+									placeholder="Enter event name and ID"
+								/>
+							</div>
+
 							<div className="flex justify-end gap-2">
 								<Button
 									variant="outline"
-									onClick={() => setDeleteEventModal(false)}
+									onClick={() => {
+										setDeleteEventModal(false);
+										setDeleteConfirmationText("");
+									}}
 								>
 									Cancel
 								</Button>
 								<Button
 									variant="destructive"
-									disabled={deletionLoading}
+									disabled={
+										deletionLoading ||
+										deleteConfirmationText !==
+											`${selectedEvent?.name} (ID: ${selectedEvent?.id})`
+									}
 									onClick={() => {
 										if (deleteEventId !== null) {
 											handleDeleteEvent(deleteEventId);
 										}
 										setDeleteEventModal(false);
+										setDeleteConfirmationText("");
 									}}
 								>
 									{deletionLoading ? "Deleting..." : "Confirm Deletion"}
