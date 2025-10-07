@@ -480,27 +480,27 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 	}
 
 	return (
-		<div className="space-y-8">
-			<div className="flex justify-between items-center mb-6">
+		<div className="space-y-4 sm:space-y-6 lg:space-y-8 p-2 min-h-screen">
+			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 sm:mb-6">
 				<div>
-					<h1 className="text-4xl font-bold text-gray-900 dark:text-slate-200 mb-2">
+					<h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-slate-200 mb-2">
 						{editingEvent?.name ?? "Registered Teams"}
 					</h1>
-					<p className="text-gray-600 dark:text-slate-400">
+					<p className="text-sm sm:text-base text-gray-600 dark:text-slate-400">
 						Track and manage participants
 					</p>
 				</div>
-				<div className="flex gap-2">
+				<div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
 					<Button
 						onClick={() => setExportDialogOpen(true)}
-						className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg"
+						className="w-full sm:w-auto bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg text-sm py-2"
 					>
 						<Download className="h-4 w-4 mr-2" />
 						Export
 					</Button>
 					<Button
 						onClick={() => exportEmails(teams)}
-						className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg"
+						className="w-full sm:w-auto bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg text-sm py-2"
 					>
 						Export Emails
 					</Button>
@@ -508,8 +508,8 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 						open={exportDialogOpen}
 						onOpenChange={setExportDialogOpen}
 					>
-						<ExportDialogContent className="sm:max-w-xs">
-							<div className="flex flex-col gap-4 items-center p-2">
+						<ExportDialogContent className="w-[95vw] max-w-xs mx-auto">
+							<div className="flex flex-col gap-4 items-center p-4">
 								<h2 className="text-lg font-semibold mb-2">Export Format</h2>
 								<Button
 									className="w-full"
@@ -530,7 +530,7 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 					</ExportDialog>
 					<Button
 						onClick={() => setCreateDialogOpen(true)}
-						className="bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg"
+						className="w-full sm:w-auto bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg text-sm py-2"
 					>
 						<Plus className="h-4 w-4 mr-2" />
 						Create Team
@@ -540,7 +540,7 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 
 			{editingEvent?.statusOfBatchRestriction &&
 				batchRestrictions.length > 0 && (
-					<div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+					<div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 						{batchRestrictions.map(
 							(batch: { year: number; maxCapacity: number }) => {
 								const counts = teamCountsByYear[batch.year] || {
@@ -548,17 +548,15 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 									total: 0,
 									maxCapacity: batch.maxCapacity,
 								};
-								const utilizationPercentage =
-									(counts.total / counts.maxCapacity) * 100;
 
 								return (
 									<Card
 										key={batch.year}
 										className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800"
 									>
-										<CardHeader className="pb-3">
-											<div className="flex justify-between items-center">
-												<CardTitle className="text-sm text-gray-700 dark:text-slate-300">
+										<CardHeader className="pb-2 sm:pb-3">
+											<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+												<CardTitle className="text-sm sm:text-base text-gray-700 dark:text-slate-300">
 													Year {batch.year}
 												</CardTitle>
 												<Button
@@ -569,29 +567,29 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 															yearFilter === batch.year ? "all" : batch.year,
 														)
 													}
-													className={
+													className={`text-xs sm:text-sm ${
 														yearFilter === batch.year
 															? "bg-blue-100 dark:bg-blue-900"
 															: ""
-													}
+													}`}
 												>
 													{yearFilter === batch.year ? "Show All" : "Filter"}
 												</Button>
 											</div>
 										</CardHeader>
-										<CardContent>
-											<div className="space-y-2">
-												<div className="flex justify-between text-sm">
+										<CardContent className="pt-0">
+											<div className="space-y-1 sm:space-y-2">
+												<div className="flex justify-between text-xs sm:text-sm">
 													<span>Confirmed:</span>
 													<span className="font-semibold text-green-600">
 														{counts.confirmed}
 													</span>
 												</div>
-												<div className="flex justify-between text-sm">
+												<div className="flex justify-between text-xs sm:text-sm">
 													<span>Total:</span>
 													<span className="font-semibold">{counts.total}</span>
 												</div>
-												<div className="flex justify-between text-sm">
+												<div className="flex justify-between text-xs sm:text-sm">
 													<span>Capacity:</span>
 													<span className="font-semibold text-blue-600">
 														{counts.maxCapacity}
@@ -606,36 +604,36 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 					</div>
 				)}
 
-			<div className="grid gap-6 md:grid-cols-2">
+			<div className="grid gap-3 sm:gap-4 lg:gap-6 grid-cols-1 md:grid-cols-2">
 				<Card className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
-					<CardHeader className="pb-3">
+					<CardHeader className="pb-2 sm:pb-3">
 						<div className="flex justify-between items-center">
-							<CardTitle className="text-sm text-gray-700 dark:text-slate-300">
+							<CardTitle className="text-sm sm:text-base text-gray-700 dark:text-slate-300">
 								Confirmed Teams
 							</CardTitle>
 						</div>
 					</CardHeader>
 
-					<CardContent>
+					<CardContent className="pt-0">
 						{/* Total Confirmed Teams */}
-						<div className="text-2xl font-bold text-green-600 dark:text-green-400">
+						<div className="text-xl sm:text-2xl font-bold text-green-600 dark:text-green-400">
 							{teams.filter((team) => team.isConfirmed).length}
 						</div>
 					</CardContent>
 				</Card>
 
 				<Card className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
-					<CardHeader className="pb-3">
+					<CardHeader className="pb-2 sm:pb-3">
 						<div className="flex justify-between items-center">
-							<CardTitle className="text-sm text-gray-700 dark:text-slate-300">
+							<CardTitle className="text-sm sm:text-base text-gray-700 dark:text-slate-300">
 								Unconfirmed Teams
 							</CardTitle>
 						</div>
 					</CardHeader>
 
-					<CardContent>
+					<CardContent className="pt-0">
 						{/* Total Unconfirmed Teams */}
-						<div className="text-2xl font-bold text-red-600 dark:text-red-400">
+						<div className="text-xl sm:text-2xl font-bold text-red-600 dark:text-red-400">
 							{teams.filter((team) => !team.isConfirmed).length}
 						</div>
 					</CardContent>
@@ -643,12 +641,12 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 			</div>
 
 			<Card className="shadow-lg bg-white dark:bg-black border border-gray-200 dark:border-slate-800">
-				<CardHeader>
-					<div className="flex justify-between items-center">
-						<CardTitle className="text-xl text-gray-900 dark:text-slate-200">
+				<CardHeader className="pb-3 sm:pb-4">
+					<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+						<CardTitle className="text-lg sm:text-xl text-gray-900 dark:text-slate-200">
 							Registered Teams
 						</CardTitle>
-						<div className="flex gap-4 items-center">
+						<div className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-stretch sm:items-center w-full sm:w-auto">
 							{editingEvent?.statusOfBatchRestriction &&
 								batchRestrictions.length > 0 && (
 									<select
@@ -660,7 +658,7 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 													: Number(e.target.value),
 											)
 										}
-										className="px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-md bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-200"
+										className="px-3 py-2 text-sm border border-gray-300 dark:border-slate-700 rounded-md bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-200 w-full sm:w-auto"
 									>
 										<option value="all">All Years</option>
 										{batchRestrictions.map((batch: { year: number }) => (
@@ -670,82 +668,73 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 										))}
 									</select>
 								)}
-							<div className="relative">
+							<div className="relative w-full sm:w-64">
 								<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-slate-400" />
 								<Input
 									placeholder="Search teams..."
 									value={searchQuery}
 									onChange={(e) => setSearchQuery(e.target.value)}
-									className="pl-10 w-64 bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-400"
+									className="pl-10 text-sm bg-gray-50 dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 placeholder:text-gray-400 dark:placeholder:text-slate-400"
 								/>
 							</div>
 						</div>
 					</div>
 				</CardHeader>
-				<CardContent>
-					<Table className="bg-white dark:bg-black text-gray-900 dark:text-slate-200">
-						<TableHeader>
-							<TableRow className="bg-gray-50 dark:bg-slate-900">
-								<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-									Team Name
-								</TableHead>
-								<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-									Leader
-								</TableHead>
-								{editingEvent?.statusOfBatchRestriction && (
-									<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-										Year
-									</TableHead>
-								)}
-								<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-									Members
-								</TableHead>
-								<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-									Status
-								</TableHead>
-								<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-									Edit
-								</TableHead>
-							</TableRow>
-						</TableHeader>
-						<TableBody>
-							{paginatedTeams.map((team: Team) => (
-								<TableRow
-									key={team.id}
-									className="hover:bg-gray-50 dark:hover:bg-slate-900"
-								>
-									{/* Team Name */}
-									<TableCell className="font-medium">
-										<div className="text-gray-900 dark:text-slate-200">
-											{team.name}
-										</div>
-									</TableCell>
-
-									<TableCell className="font-medium">
-										<div className="text-gray-900 dark:text-slate-200">
-											<span
-												key={team.leaderName}
-												className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300"
+				<CardContent className="px-0 sm:px-6">
+					<div className="block sm:hidden space-y-3 px-4">
+						{paginatedTeams.map((team: Team) => (
+							<Card
+								key={team.id}
+								className="border border-gray-200 dark:border-slate-700"
+							>
+								<CardContent className="p-4">
+									<div className="space-y-3">
+										<div className="flex justify-between items-start">
+											<h3 className="font-medium text-gray-900 dark:text-slate-200 text-sm break-words flex-1 mr-2">
+												{team.name}
+											</h3>
+											<Badge
+												className={`${
+													team.isConfirmed
+														? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+														: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+												} text-xs shrink-0`}
 											>
-												{team.leaderName || "Unknown Leader"}
-											</span>
+												{team.isConfirmed ? "Confirmed" : "Pending"}
+											</Badge>
 										</div>
-									</TableCell>
-									{editingEvent?.statusOfBatchRestriction && (
-										<TableCell>
-											<div className="text-gray-900 dark:text-slate-200">
-												<span className="px-2 py-1 text-xs rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
-													{team.yearOfStudy || "N/A"}
+
+										<div>
+											<span className="text-xs text-gray-500 dark:text-slate-400">
+												Leader:
+											</span>
+											<div className="mt-1">
+												<span className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300">
+													{team.leaderName || "Unknown Leader"}
 												</span>
 											</div>
-										</TableCell>
-									)}
+										</div>
 
-									{/* Members */}
-									<TableCell>
-										<div className="flex flex-wrap gap-2 text-gray-900 dark:text-slate-200">
-											{team.members.length > 0
-												? team.members.map((m) => (
+										{editingEvent?.statusOfBatchRestriction && (
+											<div>
+												<span className="text-xs text-gray-500 dark:text-slate-400">
+													Year:
+												</span>
+												<div className="mt-1">
+													<span className="px-2 py-1 text-xs rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
+														{team.yearOfStudy || "N/A"}
+													</span>
+												</div>
+											</div>
+										)}
+
+										<div>
+											<span className="text-xs text-gray-500 dark:text-slate-400">
+												Members:
+											</span>
+											<div className="flex flex-wrap gap-1 mt-1">
+												{team.members.length > 0 ? (
+													team.members.map((m) => (
 														<span
 															key={m.id}
 															className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300"
@@ -753,55 +742,147 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 															{m.name}
 														</span>
 													))
-												: "No members"}
+												) : (
+													<span className="text-xs text-gray-500 dark:text-slate-400">
+														No members
+													</span>
+												)}
+											</div>
 										</div>
-									</TableCell>
 
-									{/* Status */}
-									<TableCell>
-										<Badge
-											className={`${
-												team.isConfirmed
-													? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-													: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-											} w-fit`}
-										>
-											{team.isConfirmed ? "Confirmed" : "Pending"}
-										</Badge>
-									</TableCell>
+										<div className="pt-2 border-t border-gray-200 dark:border-slate-700">
+											<Button
+												variant="ghost"
+												size="sm"
+												onClick={() => setSelectedTeam(team)}
+												className="w-full hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300 text-sm"
+											>
+												Manage Team
+											</Button>
+										</div>
+									</div>
+								</CardContent>
+							</Card>
+						))}
+					</div>
 
-									{/* Actions */}
-									<TableCell>
-										<Button
-											variant="ghost"
-											size="sm"
-											onClick={() => setSelectedTeam(team)}
-											className="hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300"
-										>
-											. . .
-										</Button>
-									</TableCell>
+					<div className="hidden sm:block overflow-x-auto">
+						<Table className="bg-white dark:bg-black text-gray-900 dark:text-slate-200">
+							<TableHeader>
+								<TableRow className="bg-gray-50 dark:bg-slate-900">
+									<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+										Team Name
+									</TableHead>
+									<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+										Leader
+									</TableHead>
+									{editingEvent?.statusOfBatchRestriction && (
+										<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+											Year
+										</TableHead>
+									)}
+									<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+										Members
+									</TableHead>
+									<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+										Status
+									</TableHead>
+									<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+										Edit
+									</TableHead>
 								</TableRow>
-							))}
-						</TableBody>
-					</Table>
+							</TableHeader>
+							<TableBody>
+								{paginatedTeams.map((team: Team) => (
+									<TableRow
+										key={team.id}
+										className="hover:bg-gray-50 dark:hover:bg-slate-900"
+									>
+										<TableCell className="font-medium">
+											<div className="text-gray-900 dark:text-slate-200">
+												{team.name}
+											</div>
+										</TableCell>
+
+										<TableCell className="font-medium">
+											<div className="text-gray-900 dark:text-slate-200">
+												<span
+													key={team.leaderName}
+													className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300"
+												>
+													{team.leaderName || "Unknown Leader"}
+												</span>
+											</div>
+										</TableCell>
+										{editingEvent?.statusOfBatchRestriction && (
+											<TableCell>
+												<div className="text-gray-900 dark:text-slate-200">
+													<span className="px-2 py-1 text-xs rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
+														{team.yearOfStudy || "N/A"}
+													</span>
+												</div>
+											</TableCell>
+										)}
+
+										<TableCell>
+											<div className="flex flex-wrap gap-2 text-gray-900 dark:text-slate-200">
+												{team.members.length > 0
+													? team.members.map((m) => (
+															<span
+																key={m.id}
+																className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300"
+															>
+																{m.name}
+															</span>
+														))
+													: "No members"}
+											</div>
+										</TableCell>
+
+										<TableCell>
+											<Badge
+												className={`${
+													team.isConfirmed
+														? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+														: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+												} w-fit`}
+											>
+												{team.isConfirmed ? "Confirmed" : "Pending"}
+											</Badge>
+										</TableCell>
+
+										<TableCell>
+											<Button
+												variant="ghost"
+												size="sm"
+												onClick={() => setSelectedTeam(team)}
+												className="hover:bg-gray-100 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300"
+											>
+												. . .
+											</Button>
+										</TableCell>
+									</TableRow>
+								))}
+							</TableBody>
+						</Table>
+					</div>
 
 					{/* Pagination */}
-					<div className="flex justify-between items-center mt-6">
+					<div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-4 sm:mt-6 px-4 sm:px-0">
 						<Button
 							onClick={() => setPage((p) => Math.max(1, p - 1))}
 							disabled={page === 1}
-							className="bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
+							className="w-full sm:w-auto bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 text-sm py-2"
 						>
 							⬅ Prev
 						</Button>
-						<span className="text-sm text-gray-500 dark:text-slate-400">
+						<span className="text-xs sm:text-sm text-gray-500 dark:text-slate-400 order-first sm:order-none">
 							Page {page} of {totalPages}
 						</span>
 						<Button
 							onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
 							disabled={page === totalPages}
-							className="bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800"
+							className="w-full sm:w-auto bg-white dark:bg-slate-900 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 text-sm py-2"
 						>
 							Next ➡
 						</Button>
@@ -810,9 +891,9 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 			</Card>
 
 			<Dialog open={!!selectedTeam} onOpenChange={() => setSelectedTeam(null)}>
-				<DialogContent className="sm:max-w-md">
-					<DialogHeader>
-						<DialogTitle>
+				<DialogContent className="w-[95vw] max-w-md mx-auto p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+					<DialogHeader className="pb-3 sm:pb-4">
+						<DialogTitle className="text-base sm:text-lg break-words">
 							Manage Team: {selectedTeam?.name || "Unknown"}
 						</DialogTitle>
 					</DialogHeader>
@@ -821,14 +902,17 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 						<div className="space-y-4">
 							{/* Team Name */}
 							<div>
-								<Label htmlFor="team-name">Team Name</Label>
+								<Label htmlFor="team-name" className="text-sm">
+									Team Name
+								</Label>
 								<Input
 									id="team-name"
 									value={teamNameInput}
 									onChange={(e) => setTeamNameInput(e.target.value)}
+									className="text-sm mt-1"
 								/>
 								<Button
-									className="mt-2"
+									className="mt-2 w-full sm:w-auto text-sm py-2"
 									variant="outline"
 									onClick={handleUpdateTeamName}
 								>
@@ -838,52 +922,71 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 
 							{/* Leader */}
 							<div>
-								<Label>Leader</Label>
-								<div className="text-gray-900 dark:text-slate-200 pt-1">
+								<Label className="text-sm">Leader</Label>
+								<div className="text-gray-900 dark:text-slate-200 pt-1 text-sm break-words">
 									{selectedTeam.leaderName || "Unknown Leader"}
 								</div>
 							</div>
 
 							{/* Members */}
 							<div>
-								<Label>Members</Label>
-								<ul className="space-y-2 mt-2">
+								<Label className="text-sm">Members</Label>
+								<div className="space-y-2 mt-2 max-h-32 overflow-y-auto">
 									{selectedTeam.members
 										.filter((member) => member.id !== selectedTeam.leaderId)
 										.map((member) => (
-											<li
+											<div
 												key={member.id}
-												className="flex justify-between items-center"
+												className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 p-2 bg-gray-50 dark:bg-slate-800 rounded"
 											>
-												<span>{member.name}</span>
+												<span className="text-sm break-words flex-1">
+													{member.name}
+												</span>
 												<Button
 													variant="outline"
 													size="sm"
 													onClick={() =>
 														handleRemoveMember(selectedTeam.id, member.id)
 													}
+													className="w-full sm:w-auto text-xs py-1"
 												>
 													Remove
 												</Button>
-											</li>
+											</div>
 										))}
-								</ul>
+									{selectedTeam.members.filter(
+										(member) => member.id !== selectedTeam.leaderId,
+									).length === 0 && (
+										<p className="text-sm text-gray-500 dark:text-slate-400">
+											No additional members
+										</p>
+									)}
+								</div>
 							</div>
 
 							{/* Add Member */}
-							<div className="flex items-center space-x-2">
-								<Input
-									placeholder="Enter member ID to add"
-									value={addingMemberId}
-									onChange={(e) => setAddingMemberId(e.target.value)}
-								/>
-								<Button onClick={handleAddMember}>Add</Button>
+							<div className="space-y-2">
+								<Label className="text-sm">Add Member</Label>
+								<div className="flex flex-col sm:flex-row gap-2">
+									<Input
+										placeholder="Enter member ID to add"
+										value={addingMemberId}
+										onChange={(e) => setAddingMemberId(e.target.value)}
+										className="text-sm flex-1"
+									/>
+									<Button
+										onClick={handleAddMember}
+										className="w-full sm:w-auto text-sm py-2"
+									>
+										Add
+									</Button>
+								</div>
 							</div>
 
 							{/* Confirm Team Button */}
 							{!selectedTeam.isConfirmed ? (
 								<Button
-									className="w-full"
+									className="w-full text-sm py-2"
 									variant="default"
 									onClick={() => handleConfirmTeam(selectedTeam.id)}
 								>
@@ -891,7 +994,7 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 								</Button>
 							) : (
 								<Button
-									className="w-full"
+									className="w-full text-sm py-2"
 									variant="secondary"
 									onClick={() => handleUnConfirmTeam(selectedTeam.id)}
 								>
@@ -902,7 +1005,7 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 							{/* Delete Team */}
 							<Button
 								variant="destructive"
-								className="w-full"
+								className="w-full text-sm py-2"
 								onClick={() => handleDeleteTeam(selectedTeam.id)}
 							>
 								Remove Team
@@ -913,28 +1016,33 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 			</Dialog>
 
 			<Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-				<DialogContent className="sm:max-w-md">
-					<DialogHeader>
-						<DialogTitle>Create New Team</DialogTitle>
+				<DialogContent className="w-[95vw] max-w-md mx-auto p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+					<DialogHeader className="pb-3 sm:pb-4">
+						<DialogTitle className="text-base sm:text-lg">
+							Create New Team
+						</DialogTitle>
 					</DialogHeader>
 
 					<div className="space-y-4">
 						{/* Team Name */}
 						{!isSoloEvent ? (
 							<div>
-								<Label htmlFor="new-team-name">Team Name</Label>
+								<Label htmlFor="new-team-name" className="text-sm">
+									Team Name
+								</Label>
 								<Input
 									id="new-team-name"
 									placeholder="Enter team name"
 									value={newTeamName}
 									onChange={(e) => setNewTeamName(e.target.value)}
+									className="text-sm mt-1"
 								/>
 							</div>
 						) : null}
 
 						{/* Leader ID */}
 						<div>
-							<Label htmlFor="new-leader-id">
+							<Label htmlFor="new-leader-id" className="text-sm">
 								{isSoloEvent ? "Member ID" : "Leader ID"}
 							</Label>
 							<Input
@@ -945,32 +1053,40 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 								type="number"
 								value={newLeaderId}
 								onChange={(e) => setNewLeaderId(e.target.value)}
+								className="text-sm mt-1"
 							/>
 						</div>
 
 						{/* Member IDs */}
 						{!isSoloEvent ? (
 							<div>
-								<Label htmlFor="new-member-ids">Member IDs</Label>
+								<Label htmlFor="new-member-ids" className="text-sm">
+									Member IDs
+								</Label>
 								<Input
 									id="new-member-ids"
 									placeholder="Comma-separated member IDs"
 									value={newMemberIds}
 									onChange={(e) => setNewMemberIds(e.target.value)}
+									className="text-sm mt-1"
 								/>
+								<p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
+									Enter member IDs separated by commas (e.g., 123, 456, 789)
+								</p>
 							</div>
 						) : null}
 
 						{/* Is Confirmed */}
-
 						{!isSoloEvent ? (
 							<div>
-								<Label htmlFor="new-is-confirmed">Is Confirmed</Label>
+								<Label htmlFor="new-is-confirmed" className="text-sm">
+									Is Confirmed
+								</Label>
 								<select
 									id="new-is-confirmed"
 									value={newIsConfirmed ? "true" : "false"}
 									onChange={(e) => setNewIsConfirmed(e.target.value === "true")}
-									className="w-full rounded-md border border-input bg-background p-2 text-sm"
+									className="w-full rounded-md border border-input bg-background p-2 text-sm mt-1"
 								>
 									<option value="false">False</option>
 									<option value="true">True</option>
@@ -979,9 +1095,8 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 						) : null}
 
 						{/* Create Team Button */}
-
 						<Button
-							className="w-full"
+							className="w-full text-sm py-2 mt-6"
 							onClick={handleCreateTeam}
 							disabled={creating}
 						>

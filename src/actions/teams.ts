@@ -420,6 +420,63 @@ export async function hasAttended(
 	});
 	return attendance?.hasAttended ?? false;
 }
+export async function getTeamMembersWithAttendance(eventId: number) {
+	const teams = await db.team.findMany({
+		where: { eventId },
+		include: {
+			Members: {
+				select: {
+					id: true,
+					name: true,
+					email: true,
+				},
+			},
+			Leader: {
+				select: {
+					id: true,
+					name: true,
+				},
+			},
+			Prize: {
+				select: {
+					prizeType: true,
+					flcPoints: true,
+				},
+			},
+		},
+	});
+
+	const allUserIds = teams
+		.flatMap((team) => [
+			team.Leader ? team.Leader.id : null,
+			...team.Members.map((member) => member.id),
+		])
+		.filter((id): id is number => id !== null);
+
+	const attendanceRecords = await db.attendance.findMany({
+		where: {
+			eventId,
+			userId: { in: allUserIds },
+			hasAttended: true,
+		},
+		select: {
+			userId: true,
+		},
+	});
+
+	const attendedUserIds = new Set(
+		attendanceRecords.map((record) => record.userId),
+	);
+	const teamsWithAttendance = teams.map((team) => ({
+		...team,
+		Members: team.Members.map((member) => ({
+			...member,
+			hasAttended: attendedUserIds.has(member.id),
+		})),
+	}));
+
+	return teamsWithAttendance;
+}
 export const confirmTeam = protectedAction(
 	async (teamId: string) => {
 		const team = await db.team.findUnique({

@@ -369,16 +369,16 @@ export function EventsPage({
 			</div>
 
 			<Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-				<DialogContent className="max-w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-black border border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
-					<DialogHeader>
-						<DialogTitle className="text-xl sm:text-2xl text-gray-900 dark:text-slate-200">
+				<DialogContent className="w-[95vw] max-w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-black border border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200 p-4 sm:p-6">
+					<DialogHeader className="pb-4">
+						<DialogTitle className="text-lg sm:text-xl md:text-2xl text-gray-900 dark:text-slate-200 break-words">
 							{selectedEvent?.name}
 						</DialogTitle>
 					</DialogHeader>
 					{selectedEvent && (
-						<div className="space-y-6">
-							<div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start">
-								<div className="relative">
+						<div className="space-y-4 sm:space-y-6">
+							<div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start">
+								<div className="relative order-1 lg:order-1">
 									<Image
 										width={530}
 										height={635}
@@ -395,12 +395,12 @@ export function EventsPage({
 									</div>
 								</div>
 
-								<div className="space-y-4">
+								<div className="space-y-4 order-2 lg:order-2">
 									<div>
-										<h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200 mb-2">
+										<h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-200 mb-2">
 											Event Details
 										</h3>
-										<div className="text-gray-600 dark:text-slate-400">
+										<div className="text-sm sm:text-base text-gray-600 dark:text-slate-400">
 											<HTMLContent
 												content={selectedEvent.description || ""}
 												className=""
@@ -408,23 +408,23 @@ export function EventsPage({
 										</div>
 									</div>
 
-									<div className="space-y-3">
-										<div className="flex items-center gap-2">
-											<MapPin className="h-4 w-4 text-gray-500 dark:text-slate-400" />
-											<span className="text-sm text-gray-900 dark:text-slate-200">
+									<div className="space-y-2 sm:space-y-3">
+										<div className="flex items-start gap-2">
+											<MapPin className="h-4 w-4 text-gray-500 dark:text-slate-400 mt-0.5 flex-shrink-0" />
+											<span className="text-xs sm:text-sm text-gray-900 dark:text-slate-200 break-words">
 												{selectedEvent.venue}
 											</span>
 										</div>
-										<div className="flex items-center gap-2">
-											<Calendar className="h-4 w-4 text-gray-500 dark:text-slate-400" />
-											<span className="text-sm text-gray-900 dark:text-slate-200">
+										<div className="flex items-start gap-2">
+											<Calendar className="h-4 w-4 text-gray-500 dark:text-slate-400 mt-0.5 flex-shrink-0" />
+											<span className="text-xs sm:text-sm text-gray-900 dark:text-slate-200 break-words">
 												{new Date(selectedEvent.fromDate).toLocaleString()} -{" "}
 												{new Date(selectedEvent.toDate).toLocaleString()}
 											</span>
 										</div>
-										<div className="flex items-center gap-2">
-											<Clock className="h-4 w-4 text-gray-500 dark:text-slate-400" />
-											<span className="text-sm text-gray-900 dark:text-slate-200">
+										<div className="flex items-start gap-2">
+											<Clock className="h-4 w-4 text-gray-500 dark:text-slate-400 mt-0.5 flex-shrink-0" />
+											<span className="text-xs sm:text-sm text-gray-900 dark:text-slate-200 break-words">
 												Registration Deadline:{" "}
 												{selectedEvent?.deadline
 													? new Date(selectedEvent.deadline).toLocaleString()
@@ -437,7 +437,7 @@ export function EventsPage({
 
 							<div className="space-y-4">
 								<div>
-									<h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200 mb-3">
+									<h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-200 mb-3">
 										Registration Info
 									</h3>
 									<div className="space-y-2">
@@ -454,13 +454,13 @@ export function EventsPage({
 											],
 										].map(([label, value], i) => (
 											<div
-												className="flex justify-between"
+												className="flex justify-between text-xs sm:text-sm"
 												key={`${i}-${label}`}
 											>
-												<span className="text-sm text-gray-600 dark:text-slate-400">
+												<span className="text-gray-600 dark:text-slate-400">
 													{label}:
 												</span>
-												<span className="text-sm font-medium text-gray-900 dark:text-slate-200">
+												<span className="font-medium text-gray-900 dark:text-slate-200">
 													{value}
 												</span>
 											</div>
@@ -469,23 +469,23 @@ export function EventsPage({
 								</div>
 
 								<div>
-									<h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200 mb-3">
+									<h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-200 mb-3">
 										Pricing
 									</h3>
 									<div className="space-y-2">
-										<div className="flex justify-between">
-											<span className="text-sm text-gray-600 dark:text-slate-400">
+										<div className="flex justify-between text-xs sm:text-sm">
+											<span className="text-gray-600 dark:text-slate-400">
 												FLC Members:
 											</span>
-											<span className="text-sm font-medium text-gray-900 dark:text-slate-200">
+											<span className="font-medium text-gray-900 dark:text-slate-200">
 												₹{selectedEvent.flcAmount}
 											</span>
 										</div>
-										<div className="flex justify-between">
-											<span className="text-sm text-gray-600 dark:text-slate-400">
+										<div className="flex justify-between text-xs sm:text-sm">
+											<span className="text-gray-600 dark:text-slate-400">
 												Non-FLC:
 											</span>
-											<span className="text-sm font-medium text-gray-900 dark:text-slate-200">
+											<span className="font-medium text-gray-900 dark:text-slate-200">
 												₹{selectedEvent.nonFlcAmount}
 											</span>
 										</div>
@@ -493,16 +493,19 @@ export function EventsPage({
 								</div>
 								{selectedEvent.prizes && selectedEvent.prizes.length > 0 && (
 									<div>
-										<h3 className="text-lg font-semibold text-gray-900 dark:text-slate-200 mb-3">
+										<h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-200 mb-3">
 											FLC Points Allocation
 										</h3>
 										<div className="space-y-2">
 											{selectedEvent.prizes.map((prize) => (
-												<div key={prize.id} className="flex justify-between">
-													<span className="text-sm text-gray-600 dark:text-slate-400">
+												<div
+													key={prize.id}
+													className="flex justify-between text-xs sm:text-sm"
+												>
+													<span className="text-gray-600 dark:text-slate-400">
 														{prize.prizeType}
 													</span>
-													<span className="text-sm font-medium text-gray-900 dark:text-slate-200">
+													<span className="font-medium text-gray-900 dark:text-slate-200">
 														{prize.flcPoints} pts
 													</span>
 												</div>
@@ -522,28 +525,18 @@ export function EventsPage({
 							</div>
 
 							<div className="flex flex-col gap-3 pt-4 border-t border-gray-200 dark:border-slate-800">
-								<div className="flex flex-row justify-end gap-3">
+								<div className="flex flex-col sm:flex-col lg:flex-row justify-end gap-2 sm:gap-3">
 									<Button
 										onClick={() => handleEditEvent(selectedEvent)}
-										className="bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-200 border border-gray-300 dark:border-slate-800"
+										className="w-full sm:w-auto bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-200 border border-gray-300 dark:border-slate-800 text-sm py-2"
 									>
 										Edit Event
 									</Button>
-									<Button
-										onClick={() => {
-											setDeleteEventId(selectedEvent.id);
-											setDeleteEventModal(true);
-										}}
-										className="bg-red-100 dark:bg-red-900 hover:bg-red-200 dark:hover:bg-red-800 text-red-700 dark:text-red-200 border border-red-300 dark:border-red-800"
-									>
-										Delete Event
-									</Button>
-								</div>
-								<div className="flex flex-row justify-end gap-3">
+
 									<Button
 										type="button"
 										onClick={() => handleManageDocuments(selectedEvent)}
-										className="bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-200 border border-gray-300 dark:border-slate-800"
+										className="w-full sm:w-auto bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-200 border border-gray-300 dark:border-slate-800 text-sm py-2"
 									>
 										Manage Documents
 									</Button>
@@ -551,7 +544,7 @@ export function EventsPage({
 										<Button
 											type="button"
 											onClick={() => handleAssignWinner(selectedEvent)}
-											className="bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-200 border border-blue-300 dark:border-blue-800"
+											className="w-full sm:w-auto bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-200 border border-blue-300 dark:border-blue-800 text-sm py-2"
 										>
 											Assign Winners
 										</Button>
@@ -560,7 +553,7 @@ export function EventsPage({
 										<Button
 											type="button"
 											onClick={() => setStatusModalOpen(true)}
-											className="bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-200 border border-gray-300 dark:border-slate-800"
+											className="w-full sm:w-auto bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-200 border border-gray-300 dark:border-slate-800 text-sm py-2"
 										>
 											{selectedEvent.state === "DRAFT"
 												? "Publish Event"
@@ -571,23 +564,26 @@ export function EventsPage({
 														: null}
 										</Button>
 									) : (
-										<div className="flex items-center gap-2">
-											<p className="text-green-700 dark:text-green-400 font-semibold bg-green-100 dark:bg-green-900/30 px-4 py-2 rounded-full">
+										<div className="flex flex-col sm:flex-row items-center gap-2">
+											<p className="text-xs sm:text-sm text-green-700 dark:text-green-400 font-semibold bg-green-100 dark:bg-green-900/30 px-3 py-2 rounded-full text-center">
 												Event is Completed
 											</p>
 											<Button
 												type="button"
 												onClick={() => handleGenerateReport(selectedEvent)}
-												className="bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-200 border border-blue-300 dark:border-blue-800"
+												className="w-full sm:w-auto bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-200 border border-blue-300 dark:border-blue-800 text-sm py-2"
 											>
 												Generate Final Report
 											</Button>
 										</div>
 									)}
+								</div>
+
+								<div className="flex flex-col sm:flex-col lg:flex-row justify-end gap-2 sm:gap-3">
 									<Button
 										type="button"
 										onClick={() => handleViewParticipants(selectedEvent)}
-										className="bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-200 border border-gray-300 dark:border-slate-800"
+										className="w-full sm:w-auto bg-gray-100 dark:bg-slate-900 hover:bg-gray-200 dark:hover:bg-slate-800 text-gray-900 dark:text-slate-200 border border-gray-300 dark:border-slate-800 text-sm py-2"
 									>
 										View Participants
 									</Button>
@@ -595,11 +591,20 @@ export function EventsPage({
 										selectedEvent.state === "PUBLISHED") && (
 										<Button
 											onClick={() => handleAttendance(selectedEvent)}
-											className="bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800 text-green-700 dark:text-green-200 border border-green-300 dark:border-green-800"
+											className="w-full sm:w-auto bg-green-100 dark:bg-green-900 hover:bg-green-200 dark:hover:bg-green-800 text-green-700 dark:text-green-200 border border-green-300 dark:border-green-800 text-sm py-2"
 										>
 											Mark Attendance
 										</Button>
 									)}
+									<Button
+										onClick={() => {
+											setDeleteEventId(selectedEvent.id);
+											setDeleteEventModal(true);
+										}}
+										className="w-full sm:w-auto bg-red-100 dark:bg-red-900 hover:bg-red-200 dark:hover:bg-red-800 text-red-700 dark:text-red-200 border border-red-300 dark:border-red-800 text-sm py-2"
+									>
+										Delete Event
+									</Button>
 								</div>
 							</div>
 						</div>
@@ -609,14 +614,14 @@ export function EventsPage({
 
 			{deleteEventModal && (
 				<Dialog open={deleteEventModal} onOpenChange={setDeleteEventModal}>
-					<DialogContent className="max-w-sm">
-						<DialogHeader>
-							<DialogTitle className="text-lg font-semibold text-gray-900 dark:text-slate-200">
+					<DialogContent className="w-[95vw] max-w-md mx-auto p-4 sm:p-6">
+						<DialogHeader className="pb-4">
+							<DialogTitle className="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-200">
 								Delete Event
 							</DialogTitle>
 						</DialogHeader>
 						<div className="space-y-4">
-							<p className="text-gray-600 dark:text-slate-400">
+							<p className="text-sm sm:text-base text-gray-600 dark:text-slate-400">
 								Are you sure you want to delete this event? This action cannot
 								be undone.
 							</p>
@@ -626,7 +631,7 @@ export function EventsPage({
 									Event to delete:
 								</div>
 								<div className="p-3 bg-gray-100 dark:bg-slate-800 rounded-md border border-gray-300 dark:border-slate-700">
-									<p className="text-sm font-medium text-gray-900 dark:text-slate-200 select-none">
+									<p className="text-sm font-medium text-gray-900 dark:text-slate-200 select-none break-words">
 										{selectedEvent?.name} (ID: {selectedEvent?.id})
 									</p>
 								</div>
@@ -635,7 +640,7 @@ export function EventsPage({
 							<div className="space-y-2">
 								<label
 									htmlFor="delete-confirmation"
-									className="text-sm font-medium text-gray-900 dark:text-slate-200"
+									className="text-sm font-medium text-gray-900 dark:text-slate-200 block"
 								>
 									Type exactly as above to confirm deletion:
 								</label>
@@ -644,18 +649,19 @@ export function EventsPage({
 									type="text"
 									value={deleteConfirmationText}
 									onChange={(e) => setDeleteConfirmationText(e.target.value)}
-									className="w-full px-3 py-2 border border-gray-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+									className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
 									placeholder="Enter event name and ID"
 								/>
 							</div>
 
-							<div className="flex justify-end gap-2">
+							<div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-2">
 								<Button
 									variant="outline"
 									onClick={() => {
 										setDeleteEventModal(false);
 										setDeleteConfirmationText("");
 									}}
+									className="w-full sm:w-auto order-2 sm:order-1 text-sm py-2"
 								>
 									Cancel
 								</Button>
@@ -673,6 +679,7 @@ export function EventsPage({
 										setDeleteEventModal(false);
 										setDeleteConfirmationText("");
 									}}
+									className="w-full sm:w-auto order-1 sm:order-2 text-sm py-2"
 								>
 									{deletionLoading ? "Deleting..." : "Confirm Deletion"}
 								</Button>
@@ -684,9 +691,9 @@ export function EventsPage({
 
 			{statusModalOpen && (
 				<Dialog open={statusModalOpen} onOpenChange={setStatusModalOpen}>
-					<DialogContent className="max-w-sm">
-						<DialogHeader>
-							<DialogTitle className="text-lg font-semibold text-gray-900 dark:text-slate-200">
+					<DialogContent className="w-[95vw] max-w-md mx-auto p-4 sm:p-6">
+						<DialogHeader className="pb-4">
+							<DialogTitle className="text-base sm:text-lg font-semibold text-gray-900 dark:text-slate-200 break-words">
 								{selectedEvent?.state === "DRAFT"
 									? "Mark Event as Published"
 									: selectedEvent?.state === "PUBLISHED"
@@ -697,13 +704,14 @@ export function EventsPage({
 							</DialogTitle>
 						</DialogHeader>
 						<div className="space-y-4">
-							<p className="text-gray-600 dark:text-slate-400">
+							<p className="text-sm sm:text-base text-gray-600 dark:text-slate-400">
 								Are you sure you want to toggle the status of this event?
 							</p>
-							<div className="flex justify-end gap-2">
+							<div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
 								<Button
 									variant="outline"
 									onClick={() => setStatusModalOpen(false)}
+									className="w-full sm:w-auto order-2 sm:order-1 text-sm py-2"
 								>
 									Cancel
 								</Button>
@@ -713,6 +721,7 @@ export function EventsPage({
 											handleToggleEventStatus(selectedEvent.id);
 										}
 									}}
+									className="w-full sm:w-auto order-1 sm:order-2 text-sm py-2"
 								>
 									{selectedEvent?.state === "DRAFT"
 										? "Publish Event"

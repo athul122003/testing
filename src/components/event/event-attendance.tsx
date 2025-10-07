@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
+	getTeamMembersWithAttendance,
 	getTeamsForEvent,
 	hasAttended,
 	markAttendance,
@@ -32,6 +33,7 @@ import {
 	DialogContent as ExportDialogContent,
 } from "../ui/dialog";
 import { saveAs } from "file-saver";
+import { PrizeType } from "@prisma/client";
 
 function exportEmails(
 	members: Array<Member & { email?: string }>,
@@ -64,13 +66,30 @@ type Team = {
 	isUnmarking?: boolean;
 };
 
+interface AttedendedTeam extends Team {
+	Members: {
+		hasAttended: boolean;
+		id: number;
+		name: string;
+		email: string;
+	}[];
+	Prize: {
+		prizeType: PrizeType;
+		flcPoints: number;
+	} | null;
+	Leader: {
+		id: number;
+		name: string;
+	};
+}
+
 type EventAttendanceProps = {
 	// biome-ignore lint/suspicious/noExplicitAny: <TODO>
 	editingEvent: any;
 };
 
 export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
-	const [teams, setTeams] = useState<Team[]>([]);
+	const [teams, setTeams] = useState<AttedendedTeam[]>([]);
 	const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
 	const [memberAttendance, setMemberAttendance] = useState<number[]>([]);
 	const [search, setSearch] = useState("");
@@ -78,39 +97,36 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 	const [loading, setLoading] = useState(false);
 	const [sortOrder, setSortOrder] = useState<"default" | "reversed">("default");
 
+	async function fetchTeamsWithAttendance() {
+		if (!event?.id) return;
+		const teamDataWithAttendance = await getTeamMembersWithAttendance(event.id);
+
+		const finalRes: AttedendedTeam[] = teamDataWithAttendance.map((team) => {
+			const matchedTeam = teamDataWithAttendance.find((t) => t.id === team.id);
+
+			if (matchedTeam) {
+				matchedTeam.Members.sort((a, b) => {
+					if (a.hasAttended === b.hasAttended) return 0;
+					return a.hasAttended ? -1 : 1;
+				});
+
+				return {
+					...matchedTeam,
+					leaderName: matchedTeam.Leader?.name,
+					members: matchedTeam.Members,
+					Prize: matchedTeam.Prize,
+					Leader: matchedTeam.Leader,
+				} as AttedendedTeam;
+			}
+			return team as unknown as AttedendedTeam;
+		});
+		setTeams(finalRes);
+	}
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <its fine>
 	useEffect(() => {
-		async function fetchTeamsWithAttendance() {
-			if (!event?.id) return;
-			const rawTeams = await getTeamsForEvent(event.id);
-			const teamsWithAttendance = await Promise.all(
-				rawTeams.map(async (team: Team) => {
-					// Include leader as a member for attendance
-					const allMembers = [...team.members];
-					console.log("All members for team:", allMembers);
-					const membersWithAttendance = await Promise.all(
-						allMembers.map(async (member) => {
-							const attended = await hasAttended(event.id, member.id);
-							return { ...member, hasAttended: attended };
-						}),
-					);
-					membersWithAttendance.sort((a, b) => {
-						if (a.hasAttended === b.hasAttended) return 0;
-						return a.hasAttended ? -1 : 1;
-					});
-					return {
-						...team,
-						members: membersWithAttendance,
-					};
-				}),
-			);
-			setTeams(teamsWithAttendance);
-		}
 		fetchTeamsWithAttendance();
 	}, [event?.id]);
-
-	useEffect(() => {
-		console.log(teams);
-	}, [teams]);
 
 	const filteredTeams = teams
 		.filter((team) => team.name.toLowerCase().includes(search.toLowerCase()))
@@ -207,23 +223,7 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 	async function refreshTeams() {
 		setRefreshing(true);
 		if (!event?.id) return;
-		const rawTeams = await getTeamsForEvent(event.id);
-		const teamsWithAttendance = await Promise.all(
-			rawTeams.map(async (team: Team) => {
-				const allMembers = [...team.members];
-				const membersWithAttendance = await Promise.all(
-					allMembers.map(async (member) => {
-						const attended = await hasAttended(event.id, member.id);
-						return { ...member, hasAttended: attended };
-					}),
-				);
-				return {
-					...team,
-					members: membersWithAttendance,
-				};
-			}),
-		);
-		setTeams(teamsWithAttendance);
+		fetchTeamsWithAttendance();
 		setRefreshing(false);
 	}
 
