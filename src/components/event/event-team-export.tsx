@@ -257,61 +257,100 @@ export function generateTeamDetailsTable(
 	let currentYear: number | null = null;
 	let currentStatus: "confirmed" | "unconfirmed" | null = null;
 	let tableHtml = "";
+	let hasOpenTable = false;
+
+	if (!hasYearColumn) {
+		hasOpenTable = true;
+	}
 
 	teams.forEach((team, teamIndex) => {
-		if (includeUnconfirmed) {
+		if (includeUnconfirmed && !hasYearColumn) {
 			const teamStatus = team.isConfirmed ? "confirmed" : "unconfirmed";
 			if (currentStatus !== teamStatus) {
-				if (currentStatus !== null) {
+				if (hasOpenTable) {
 					tableHtml += "</tbody></table>";
+					hasOpenTable = false;
 				}
 				currentStatus = teamStatus;
-				currentYear = null;
 
 				tableHtml += `
 					<div class="year-section">
 						<div class="year-header">
 							${teamStatus === "confirmed" ? "CONFIRMED TEAMS" : "UNCONFIRMED TEAMS"}
 						</div>
+						<table class="main-table">
+							<thead>
+								<tr>
+									<th>Team Name</th>
+									<th>Member Name</th>
+									<th>Phone Number</th>
+									<th>Status</th>
+								</tr>
+							</thead>
+							<tbody>
 				`;
+				hasOpenTable = true;
 			}
 		}
 
-		if (hasYearColumn && team.yearOfStudy && currentYear !== team.yearOfStudy) {
-			if (currentYear !== null) {
-				tableHtml += "</tbody></table>";
+		if (hasYearColumn) {
+			if (includeUnconfirmed) {
+				const teamStatus = team.isConfirmed ? "confirmed" : "unconfirmed";
+				if (currentStatus !== teamStatus) {
+					if (hasOpenTable) {
+						tableHtml += "</tbody></table>";
+						hasOpenTable = false;
+					}
+					currentStatus = teamStatus;
+					currentYear = null;
+					tableHtml += `
+						<div class="year-section">
+							<div class="year-header">
+								${teamStatus === "confirmed" ? "CONFIRMED TEAMS" : "UNCONFIRMED TEAMS"}
+							</div>
+					`;
+				}
 			}
-			currentYear = team.yearOfStudy;
 
-			tableHtml += `
-				${!includeUnconfirmed || teamIndex === 0 ? '<div class="year-section">' : ""}
-				${hasYearColumn ? `<div class="year-header">Year ${team.yearOfStudy}</div>` : ""}
-				<table class="main-table">
-					<thead>
-						<tr>
-							<th>Team Name</th>
-							${hasYearColumn ? "<th>Year</th>" : ""}
-							<th>Member Name</th>
-							<th>Phone Number</th>
-							<th>Status</th>
-						</tr>
-					</thead>
-					<tbody>
-			`;
-		} else if (currentYear === null) {
-			tableHtml += `
-				<table class="main-table">
-					<thead>
-						<tr>
-							<th>Team Name</th>
-							${hasYearColumn ? "<th>Year</th>" : ""}
-							<th>Member Name</th>
-							<th>Phone Number</th>
-							<th>Status</th>
-						</tr>
-					</thead>
-					<tbody>
-			`;
+			if (team.yearOfStudy && currentYear !== team.yearOfStudy) {
+				if (hasOpenTable) {
+					tableHtml += "</tbody></table>";
+					hasOpenTable = false;
+				}
+				currentYear = team.yearOfStudy;
+
+				tableHtml += `
+					${!includeUnconfirmed || teamIndex === 0 ? '<div class="year-section">' : ""}
+					<div class="year-header">Year ${team.yearOfStudy}</div>
+					<table class="main-table">
+						<thead>
+							<tr>
+								<th>Team Name</th>
+								<th>Year</th>
+								<th>Member Name</th>
+								<th>Phone Number</th>
+								<th>Status</th>
+							</tr>
+						</thead>
+						<tbody>
+				`;
+				hasOpenTable = true;
+			} else if (!hasOpenTable) {
+				tableHtml += `
+					<table class="main-table">
+						<thead>
+							<tr>
+								<th>Team Name</th>
+								<th>Year</th>
+								<th>Member Name</th>
+								<th>Phone Number</th>
+								<th>Status</th>
+							</tr>
+						</thead>
+						<tbody>
+				`;
+				hasOpenTable = true;
+			}
 		}
 
 		const allMembers = [...team.members];
@@ -343,7 +382,10 @@ export function generateTeamDetailsTable(
 		});
 	});
 
-	tableHtml += "</tbody></table>";
+	if (hasOpenTable) {
+		tableHtml += "</tbody></table>";
+	}
+
 	if (includeUnconfirmed || hasYearColumn) {
 		tableHtml += "</div>";
 	}
