@@ -20,6 +20,7 @@ export async function getTeamsForEvent(eventId: number) {
 				select: {
 					id: true,
 					name: true,
+					phone: true,
 				},
 			},
 			Members: {
@@ -27,6 +28,7 @@ export async function getTeamsForEvent(eventId: number) {
 					id: true,
 					name: true,
 					email: true,
+					phone: true,
 				},
 			},
 			Prize: {
@@ -44,12 +46,14 @@ export async function getTeamsForEvent(eventId: number) {
 		name: team.name,
 		isConfirmed: team.isConfirmed,
 		leaderName: team.Leader?.name,
+		leaderPhone: team.Leader?.phone,
 		hasAttended: team.hasAttended,
 		leaderId: team.Leader?.id,
 		members: team.Members.map((member) => ({
 			id: member.id,
 			name: member.name,
 			email: member.email,
+			phone: member.phone,
 		})),
 		Prize: {
 			prizeType: team.Prize?.prizeType,
@@ -177,7 +181,7 @@ export async function addMemberToTeam(teamId: string, userId: number) {
 	const team = await db.team.findUnique({
 		where: { id: teamId },
 		include: {
-			Members: { select: { id: true, name: true, email: true } },
+			Members: { select: { id: true, name: true, email: true, phone: true } },
 			Event: { select: { id: true, name: true, maxTeamSize: true } },
 		},
 	});
@@ -243,7 +247,7 @@ export async function addMemberToTeam(teamId: string, userId: number) {
 	const updatedTeam = await db.team.findUnique({
 		where: { id: teamId },
 		include: {
-			Members: { select: { id: true, name: true, email: true } },
+			Members: { select: { id: true, name: true, email: true, phone: true } },
 		},
 	});
 

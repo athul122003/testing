@@ -40,11 +40,16 @@ import {
 	makeLeader,
 } from "~/actions/teams";
 import { toast } from "sonner";
+import {
+	exportTeamsDetailsPDF,
+	exportTeamsForPrint,
+} from "./event-team-export";
 
 type Member = {
 	id: number;
 	name: string;
 	email: string;
+	phone: string;
 };
 
 type Team = {
@@ -53,6 +58,7 @@ type Team = {
 	leaderId?: number;
 	isConfirmed: boolean;
 	leaderName?: string;
+	leaderPhone?: string;
 	members: Member[];
 	yearOfStudy?: number | null;
 };
@@ -76,111 +82,9 @@ function exportEmails(teams: Team[]) {
 	saveAs(blob, "event-emails.txt");
 }
 
-// Export printable table for teams and members
-function exportTeamsForPrint(event: any, teams: Team[]) {
-	console.log(event.name);
-	const confirmedCount = teams.length;
-	const html = `
-	      <html>
-	      <head>
-		      <title>${event?.name ?? "Event Export"} - Attendance Sheet</title>
-					<style>
-									body { font-family: sans-serif; }
-									table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
-									th, td { border: 1px solid #333; padding: 8px; text-align: center; }
-									th { background: #f3f3f3; }
-									.nowrap { white-space: nowrap; }
-									@media print {
-										.page-break { page-break-before: always; break-before: page; }
-									}
-					</style>
-	      </head>
-	      <body>
-		      <h2>${event?.name ?? "Event Export"} - Attendance Sheet</h2>
-		      <table>
-			      <thead>
-				      <tr>
-					      <th>Team Name</th>
-					      <th>Leader Name</th>
-						<th>FLC Id</th>
-					      <th>Member Name</th>
-					      <th>Signature</th>
-				      </tr>
-			      </thead>
-			      <tbody>
-				      ${teams
-								.map((team) => {
-									const members =
-										team.members.length > 0
-											? team.members
-											: [{ name: "-", id: 0 }];
-									return members
-										.map(
-											(member, idx) => `
-					       <tr>
-						       ${idx === 0 ? `<td rowspan="${members.length}" class="nowrap">${team.name}</td>` : ""}
-						       ${idx === 0 ? `<td rowspan="${members.length}" class="nowrap">${team.leaderName || "-"}</td>` : ""}
-							   <td class="nowrap">${member.id || "-"}</td>
-						       <td class="nowrap">${member.name}</td>
-						       <td style="min-width:120px;"></td>
-					       </tr>
-				       `,
-										)
-										.join("");
-								})
-								.join("")}
-			      </tbody>
-		      </table>
-			  <div class="page-break">
-				<h3 style="text-align:center">Summary</h3>
-				<table>
-				  <thead>
-					  <tr>
-						  <th>Teams Confirmed</th>
-						  <th>Teams Attended</th>
-					  </tr>
-				  </thead>
-				  <tbody>
-					  <tr>
-						  <td>${confirmedCount}</td>
-						  <td></td>
-					  </tr>
-				  </tbody>
-				</table>
-				<br>
-				<h3 style="text-align:center">Signatures</h3>
-				<table>
-				  <thead>
-					  <tr>
-					  <th>Operations Manager</th>
-					  <th>Vice President</th>
-					  <th>President</th>
-						  <th>Faculty Coordinator</th>
-					  </tr>
-				  </thead>
-				  <tbody>
-					  <tr style="height: 60px;">
-						  <td></td>
-						  <td></td>
-						  <td></td>
-						  <td></td>
-					  </tr>
-				  </tbody>
-				</table>
-			  </div>
-		      <script>window.print()</script>
-	      </body>
-	      </html>
-       `;
-	const win = window.open("", "_blank");
-	if (win) {
-		win.document.write(html);
-		win.document.close();
-	}
-}
-
 export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 	const [exportDialogOpen, setExportDialogOpen] = useState(false);
+	const [detailsExportDialogOpen, setDetailsExportDialogOpen] = useState(false);
 	const [exportLoading, setExportLoading] = useState(false);
 	const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
 	const [searchQuery, setSearchQuery] = useState("");
@@ -529,6 +433,13 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 						Export Signature Sheet
 					</Button>
 					<Button
+						onClick={() => setDetailsExportDialogOpen(true)}
+						className="w-full sm:w-auto bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800 border border-blue-600 dark:border-blue-700 shadow-lg text-sm py-2"
+					>
+						<Download className="h-4 w-4 mr-2" />
+						Export Team Details
+					</Button>
+					<Button
 						onClick={() => exportEmails(teams)}
 						className="w-full sm:w-auto bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg text-sm py-2"
 					>
@@ -554,6 +465,43 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 									onClick={() => handleExport("docx")}
 								>
 									DOCX
+								</Button>
+							</div>
+						</ExportDialogContent>
+					</ExportDialog>
+					<ExportDialog
+						open={detailsExportDialogOpen}
+						onOpenChange={setDetailsExportDialogOpen}
+					>
+						<ExportDialogContent className="w-[95vw] max-w-sm mx-auto">
+							<div className="flex flex-col gap-4 items-center p-4">
+								<h2 className="text-lg font-semibold mb-2">
+									Export Team Details
+								</h2>
+								<p className="text-sm text-gray-600 dark:text-gray-400 text-center mb-4">
+									Comprehensive team export with member details, phone numbers,
+									and year-wise sorting
+								</p>
+								<Button
+									className="w-full"
+									disabled={exportLoading}
+									onClick={() => {
+										exportTeamsDetailsPDF(editingEvent, teams, false);
+										setDetailsExportDialogOpen(false);
+									}}
+								>
+									Confirmed Teams Only
+								</Button>
+								<Button
+									className="w-full"
+									variant="outline"
+									disabled={exportLoading}
+									onClick={() => {
+										exportTeamsDetailsPDF(editingEvent, teams, true);
+										setDetailsExportDialogOpen(false);
+									}}
+								>
+									All Teams (Confirmed + Unconfirmed)
 								</Button>
 							</div>
 						</ExportDialogContent>

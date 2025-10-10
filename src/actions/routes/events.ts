@@ -253,7 +253,18 @@ export async function createTeam(
 	yearOfStudy?: number,
 ) {
 	try {
-		// Check if the event exists and is a solo event
+		if (!teamName) {
+			return {
+				success: false,
+				error: "Team name is required",
+			};
+		}
+		if (teamName && teamName.trim().length === 0) {
+			return {
+				success: false,
+				error: "Team name cannot be empty",
+			};
+		}
 		const event = await db.event.findUnique({
 			where: { id: eventId },
 			include: {
