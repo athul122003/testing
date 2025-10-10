@@ -21,6 +21,8 @@ export async function getTeamsForEvent(eventId: number) {
 					id: true,
 					name: true,
 					phone: true,
+					usn: true,
+					year: true,
 				},
 			},
 			Members: {
@@ -29,6 +31,8 @@ export async function getTeamsForEvent(eventId: number) {
 					name: true,
 					email: true,
 					phone: true,
+					usn: true,
+					year: true,
 				},
 			},
 			Prize: {
@@ -47,6 +51,8 @@ export async function getTeamsForEvent(eventId: number) {
 		isConfirmed: team.isConfirmed,
 		leaderName: team.Leader?.name,
 		leaderPhone: team.Leader?.phone,
+		leaderUsn: team.Leader?.usn,
+		leaderYear: team.Leader?.year,
 		hasAttended: team.hasAttended,
 		leaderId: team.Leader?.id,
 		members: team.Members.map((member) => ({
@@ -54,6 +60,8 @@ export async function getTeamsForEvent(eventId: number) {
 			name: member.name,
 			email: member.email,
 			phone: member.phone,
+			usn: member.usn,
+			year: member.year,
 		})),
 		Prize: {
 			prizeType: team.Prize?.prizeType,
@@ -181,7 +189,16 @@ export async function addMemberToTeam(teamId: string, userId: number) {
 	const team = await db.team.findUnique({
 		where: { id: teamId },
 		include: {
-			Members: { select: { id: true, name: true, email: true, phone: true } },
+			Members: {
+				select: {
+					id: true,
+					name: true,
+					email: true,
+					phone: true,
+					usn: true,
+					year: true,
+				},
+			},
 			Event: { select: { id: true, name: true, maxTeamSize: true } },
 		},
 	});
@@ -247,7 +264,16 @@ export async function addMemberToTeam(teamId: string, userId: number) {
 	const updatedTeam = await db.team.findUnique({
 		where: { id: teamId },
 		include: {
-			Members: { select: { id: true, name: true, email: true, phone: true } },
+			Members: {
+				select: {
+					id: true,
+					name: true,
+					email: true,
+					phone: true,
+					usn: true,
+					year: true,
+				},
+			},
 		},
 	});
 

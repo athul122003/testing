@@ -44,12 +44,15 @@ import {
 	exportTeamsDetailsPDF,
 	exportTeamsForPrint,
 } from "./event-team-export";
+import { UserTooltip } from "~/components/ui/user-tooltip";
 
 type Member = {
 	id: number;
 	name: string;
 	email: string;
 	phone: string;
+	usn: string;
+	year: string;
 };
 
 type Team = {
@@ -59,6 +62,8 @@ type Team = {
 	isConfirmed: boolean;
 	leaderName?: string;
 	leaderPhone?: string;
+	leaderUsn?: string;
+	leaderYear?: string;
 	members: Member[];
 	yearOfStudy?: number | null;
 };
@@ -687,9 +692,15 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 												Leader:
 											</span>
 											<div className="mt-1">
-												<span className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300">
-													{team.leaderName || "Unknown Leader"}
-												</span>
+												<UserTooltip
+													name={team.leaderName || "Unknown Leader"}
+													usn={team.leaderUsn}
+													year={team.leaderYear}
+												>
+													<span className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300">
+														{team.leaderName || "Unknown Leader"}
+													</span>
+												</UserTooltip>
 											</div>
 										</div>
 
@@ -713,12 +724,16 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 											<div className="flex flex-wrap gap-1 mt-1">
 												{team.members.length > 0 ? (
 													team.members.map((m) => (
-														<span
+														<UserTooltip
 															key={m.id}
-															className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300"
+															name={m.name}
+															usn={m.usn}
+															year={m.year}
 														>
-															{m.name}
-														</span>
+															<span className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300">
+																{m.name}
+															</span>
+														</UserTooltip>
 													))
 												) : (
 													<span className="text-xs text-gray-500 dark:text-slate-400">
@@ -784,12 +799,18 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 
 										<TableCell className="font-medium">
 											<div className="text-gray-900 dark:text-slate-200">
-												<span
-													key={team.leaderName}
-													className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300"
+												<UserTooltip
+													name={team.leaderName || "Unknown Leader"}
+													usn={team.leaderUsn}
+													year={team.leaderYear}
 												>
-													{team.leaderName || "Unknown Leader"}
-												</span>
+													<span
+														key={team.leaderName}
+														className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300"
+													>
+														{team.leaderName || "Unknown Leader"}
+													</span>
+												</UserTooltip>
 											</div>
 										</TableCell>
 										{editingEvent?.statusOfBatchRestriction && (
@@ -806,12 +827,16 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 											<div className="flex flex-wrap gap-2 text-gray-900 dark:text-slate-200">
 												{team.members.length > 0
 													? team.members.map((m) => (
-															<span
+															<UserTooltip
 																key={m.id}
-																className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300"
+																name={m.name}
+																usn={m.usn}
+																year={m.year}
 															>
-																{m.name}
-															</span>
+																<span className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300">
+																	{m.name}
+																</span>
+															</UserTooltip>
 														))
 													: "No members"}
 											</div>
@@ -902,7 +927,13 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 							<div>
 								<Label className="text-sm">Leader</Label>
 								<div className="text-gray-900 dark:text-slate-200 pt-1 text-sm break-words">
-									{selectedTeam.leaderName || "Unknown Leader"}
+									<UserTooltip
+										name={selectedTeam.leaderName || "Unknown Leader"}
+										usn={selectedTeam.leaderUsn}
+										year={selectedTeam.leaderYear}
+									>
+										<span>{selectedTeam.leaderName || "Unknown Leader"}</span>
+									</UserTooltip>
 								</div>
 							</div>
 
@@ -917,9 +948,15 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 												key={member.id}
 												className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 p-2 bg-gray-50 dark:bg-slate-800 rounded"
 											>
-												<span className="text-sm break-words flex-1">
-													{member.name}
-												</span>
+												<UserTooltip
+													name={member.name}
+													usn={member.usn}
+													year={member.year}
+												>
+													<span className="text-sm break-words flex-1">
+														{member.name}
+													</span>
+												</UserTooltip>
 												<Button
 													variant="default"
 													size="sm"
