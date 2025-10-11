@@ -7,6 +7,8 @@ import {
 	hasAttended,
 	markAttendance,
 	unmarkAttendance,
+	markBulkAttendance,
+	unmarkBulkAttendance,
 } from "~/actions/teams";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -96,6 +98,8 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 	const [refreshing, setRefreshing] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [sortOrder, setSortOrder] = useState<"default" | "reversed">("default");
+	const [selectedTeams, setSelectedTeams] = useState<Set<string>>(new Set());
+	const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
 	async function fetchTeamsWithAttendance() {
 		if (!event?.id) return;
@@ -255,12 +259,122 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 		if (!selectedTeam) setMemberAttendance([]);
 	}, [selectedTeam]);
 
+	// Bulk selection functions
+	const toggleTeamSelection = (teamId: string) => {
+		setSelectedTeams((prev) => {
+			const newSet = new Set(prev);
+			if (newSet.has(teamId)) {
+				newSet.delete(teamId);
+			} else {
+				newSet.add(teamId);
+			}
+			return newSet;
+		});
+	};
+
+	const selectAllTeams = () => {
+		setSelectedTeams(new Set(filteredTeams.map((team) => team.id)));
+	};
+
+	const clearSelection = () => {
+		setSelectedTeams(new Set());
+	};
+
+	const isAllSelected =
+		filteredTeams.length > 0 && selectedTeams.size === filteredTeams.length;
+	const isPartiallySelected =
+		selectedTeams.size > 0 && selectedTeams.size < filteredTeams.length;
+
+	// Bulk action handlers
+	const handleBulkMarkAttendance = () => {
+		if (selectedTeams.size === 0) return;
+		setBulkConfirmAction({
+			type: "mark",
+			teamCount: selectedTeams.size,
+		});
+		setBulkConfirmDialogOpen(true);
+	};
+
+	const handleBulkUnmarkAttendance = () => {
+		if (selectedTeams.size === 0) return;
+		setBulkConfirmAction({
+			type: "unmark",
+			teamCount: selectedTeams.size,
+		});
+		setBulkConfirmDialogOpen(true);
+	};
+
+	const executeBulkMarkAttendance = async () => {
+		if (!event?.id || selectedTeams.size === 0) return;
+
+		setBulkActionLoading(true);
+		try {
+			const teamIds = Array.from(selectedTeams);
+			const { results, errors } = await markBulkAttendance(event.id, teamIds);
+
+			const successCount = results.filter((r) => r.success).length;
+			const errorCount = errors.length;
+
+			if (successCount > 0) {
+				toast.success(
+					`Successfully marked attendance for ${successCount} team(s)`,
+				);
+			}
+			if (errorCount > 0) {
+				toast.error(`Failed to mark attendance for ${errorCount} team(s)`);
+			}
+
+			clearSelection();
+			await refreshTeams();
+		} catch (err) {
+			console.error("Error marking bulk attendance:", err);
+			toast.error("Failed to mark bulk attendance.");
+		} finally {
+			setBulkActionLoading(false);
+		}
+	};
+
+	const executeBulkUnmarkAttendance = async () => {
+		if (!event?.id || selectedTeams.size === 0) return;
+
+		setBulkActionLoading(true);
+		try {
+			const teamIds = Array.from(selectedTeams);
+			const { results, errors } = await unmarkBulkAttendance(event.id, teamIds);
+
+			const successCount = results.filter((r) => r.success).length;
+			const errorCount = errors.length;
+
+			if (successCount > 0) {
+				toast.success(
+					`Successfully unmarked attendance for ${successCount} team(s)`,
+				);
+			}
+			if (errorCount > 0) {
+				toast.error(`Failed to unmark attendance for ${errorCount} team(s)`);
+			}
+
+			clearSelection();
+			await refreshTeams();
+		} catch (err) {
+			console.error("Error unmarking bulk attendance:", err);
+			toast.error("Failed to unmark bulk attendance.");
+		} finally {
+			setBulkActionLoading(false);
+		}
+	};
+
 	const [exportDialogOpen, setExportDialogOpen] = useState(false);
 	const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 	const [confirmAction, setConfirmAction] = useState<{
 		type: "mark" | "unmark";
 		teamId: string;
 		teamName: string;
+	} | null>(null);
+	const [bulkConfirmDialogOpen, setBulkConfirmDialogOpen] = useState(false);
+	const [bulkConfirmAction, setBulkConfirmAction] = useState<{
+		type: "mark" | "unmark";
+		teamCount: number;
 	} | null>(null);
 	return (
 		<div className="space-y-4 sm:space-y-6 lg:space-y-8 p-2 sm:p-4 lg:p-6 min-h-screen">
@@ -275,6 +389,36 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 						</p>
 					</div>
 					<div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+						{selectedTeams.size > 0 && (
+							<div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+								<Button
+									onClick={handleBulkMarkAttendance}
+									disabled={bulkActionLoading}
+									className="w-full sm:w-auto text-sm py-2 bg-green-600 hover:bg-green-700"
+								>
+									{bulkActionLoading
+										? "Marking..."
+										: `Mark ${selectedTeams.size} Selected`}
+								</Button>
+								<Button
+									onClick={handleBulkUnmarkAttendance}
+									disabled={bulkActionLoading}
+									variant="destructive"
+									className="w-full sm:w-auto text-sm py-2"
+								>
+									{bulkActionLoading
+										? "Unmarking..."
+										: `Unmark ${selectedTeams.size} Selected`}
+								</Button>
+								<Button
+									onClick={clearSelection}
+									variant="outline"
+									className="w-full sm:w-auto text-sm py-2"
+								>
+									Clear Selection
+								</Button>
+							</div>
+						)}
 						<Button
 							onClick={() => setExportDialogOpen(true)}
 							variant="outline"
@@ -448,9 +592,17 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 								<CardContent className="p-4">
 									<div className="space-y-3">
 										<div className="flex justify-between items-start">
-											<h3 className="font-medium text-gray-900 dark:text-slate-200 text-sm break-words flex-1 mr-2">
-												{team.name}
-											</h3>
+											<div className="flex items-center gap-2 flex-1 mr-2">
+												<input
+													type="checkbox"
+													checked={selectedTeams.has(team.id)}
+													onChange={() => toggleTeamSelection(team.id)}
+													className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+												/>
+												<h3 className="font-medium text-gray-900 dark:text-slate-200 text-sm break-words">
+													{team.name}
+												</h3>
+											</div>
 											<Badge
 												variant={team.isConfirmed ? "default" : "secondary"}
 												className="text-xs shrink-0"
@@ -567,6 +719,23 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 						<Table className="bg-white dark:bg-black text-gray-900 dark:text-slate-200">
 							<TableHeader>
 								<TableRow className="bg-gray-50 dark:bg-slate-900">
+									<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200 w-12">
+										<input
+											type="checkbox"
+											checked={isAllSelected}
+											ref={(input) => {
+												if (input) input.indeterminate = isPartiallySelected;
+											}}
+											onChange={() => {
+												if (isAllSelected) {
+													clearSelection();
+												} else {
+													selectAllTeams();
+												}
+											}}
+											className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+										/>
+									</TableHead>
 									<TableHead className="bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
 										Team
 									</TableHead>
@@ -617,6 +786,14 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 													: "bg-red-50 dark:bg-red-900/20"
 										}`}
 									>
+										<TableCell className="w-12">
+											<input
+												type="checkbox"
+												checked={selectedTeams.has(team.id)}
+												onChange={() => toggleTeamSelection(team.id)}
+												className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+											/>
+										</TableCell>
 										<TableCell className="font-semibold">{team.name}</TableCell>
 										<TableCell>
 											{team.leaderName ?? "N/A"}
@@ -898,6 +1075,63 @@ export function EventAttendance({ editingEvent: event }: EventAttendanceProps) {
 								{loading
 									? "Processing..."
 									: confirmAction?.type === "mark"
+										? "Confirm"
+										: "Unmark"}
+							</Button>
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
+			<Dialog
+				open={bulkConfirmDialogOpen}
+				onOpenChange={setBulkConfirmDialogOpen}
+			>
+				<DialogContent className="w-[95vw] max-w-sm mx-auto p-4 sm:p-6">
+					<DialogHeader className="pb-3 sm:pb-4">
+						<DialogTitle className="text-base sm:text-lg break-words">
+							{bulkConfirmAction?.type === "mark"
+								? "Confirm Bulk Attendance"
+								: "Remove Bulk Attendance"}
+						</DialogTitle>
+					</DialogHeader>
+					<div className="space-y-4">
+						<p className="text-sm text-gray-600 dark:text-slate-400 break-words">
+							{bulkConfirmAction?.type === "mark"
+								? `Are you sure you want to mark attendance for ${bulkConfirmAction?.teamCount} selected team(s)?`
+								: `Are you sure you want to remove attendance for ${bulkConfirmAction?.teamCount} selected team(s)?`}
+						</p>
+						<div className="flex flex-col sm:flex-row gap-2">
+							<Button
+								variant="outline"
+								onClick={() => {
+									setBulkConfirmDialogOpen(false);
+									setBulkConfirmAction(null);
+								}}
+								className="w-full sm:w-auto text-sm py-2"
+							>
+								Cancel
+							</Button>
+							<Button
+								variant={
+									bulkConfirmAction?.type === "mark" ? "default" : "destructive"
+								}
+								onClick={async () => {
+									if (bulkConfirmAction) {
+										if (bulkConfirmAction.type === "mark") {
+											await executeBulkMarkAttendance();
+										} else {
+											await executeBulkUnmarkAttendance();
+										}
+									}
+									setBulkConfirmDialogOpen(false);
+									setBulkConfirmAction(null);
+								}}
+								disabled={bulkActionLoading}
+								className="w-full sm:w-auto text-sm py-2"
+							>
+								{bulkActionLoading
+									? "Processing..."
+									: bulkConfirmAction?.type === "mark"
 										? "Confirm"
 										: "Unmark"}
 							</Button>

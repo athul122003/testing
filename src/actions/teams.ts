@@ -468,6 +468,136 @@ export async function unmarkAttendance(eventId: number, userId: number) {
 	return { success: true };
 }
 
+export async function markBulkAttendance(eventId: number, teamIds: string[]) {
+	const errors: { teamId: string; error: string }[] = [];
+	const results: { teamId: string; success: boolean }[] = [];
+
+	for (const teamId of teamIds) {
+		try {
+			const team = await db.team.findUnique({
+				where: { id: teamId, eventId: eventId },
+				include: {
+					Members: {
+						select: {
+							id: true,
+						},
+					},
+				},
+			});
+
+			if (!team) {
+				errors.push({ teamId, error: "Team not found" });
+				continue;
+			}
+
+			await db.team.update({
+				where: { id: teamId, eventId: eventId },
+				data: {
+					hasAttended: true,
+				},
+			});
+
+			const memberIds = team.Members.map((member) => member.id);
+			await Promise.all(
+				memberIds.map(async (userId) => {
+					await db.attendance.upsert({
+						where: {
+							userId_eventId: {
+								userId,
+								eventId,
+							},
+						},
+						update: {
+							hasAttended: true,
+						},
+						create: {
+							eventId,
+							userId,
+							teamId: team.id,
+							hasAttended: true,
+						},
+					});
+				}),
+			);
+
+			results.push({ teamId, success: true });
+		} catch (error) {
+			errors.push({
+				teamId,
+				error: error instanceof Error ? error.message : "Unknown error",
+			});
+			results.push({ teamId, success: false });
+		}
+	}
+
+	return { results, errors };
+}
+
+export async function unmarkBulkAttendance(eventId: number, teamIds: string[]) {
+	const errors: { teamId: string; error: string }[] = [];
+	const results: { teamId: string; success: boolean }[] = [];
+
+	for (const teamId of teamIds) {
+		try {
+			const team = await db.team.findUnique({
+				where: { id: teamId, eventId: eventId },
+				include: {
+					Members: {
+						select: {
+							id: true,
+						},
+					},
+				},
+			});
+
+			if (!team) {
+				errors.push({ teamId, error: "Team not found" });
+				continue;
+			}
+
+			const memberIds = team.Members.map((member) => member.id);
+			await Promise.all(
+				memberIds.map(async (userId) => {
+					await db.attendance.updateMany({
+						where: {
+							userId,
+							eventId,
+						},
+						data: {
+							hasAttended: false,
+						},
+					});
+				}),
+			);
+
+			const anyMembersHaveAttendance = await db.attendance.findFirst({
+				where: {
+					eventId,
+					userId: { in: memberIds },
+					hasAttended: true,
+				},
+			});
+
+			await db.team.update({
+				where: { id: teamId },
+				data: {
+					hasAttended: !!anyMembersHaveAttendance,
+				},
+			});
+
+			results.push({ teamId, success: true });
+		} catch (error) {
+			errors.push({
+				teamId,
+				error: error instanceof Error ? error.message : "Unknown error",
+			});
+			results.push({ teamId, success: false });
+		}
+	}
+
+	return { results, errors };
+}
+
 export async function hasAttended(
 	eventId: number,
 	userId: number,
