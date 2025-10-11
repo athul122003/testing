@@ -27,6 +27,12 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
+import {
+	Dialog,
+	DialogContent,
+	DialogHeader,
+	DialogTitle,
+} from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import {
 	Table,
@@ -55,7 +61,7 @@ type Payment = PaymentWithUser["payments"][number];
 
 export function PaymentsPage() {
 	const [searchInput, setSearchInput] = useState("");
-	const [statusFilter, setStatusFilter] = useState("all");
+	const [statusFilter, _setStatusFilter] = useState("all");
 	const [page, setPage] = useState(1);
 	const [dateFilter, setDateFilter] = useState<DateFilter>({
 		startDate: undefined,
@@ -223,7 +229,7 @@ export function PaymentsPage() {
 		(p: Payment) => getPaymentStatus(p) === "success",
 	).length;
 
-	const currentFailedPayments = filteredPayments.filter(
+	const _currentFailedPayments = filteredPayments.filter(
 		(p: Payment) => getPaymentStatus(p) === "failed",
 	).length;
 
@@ -253,13 +259,78 @@ export function PaymentsPage() {
 		}
 	};
 
-	const handleExportFilteredPayments = () => {
+	const [exportDialogOpen, setExportDialogOpen] = useState(false);
+
+	const exportFiltered = () => {
 		const csvData = convertPaymentsToCSV(filteredPayments);
 		if (!csvData) {
 			console.error("No data to export");
 			return;
 		}
 		downloadCSV(csvData, "filtered_payments.csv");
+	};
+
+	async function exportFilteredMembershipEmails() {
+		// Ensure date filter is set
+		if (!dateFilter.startDate && !dateFilter.endDate) {
+			console.error("No date filter set");
+			return;
+		}
+
+		try {
+			const pageSize = 10000;
+			let page = 1;
+			const allPayments: Payment[] = [];
+
+			while (true) {
+				const res = await filterPaymentsByDate({
+					startDate: dateFilter.startDate,
+					endDate: dateFilter.endDate,
+					page,
+					pageSize,
+				});
+
+				if (res?.payments?.length) {
+					allPayments.push(...res.payments);
+				}
+
+				if (!res || !res.totalPages || page >= res.totalPages) break;
+				page += 1;
+			}
+
+			const emails = Array.from(
+				new Set(
+					allPayments
+						.filter((p) => p.paymentType === "MEMBERSHIP" && p.User?.email)
+						.map((p) => p.User?.email),
+				),
+			);
+
+			const blob = new Blob([emails.join("\n")], {
+				type: "text/plain;charset=utf-8",
+			});
+			saveAs(blob, "filtered-membership-emails.txt");
+		} catch (err) {
+			console.error("Failed to export filtered membership emails:", err);
+		}
+	}
+
+	const onExportCurrentClick = () => {
+		const filtersApplied = !!(
+			searchResults ||
+			dateFilterResults ||
+			searchInput ||
+			dateFilter.startDate ||
+			dateFilter.endDate ||
+			statusFilter !== "all"
+		);
+
+		if (filtersApplied) {
+			setExportDialogOpen(true);
+			return;
+		}
+
+		exportFiltered();
 	};
 
 	const handleExportAllPayments = async () => {
@@ -296,6 +367,40 @@ export function PaymentsPage() {
 
 	return (
 		<div className="space-y-8">
+			<Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Export Options</DialogTitle>
+					</DialogHeader>
+					<div className="py-2">
+						<p className="text-sm text-gray-700 dark:text-slate-300">
+							Filters are active. Would you like to export the current filtered
+							view or export all records?
+						</p>
+					</div>
+					<div className="flex gap-2 justify-end">
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => {
+								setExportDialogOpen(false);
+								handleExportAllPayments();
+							}}
+						>
+							Export All
+						</Button>
+						<Button
+							type="button"
+							onClick={() => {
+								setExportDialogOpen(false);
+								exportFiltered();
+							}}
+						>
+							Export Filtered
+						</Button>
+					</div>
+				</DialogContent>
+			</Dialog>
 			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 				<div>
 					<h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-slate-200">
@@ -317,7 +422,7 @@ export function PaymentsPage() {
 						className="w-48 bg-white dark:bg-black border border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200"
 					>
 						<DropdownMenuItem
-							onClick={handleExportFilteredPayments}
+							onClick={onExportCurrentClick}
 							className="hover:bg-gray-100 dark:hover:bg-gray-800"
 						>
 							Export Current View
@@ -332,8 +437,18 @@ export function PaymentsPage() {
 							onClick={() => exportMembershipEmails()}
 							className="hover:bg-gray-100 dark:hover:bg-gray-800"
 						>
-							Export Membership Emails
+							All Membership Emails
 						</DropdownMenuItem>
+						{(dateFilter.startDate || dateFilter.endDate) && (
+							<DropdownMenuItem
+								onClick={() => {
+									exportFilteredMembershipEmails();
+								}}
+								className="hover:bg-gray-100 dark:hover:bg-gray-800"
+							>
+								Filtered Membership Emails
+							</DropdownMenuItem>
+						)}
 					</DropdownMenuContent>
 				</DropdownMenu>
 			</div>
