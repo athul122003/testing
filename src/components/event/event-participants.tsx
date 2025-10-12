@@ -18,7 +18,6 @@ import {
 	TableRow,
 } from "~/components/ui/table";
 import { Badge } from "~/components/ui/badge";
-import { Switch } from "~/components/ui/switch";
 import { Search, Plus, Download } from "lucide-react";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -72,19 +71,119 @@ type EventParticipantsProps = {
 	editingEvent: any;
 };
 
-function exportEmails(teams: Team[]) {
-	const emails = new Set<string>();
-	teams.forEach((team) => {
-		team.members.forEach((member) => {
-			console.log(member);
-			if ((member as any).email) {
-				emails.add((member as any).email);
+function exportEmails(
+	teams: Team[],
+	batchRestrictions: { year: number }[] = [],
+	batchEnabled = false,
+) {
+	if (batchEnabled && batchRestrictions.length > 0) {
+		let filesCreated = 0;
+		batchRestrictions.forEach((batch) => {
+			const emails = new Set<string>();
+			const teamsForYear = teams
+				.filter((t) => t.yearOfStudy === batch.year)
+				.filter((t) => t.isConfirmed === true);
+			teamsForYear.forEach((team) => {
+				team.members.forEach((m) => {
+					if (m.email) emails.add(m.email);
+				});
+			});
+
+			const emailList = Array.from(emails).filter(Boolean).join("\n");
+			if (emailList) {
+				const blob = new Blob([emailList], {
+					type: "text/plain;charset=utf-8",
+				});
+				saveAs(blob, `${batch.year}-emails.txt`);
+				filesCreated += 1;
 			}
 		});
+
+		if (filesCreated > 0) {
+			toast.success(
+				`Downloaded ${filesCreated} email file${filesCreated > 1 ? "s" : ""}`,
+			);
+		} else {
+			toast.error("No emails found to export");
+		}
+
+		return;
+	}
+
+	const emails = new Set<string>();
+	teams.forEach((team) => {
+		if (team.isConfirmed === false) return;
+		team.members.forEach((member) => {
+			if (member.email) emails.add(member.email);
+		});
 	});
-	const emailList = Array.from(emails).join("\n");
-	const blob = new Blob([emailList], { type: "text/plain;charset=utf-8" });
-	saveAs(blob, "event-emails.txt");
+
+	const emailList = Array.from(emails).filter(Boolean).join("\n");
+	if (emailList) {
+		const blob = new Blob([emailList], { type: "text/plain;charset=utf-8" });
+		saveAs(blob, "event-emails.txt");
+		toast.success("Downloaded 1 email file");
+	} else {
+		toast.error("No emails found to export");
+	}
+}
+
+function exportPhones(
+	teams: Team[],
+	batchRestrictions: { year: number }[] = [],
+	batchEnabled = false,
+) {
+	if (batchEnabled && batchRestrictions.length > 0) {
+		let filesCreated = 0;
+		batchRestrictions.forEach((batch) => {
+			const phones = new Set<string>();
+			const teamsForYearA = teams.filter((t) => t.yearOfStudy === batch.year);
+			const teamsForYear = teamsForYearA.filter((t) => t.isConfirmed === true); // Bad coding again hehe
+			teamsForYear.forEach((team) => {
+				if (team.leaderPhone) phones.add(String(team.leaderPhone).trim());
+				team.members.forEach((m) => {
+					if (m.phone) phones.add(String(m.phone).trim());
+				});
+			});
+
+			const phoneList = Array.from(phones).filter(Boolean).join("\n");
+			if (phoneList) {
+				const blob = new Blob([phoneList], {
+					type: "text/plain;charset=utf-8",
+				});
+				saveAs(blob, `${batch.year}.txt`);
+				filesCreated += 1;
+			}
+		});
+
+		if (filesCreated > 0) {
+			toast.success(
+				`Downloaded ${filesCreated} phone file${filesCreated > 1 ? "s" : ""}`,
+			);
+		} else {
+			toast.error("No phone numbers found to export");
+		}
+
+		return;
+	}
+
+	const phones = new Set<string>();
+	teams.forEach((team) => {
+		if (team.isConfirmed === false) return;
+		if (team.leaderPhone) phones.add(String(team.leaderPhone).trim());
+		team.members.forEach((m) => {
+			if (m.phone) phones.add(String(m.phone).trim());
+		});
+	});
+
+	const phoneList = Array.from(phones).filter(Boolean).join("\n");
+	if (phoneList) {
+		const blob = new Blob([phoneList], { type: "text/plain;charset=utf-8" });
+		saveAs(blob, "phones.txt");
+		toast.success("Downloaded 1 phone numbers file");
+	} else {
+		toast.error("No phone numbers found to export");
+	}
 }
 
 export function EventParticipants({ editingEvent }: EventParticipantsProps) {
@@ -209,7 +308,7 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 				...member,
 				id: member.id,
 				name: member.name,
-				email: (member as any).email,
+				email: member.email,
 				isLeader: member.id === userId,
 			}));
 
@@ -261,8 +360,9 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 			);
 			setAddingMemberId("");
 			toast.success("Member added successfully");
-		} catch (err: any) {
-			toast.error(err.message || "Failed to add member");
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : undefined;
+			toast.error(msg || "Failed to add member");
 		}
 	}
 
@@ -283,8 +383,9 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 			);
 
 			toast.success("Team confirmed successfully");
-		} catch (err: any) {
-			toast.error(err.message || "Failed to confirm team");
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : undefined;
+			toast.error(msg || "Failed to confirm team");
 		}
 	}
 
@@ -305,8 +406,9 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 			);
 
 			toast.success("Team unconfirmed successfully");
-		} catch (err: any) {
-			toast.error(err.message || "Failed to unconfirm team");
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : undefined;
+			toast.error(msg || "Failed to unconfirm team");
 		}
 	}
 
@@ -326,7 +428,7 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 
 		// Parse leader ID
 		const leaderIdNum = Number(newLeaderId);
-		if (isNaN(leaderIdNum) || leaderIdNum <= 0) {
+		if (Number.isNaN(leaderIdNum) || leaderIdNum <= 0) {
 			toast.error("Leader ID must be a valid positive number");
 			return;
 		}
@@ -337,7 +439,7 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 			.map((id) => id.trim())
 			.filter((id) => id !== "")
 			.map((id) => Number(id))
-			.filter((id) => !isNaN(id) && id > 0);
+			.filter((id) => !Number.isNaN(id) && id > 0);
 
 		// Remove duplicates
 		const uniqueMemberIds = Array.from(new Set(memberIdsArray));
@@ -396,8 +498,9 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 			setNewMemberIds("");
 			setNewIsConfirmed(false);
 			setCreateDialogOpen(false);
-		} catch (err: any) {
-			toast.error(err.message || "Failed to create team");
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : undefined;
+			toast.error(msg || "Failed to create team");
 		} finally {
 			setCreating(false);
 		}
@@ -445,10 +548,28 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 						Export Team Details
 					</Button>
 					<Button
-						onClick={() => exportEmails(teams)}
+						onClick={() =>
+							exportEmails(
+								teams,
+								batchRestrictions as { year: number }[],
+								!!editingEvent?.statusOfBatchRestriction,
+							)
+						}
 						className="w-full sm:w-auto bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg text-sm py-2"
 					>
 						Export Emails
+					</Button>
+					<Button
+						onClick={() =>
+							exportPhones(
+								teams,
+								batchRestrictions as { year: number }[],
+								!!editingEvent?.statusOfBatchRestriction,
+							)
+						}
+						className="w-full sm:w-auto bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 border border-gray-300 dark:border-slate-800 shadow-lg text-sm py-2"
+					>
+						Export Phones
 					</Button>
 					<ExportDialog
 						open={exportDialogOpen}
