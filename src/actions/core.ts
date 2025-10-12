@@ -59,7 +59,7 @@ export const addToCore = protectedAction(
 );
 
 export const getCoreMembers = protectedAction(
-	async (page: number = 1, pageSize: number = 20) => {
+	async ({ page = 1, pageSize = 20 }: { page?: number; pageSize?: number }) => {
 		try {
 			const skip = (page - 1) * pageSize;
 			const [coreMembers, totalCore] = await Promise.all([
