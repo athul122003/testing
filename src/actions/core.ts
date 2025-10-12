@@ -1,105 +1,111 @@
 "use server";
 import { CoreType } from "@prisma/client";
-import { User } from "lucide-react";
 import { db } from "~/server/db";
+import { protectedAction } from "./middleware/protectedAction";
 
-export async function addToCore(formData: FormData) {
-	try {
-		const coreId = formData.get("coreId") as string | null;
-		const userIds = JSON.parse(formData.get("userIds") as string) as number[];
-		const year = formData.get("year") as string;
-		const position = formData.get("position") as string;
-		const type = formData.get("type") as CoreType;
-		const priorityValue = formData.get("priority");
-		const priority = priorityValue !== null ? Number(priorityValue) : undefined;
+export const addToCore = protectedAction(
+	async (formData: FormData) => {
+		try {
+			const coreId = formData.get("coreId") as string | null;
+			const userIds = JSON.parse(formData.get("userIds") as string) as number[];
+			const year = formData.get("year") as string;
+			const position = formData.get("position") as string;
+			const type = formData.get("type") as CoreType;
+			const priorityValue = formData.get("priority");
+			const priority =
+				priorityValue !== null ? Number(priorityValue) : undefined;
 
-		if (coreId) {
-			const userId = userIds[0];
-			const duplicate = await db.core.findFirst({
-				where: { userId, year, id: { not: coreId } },
-			});
-			if (duplicate) {
-				throw new Error("User already exists in core for this year and type");
-			}
-			await db.core.update({
-				where: { id: coreId },
-				data: { position, year, type, priority },
-			});
-		} else {
-			for (const userId of userIds) {
+			if (coreId) {
+				const userId = userIds[0];
 				const duplicate = await db.core.findFirst({
-					where: { userId, year },
+					where: { userId, year, id: { not: coreId } },
 				});
-
 				if (duplicate) {
-					throw new Error("User already exists in core for this year");
+					throw new Error("User already exists in core for this year and type");
 				}
-
-				await db.core.create({
-					data: {
-						userId,
-						year,
-						position,
-						priority: priority!,
-						type,
-					},
+				await db.core.update({
+					where: { id: coreId },
+					data: { position, year, type, priority },
 				});
+			} else {
+				for (const userId of userIds) {
+					const duplicate = await db.core.findFirst({
+						where: { userId, year },
+					});
+
+					if (duplicate) {
+						throw new Error("User already exists in core for this year");
+					}
+
+					await db.core.create({
+						data: {
+							userId,
+							year,
+							position,
+							priority: priority!,
+							type,
+						},
+					});
+				}
 			}
+
+			return { status: "success" };
+		} catch (error) {
+			console.error("Error in addToCore:", error);
+			throw new Error("Failed to add to core");
 		}
+	},
+	{ actionName: "core.ALLPERM" },
+);
 
-		return { status: "success" };
-	} catch (error) {
-		console.error("Error in addToCore:", error);
-		throw new Error("Failed to add to core");
-	}
-}
-
-export async function getCoreMembers({
-	page = 1,
-	pageSize = 20,
-}: {
-	page?: number;
-	pageSize?: number;
-}) {
-	try {
-		const skip = (page - 1) * pageSize;
-		const [coreMembers, totalCore] = await Promise.all([
-			db.core.findMany({
-				skip,
-				take: pageSize,
-				orderBy: { priority: "asc" },
-				include: {
-					User: {
-						select: {
-							name: true,
-							email: true,
+export const getCoreMembers = protectedAction(
+	async (page: number = 1, pageSize: number = 20) => {
+		try {
+			const skip = (page - 1) * pageSize;
+			const [coreMembers, totalCore] = await Promise.all([
+				db.core.findMany({
+					skip,
+					take: pageSize,
+					orderBy: { priority: "asc" },
+					include: {
+						User: {
+							select: {
+								name: true,
+								email: true,
+							},
 						},
 					},
-				},
-			}),
-			db.core.count(),
-		]);
-		const totalPages = Math.ceil(totalCore / pageSize);
-		return { coreMembers, totalCore, totalPages, page, pageSize };
-	} catch (error) {
-		console.error("Error in getCoreMembers:", error);
-		throw new Error("Failed to fetch core members", { cause: error });
-	}
-}
-
-export async function deleteBulkCore(coreIds: string[]) {
-	try {
-		if (coreIds.length === 0) {
-			throw new Error("No core IDs provided for deletion");
+				}),
+				db.core.count(),
+			]);
+			const totalPages = Math.ceil(totalCore / pageSize);
+			return { coreMembers, totalCore, totalPages, page, pageSize };
+		} catch (error) {
+			console.error("Error in getCoreMembers:", error);
+			throw new Error("Failed to fetch core members", { cause: error });
 		}
-		const deletedResult = await db.core.deleteMany({
-			where: {
-				id: { in: coreIds },
-			},
-		});
-		return { status: "success", deletedCount: deletedResult.count };
-	} catch (error) {
-		console.error("Error in deleteBulkCore:", error);
-		throw new Error("Failed to delete core", { cause: error });
-	}
-}
+	},
+	{ actionName: "core.ALLPERM" },
+);
+
+export const deleteBulkCore = protectedAction(
+	async (coreIds: string[]) => {
+		try {
+			if (coreIds.length === 0) {
+				throw new Error("No core IDs provided for deletion");
+			}
+			const deletedResult = await db.core.deleteMany({
+				where: {
+					id: { in: coreIds },
+				},
+			});
+			return { status: "success", deletedCount: deletedResult.count };
+		} catch (error) {
+			console.error("Error in deleteBulkCore:", error);
+			throw new Error("Failed to delete core", { cause: error });
+		}
+	},
+	{
+		actionName: "core.ALLPERM",
+	},
+);

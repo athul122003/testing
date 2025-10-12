@@ -74,7 +74,7 @@ export const permissionRoutes = [
 	["payment.ALLPERM"],
 
 	// MANAGE_CORE
-	[],
+	["core.ALLPERM"],
 
 	// ISSUE_CERTIFICATE
 	["certificate.ALLPERM", "event.getAll"],
