@@ -31,6 +31,7 @@ interface UserTooltipProps {
 	name: string;
 	usn?: string;
 	year?: string;
+	phone?: string;
 	className?: string;
 }
 
@@ -39,6 +40,7 @@ const UserTooltip = ({
 	name,
 	usn,
 	year,
+	phone,
 	className,
 }: UserTooltipProps) => {
 	return (
@@ -52,6 +54,11 @@ const UserTooltip = ({
 						<div className="font-medium">{name}</div>
 						{usn && (
 							<div className="text-xs text-muted-foreground">USN: {usn}</div>
+						)}
+						{phone && (
+							<div className="text-xs text-muted-foreground">
+								Phone: {phone}
+							</div>
 						)}
 						{year && (
 							<div className="text-xs text-muted-foreground">Year: {year}</div>

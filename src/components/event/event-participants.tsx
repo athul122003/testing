@@ -817,6 +817,7 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 													name={team.leaderName || "Unknown Leader"}
 													usn={team.leaderUsn}
 													year={team.leaderYear}
+													phone={team.leaderPhone}
 												>
 													<span className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300">
 														{team.leaderName || "Unknown Leader"}
@@ -850,6 +851,7 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 															name={m.name}
 															usn={m.usn}
 															year={m.year}
+															phone={m.phone}
 														>
 															<span className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300">
 																{m.name}
@@ -924,6 +926,7 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 													name={team.leaderName || "Unknown Leader"}
 													usn={team.leaderUsn}
 													year={team.leaderYear}
+													phone={team.leaderPhone}
 												>
 													<span
 														key={team.leaderName}
@@ -953,6 +956,7 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 																name={m.name}
 																usn={m.usn}
 																year={m.year}
+																phone={m.phone}
 															>
 																<span className="px-2 py-1 text-xs rounded bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300">
 																	{m.name}
@@ -1052,6 +1056,7 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 										name={selectedTeam.leaderName || "Unknown Leader"}
 										usn={selectedTeam.leaderUsn}
 										year={selectedTeam.leaderYear}
+										phone={selectedTeam.leaderPhone}
 									>
 										<span>{selectedTeam.leaderName || "Unknown Leader"}</span>
 									</UserTooltip>
@@ -1073,6 +1078,7 @@ export function EventParticipants({ editingEvent }: EventParticipantsProps) {
 													name={member.name}
 													usn={member.usn}
 													year={member.year}
+													phone={member.phone}
 												>
 													<span className="text-sm break-words flex-1">
 														{member.name}
