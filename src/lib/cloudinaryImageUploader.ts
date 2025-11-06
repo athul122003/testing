@@ -16,8 +16,10 @@ export async function getCloudinarySignature(
 ) {
 	const timestamp = Math.round(Date.now() / 1000);
 
+	const finalFolderName = folder.replace(/[^a-zA-Z0-9-_]/g, "");
+
 	const signature = cloudinary.utils.api_sign_request(
-		{ timestamp, folder },
+		{ timestamp, folder: finalFolderName },
 		CLOUDINARY_API_SECRET,
 	);
 
@@ -26,7 +28,7 @@ export async function getCloudinarySignature(
 		signature,
 		apiKey: CLOUDINARY_API_KEY,
 		cloudName: CLOUDINARY_CLOUD_NAME,
-		folder,
+		finalFolderName,
 	};
 }
 
@@ -55,7 +57,7 @@ export async function uploadImageToCloudinary(file: File, folder?: string) {
 	formData.append("api_key", sign.apiKey);
 	formData.append("timestamp", String(sign.timestamp));
 	formData.append("signature", sign.signature);
-	formData.append("folder", sign.folder);
+	formData.append("folder", sign.finalFolderName);
 
 	const upload = await fetch(
 		`https://api.cloudinary.com/v1_1/${sign.cloudName}/image/upload`,

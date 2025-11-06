@@ -109,7 +109,10 @@ export const uploadCertificateToCloudinary = protectedAction(
 			const blob = await response.blob();
 			const file = new File([blob], filename, { type: "image/png" });
 
-			const folderName = `certificates/${event.name.replace(/\s+/g, "-").toLowerCase()}`;
+			const eventNameModified = event.name.replace(/\s+/g, "-").toLowerCase();
+			const finalEventName = eventNameModified.replace(/[^a-zA-Z0-9-_]/g, "");
+
+			const folderName = `certificates/${finalEventName}`;
 
 			const cloudinaryUrl = await uploadImageToCloudinary(file, folderName);
 
