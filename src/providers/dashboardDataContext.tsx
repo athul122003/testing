@@ -6,6 +6,7 @@ import type {
 	EventType,
 	Permission,
 	Role,
+	Strike,
 } from "@prisma/client";
 import type { ExtendedEvent } from "~/actions/event";
 import { type UseQueryResult, useQuery } from "@tanstack/react-query";
@@ -46,6 +47,12 @@ type DashboardDataContextType = {
 				id: number | string;
 				name: string;
 			};
+			banCount: number;
+			strikes: Array<{
+				id: string;
+				reason: string;
+				createdAt: Date;
+			}>;
 		}>;
 		total: number;
 		page: number;
@@ -76,6 +83,7 @@ type DashboardDataContextType = {
 		sortBy: string,
 		sortOrder: "asc" | "desc",
 		role?: string,
+		bannedOnly?: boolean,
 	) => void;
 
 	permissions: string[];
@@ -171,12 +179,14 @@ export const DashboardDataProvider = ({
 		sortBy: string;
 		sortOrder: "asc" | "desc";
 		role?: string;
+		bannedOnly?: boolean;
 	}>({
 		query: "",
 		page: 1,
 		limit: 10,
 		sortBy: "role",
 		sortOrder: "asc",
+		bannedOnly: false,
 	});
 
 	const setUserParams = useCallback(
@@ -187,8 +197,9 @@ export const DashboardDataProvider = ({
 			sortBy: string,
 			sortOrder: "asc" | "desc",
 			role?: string,
+			bannedOnly?: boolean,
 		) => {
-			setUserArgs({ query, page, limit, sortBy, sortOrder, role });
+			setUserArgs({ query, page, limit, sortBy, sortOrder, role, bannedOnly });
 		},
 		[],
 	);
@@ -257,6 +268,7 @@ export const DashboardDataProvider = ({
 			userArgs.sortBy,
 			userArgs.sortOrder,
 			userArgs.role,
+			userArgs.bannedOnly,
 		],
 		queryFn: () =>
 			api.user.searchUser({
@@ -266,6 +278,7 @@ export const DashboardDataProvider = ({
 				sortBy: userArgs.sortBy,
 				sortOrder: userArgs.sortOrder,
 				role: userArgs.role,
+				bannedOnly: userArgs.bannedOnly,
 			}),
 		staleTime: 30_000,
 		placeholderData: (prev) => prev,

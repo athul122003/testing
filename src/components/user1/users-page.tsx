@@ -1,4 +1,3 @@
-// @ts-nocheck
 "use client";
 import {
 	ArrowDownAZ,
@@ -177,6 +176,8 @@ export function UsersPage() {
 	const [rolePage, setRolePage] = useState(1);
 	const ROLES_PER_PAGE = 4;
 
+	const [bannedOnly, setBannedOnly] = useState(false);
+
 	const filteredRoles = useMemo(() => {
 		return roles.filter((role) =>
 			role.name.toLowerCase().includes(roleSearchTerm.toLowerCase()),
@@ -206,7 +207,7 @@ export function UsersPage() {
 			setNewRoleName("");
 			if (refetchRoles) refetchRoles(); // Refresh roles list
 		},
-		onError: (error) => {
+		onError: (error: any) => {
 			toast.error(error.message || "Failed to create Role.");
 		},
 	});
@@ -215,14 +216,14 @@ export function UsersPage() {
 			toast.error("Please provide both department name and full name.");
 			return;
 		}
-		createRoleMutation.mutate({ name: newRoleName.trim() });
+		createRoleMutation.mutate({ name: newRoleName.trim() } as any);
 	};
 	const deleteRoleMutation = api.role.deleteRole.useMutation({
 		onSuccess: (delRole) => {
 			toast.success(`Role ${delRole.name} deleted.`);
 			if (refetchRoles) refetchRoles(); // Refresh roles list
 		},
-		onError: (error) => {
+		onError: (error: any) => {
 			toast.error(error.message);
 		},
 	});
@@ -231,7 +232,7 @@ export function UsersPage() {
 			toast.error("Please provide a valid department id for deletion.");
 			return;
 		}
-		deleteRoleMutation.mutate({ id: roleId.trim() });
+		deleteRoleMutation.mutate({ id: roleId.trim() } as any);
 	};
 
 	const togglePermission = (roleId: string, permId: string) => {
@@ -272,7 +273,7 @@ export function UsersPage() {
 
 			if (refetchRoles) refetchRoles(); // Refresh roles list
 		},
-		onError: (error) => {
+		onError: (error: any) => {
 			toast.error(error.message || "Failed to update permissions.");
 		},
 	});
@@ -293,13 +294,141 @@ export function UsersPage() {
 	const [searchTerm, setSearchTerm] = useState("");
 	const [page, setPage] = useState(1);
 	const [roleSortOrder, setRoleSortOrder] = useState<"asc" | "desc">("asc");
-	const [selectedUsers, setSelectedUsers] = useState<UserType[]>([]);
+	const [selectedUsers, setSelectedUsers] = useState<StrikeUser[]>([]);
 	const [editingRoles, setEditingRoles] = useState<
 		Record<string, { prev: string; current: string }>
 	>({});
 	const [selectedRole, setSelectedRole] = useState(""); // for filtering by role
-	const [sortBy, setSortBy] = useState<"role" | "name" | "id">("role");
+	const [sortBy, setSortBy] = useState<"role" | "name" | "id" | "strikeCount">(
+		"role",
+	);
 	const [bulkSelectedRole, setBulkSelectedRole] = useState<string | null>(null);
+
+	type StrikeUser = {
+		id: number;
+		name: string;
+		usn?: string;
+		memberSince?: Date | string | null;
+		email?: string;
+		phone?: string | null;
+		role?: { id: number | string; name: string };
+		banCount?: number;
+		strikes: Array<{
+			id: string;
+			reason: string;
+			createdAt: Date;
+		}>;
+	};
+
+	const [strikeModalOpen, setStrikeModalOpen] = useState(false);
+	const [strikeUser, setStrikeUser] = useState<StrikeUser | null>(null);
+	const [strikeCount, setStrikeCount] = useState<number>(0);
+	const [banCount, setBanCount] = useState<number>(0);
+
+	const [addStrikeModalOpen, setAddStrikeModalOpen] = useState(false);
+	const [newStrikeReason, setNewStrikeReason] = useState("");
+
+	const addBanStreakMutation = api.user.addBanStreak.useMutation({
+		onSuccess: async () => {
+			toast.success("Strike added");
+			if (refetchUsers) await refetchUsers();
+			setStrikeCount((v) => v + 1);
+		},
+		onError: (err: unknown) => {
+			const msg = err instanceof Error ? err.message : undefined;
+			toast.error(msg || "Failed to add strike");
+		},
+	});
+
+	const revokeBanMutation = api.user.revokeBan.useMutation({
+		onSuccess: async () => {
+			toast.success("Ban revoked");
+			if (refetchUsers) await refetchUsers();
+			setStrikeCount(0);
+			setBanCount((v) => Math.max(0, v - 1));
+		},
+		onError: (err: unknown) => {
+			const msg = err instanceof Error ? err.message : undefined;
+			toast.error(msg || "Failed to revoke ban");
+		},
+	});
+
+	const removeStrikeReasonMutation = api.user.removeStrikeReason.useMutation({
+		onSuccess: async () => {
+			toast.success("Strike removed");
+			if (refetchUsers) await refetchUsers();
+			setStrikeCount((v) => Math.max(0, v - 1));
+		},
+		onError: (err: unknown) => {
+			const msg = err instanceof Error ? err.message : undefined;
+			toast.error(msg || "Failed to remove strike");
+		},
+	});
+
+	useEffect(() => {
+		if (strikeUser) {
+			console.log("Strike user updated:", strikeUser);
+		}
+	}, [strikeUser]);
+
+	function openStrikeModal(user: StrikeUser) {
+		setStrikeUser(user);
+		setStrikeCount(user.strikes.length ?? 0);
+		setBanCount(user.banCount ?? 0);
+		setStrikeModalOpen(true);
+	}
+
+	function handleIncreaseStrike() {
+		setNewStrikeReason("");
+		setAddStrikeModalOpen(true);
+	}
+
+	function handleConfirmAddStrike() {
+		if (!strikeUser) return;
+		const reason = String(newStrikeReason ?? "").trim();
+		if (!reason) {
+			toast.error("Please enter a reason for the strike.");
+			return;
+		}
+
+		toast.loading("Adding strike...");
+		addBanStreakMutation.mutate(
+			{ userId: strikeUser.id, reason },
+			{
+				onSuccess: () => {
+					toast.dismiss();
+					toast.success("Strike added.");
+					setAddStrikeModalOpen(false);
+					setNewStrikeReason("");
+					setStrikeModalOpen(false);
+				},
+				onError: (err: unknown) => {
+					toast.dismiss();
+					const msg =
+						err instanceof Error ? err.message : "Failed to add strike";
+					toast.error(msg);
+				},
+			},
+		);
+	}
+
+	function handleRevokeBan() {
+		if (!strikeUser) return;
+		toast.loading("Revoking ban...");
+		revokeBanMutation.mutate(
+			{ userId: strikeUser.id },
+			{
+				onSuccess: () => {
+					toast.dismiss();
+					toast.success("Ban revoked.");
+				},
+				onError: () => {
+					toast.dismiss();
+					toast.error("Failed to revoke ban.");
+				},
+			},
+		);
+	}
 
 	//const { data: users, isLoading: userLoading } = usersQuery;
 	//CHANGES AS PER THE PERMISSION BASED FETCHS
@@ -314,6 +443,7 @@ export function UsersPage() {
 			sortBy,
 			roleSortOrder,
 			selectedRole || "all",
+			bannedOnly,
 		);
 	}, [
 		canManageUser,
@@ -323,6 +453,7 @@ export function UsersPage() {
 		roleSortOrder,
 		selectedRole,
 		setUserParams,
+		bannedOnly,
 	]);
 
 	const singleUpdate = api.user.updateUserRole.useMutation({
@@ -334,11 +465,12 @@ export function UsersPage() {
 			// Exit editing mode for that specific user
 			setEditingRoles((prev) => {
 				const copy = { ...prev };
-				delete copy[variables.userId]; // `userId` comes from mutation input
+				const userId = (variables as { userId: number | string }).userId;
+				delete copy[String(userId)]; // `userId` comes from mutation input
 				return copy;
 			});
 		},
-		onError: (err) => toast.error(err.message),
+		onError: (err) => toast.error((err as any)?.message),
 	});
 
 	const bulkUpdate = api.user.updateMultipleUserRoles.useMutation({
@@ -348,7 +480,7 @@ export function UsersPage() {
 			toast.success("Roles updated for selected users.");
 			setSelectedUsers([]);
 		},
-		onError: (err) => toast.error(err.message),
+		onError: (err: any) => toast.error(err.message),
 	});
 
 	const searchParams = useSearchParams();
@@ -455,9 +587,13 @@ export function UsersPage() {
 										<div className="grid gap-4 md:grid-cols-2">
 											{paginatedRoles.map((role) => {
 												const isEditing = editingRoleId === role.id;
-												const currentPermissionIds = role.permissions.map(
-													(p) => p.permission.id,
-												);
+												const currentPermissionIds = Array.isArray(
+													(role as any).permissions,
+												)
+													? (role as any).permissions.map(
+															(p: any) => p.permission.id,
+														)
+													: [];
 												const selected =
 													selectedPermissions[role.id] || currentPermissionIds;
 
@@ -481,9 +617,14 @@ export function UsersPage() {
 																			if (isEditing) {
 																				savePermissions(role.id, selected);
 																			} else {
-																				const permIds = role.permissions.map(
-																					(p) => p.permission.id,
-																				);
+																				const permIds = Array.isArray(
+																					(role as any).permissions,
+																				)
+																					? (role as any).permissions.map(
+																							(p: any) => p.permission.id,
+																						)
+																					: [];
+
 																				setSelectedPermissions((prev) => ({
 																					...prev,
 																					[role.id]: permIds,
@@ -556,21 +697,27 @@ export function UsersPage() {
 																</div>
 															) : (
 																<div className="flex flex-wrap gap-2">
-																	{role.permissions.slice(0, 4).map((p) => (
-																		<Badge
-																			key={p.permission.id}
-																			variant="secondary"
-																			className="text-xs bg-gray-100 dark:bg-slate-900 text-gray-700 dark:text-slate-200"
-																		>
-																			{p.permission.name}
-																		</Badge>
-																	))}
-																	{role.permissions.length > 4 && (
+																	{((role as any).permissions ?? [])
+																		.slice(0, 4)
+																		.map((p: any) => (
+																			<Badge
+																				key={p.permission.id}
+																				variant="secondary"
+																				className="text-xs bg-gray-100 dark:bg-slate-900 text-gray-700 dark:text-slate-200"
+																			>
+																				{p.permission.name}
+																			</Badge>
+																		))}
+																	{((role as any).permissions ?? []).length >
+																		4 && (
 																		<Badge
 																			variant="outline"
 																			className="text-xs border-gray-300 dark:border-slate-700 text-gray-500 dark:text-slate-400"
 																		>
-																			+{role.permissions.length - 4} more
+																			+
+																			{((role as any).permissions ?? [])
+																				.length - 4}{" "}
+																			more
 																		</Badge>
 																	)}
 																</div>
@@ -737,7 +884,7 @@ export function UsersPage() {
 												<Select
 													value={selectedRole ?? "all"}
 													onValueChange={(val) =>
-														setSelectedRole(val === "all" ? null : val)
+														setSelectedRole(val === "all" ? "" : val)
 													}
 												>
 													<SelectTrigger className="w-full bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200">
@@ -756,7 +903,9 @@ export function UsersPage() {
 												<Select
 													value={sortBy}
 													onValueChange={(val) =>
-														setSortBy(val as "role" | "name" | "id")
+														setSortBy(
+															val as "role" | "name" | "id" | "strikeCount",
+														)
 													}
 												>
 													<SelectTrigger className="w-full bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200">
@@ -766,6 +915,9 @@ export function UsersPage() {
 														<SelectItem value="role">Sort by Role</SelectItem>
 														<SelectItem value="name">Sort by Name</SelectItem>
 														<SelectItem value="id">Sort by ID</SelectItem>
+														<SelectItem value="strikeCount">
+															Sort by Strikes
+														</SelectItem>
 													</SelectContent>
 												</Select>
 
@@ -787,6 +939,48 @@ export function UsersPage() {
 														{roleSortOrder === "asc" ? "A-Z" : "Z-A"}
 													</span>
 													<span className="sm:hidden">Sort</span>
+												</Button>
+												<Button
+													variant={bannedOnly ? "destructive" : "outline"}
+													onClick={() => {
+														const newBanned = !bannedOnly;
+														setBannedOnly(newBanned);
+														setPage(1);
+
+														if (setUserParams) {
+															try {
+																setUserParams(
+																	searchTerm,
+																	1,
+																	10,
+																	sortBy,
+																	roleSortOrder,
+																	selectedRole || "all",
+																	newBanned,
+																);
+															} catch (e) {
+																console.warn("setUserParams failed:", e);
+															}
+														}
+
+														if (refetchUsers) {
+															refetchUsers();
+														}
+													}}
+													className={`w-full justify-center bg-white dark:bg-slate-900 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-800 ${
+														bannedOnly
+															? "bg-red-600 dark:bg-red-700 text-white hover:bg-red-700 dark:hover:bg-red-800 border-red-600 dark:border-red-700"
+															: ""
+													}`}
+												>
+													<span className="hidden sm:inline">
+														{bannedOnly
+															? "Showing Banned Members"
+															: "Show Banned Only"}
+													</span>
+													<span className="sm:hidden">
+														{bannedOnly ? "Banned" : "Ban Only"}
+													</span>
 												</Button>
 											</div>
 										</div>
@@ -917,7 +1111,6 @@ export function UsersPage() {
 																			<TableHead className="min-w-[120px] bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
 																				Name
 																			</TableHead>
-
 																			<TableHead className="min-w-[180px] bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
 																				Email
 																			</TableHead>
@@ -926,6 +1119,9 @@ export function UsersPage() {
 																			</TableHead>
 																			<TableHead className="min-w-[200px] bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
 																				Role
+																			</TableHead>
+																			<TableHead className="min-w-[200px] bg-gray-50 dark:bg-slate-900 border-gray-200 dark:border-slate-800 text-gray-900 dark:text-slate-200">
+																				Strikes
 																			</TableHead>
 																		</TableRow>
 																	</TableHeader>
@@ -1005,6 +1201,7 @@ export function UsersPage() {
 																									))}
 																								</SelectContent>
 																							</Select>
+
 																							<Button
 																								size="icon"
 																								variant="ghost"
@@ -1061,6 +1258,34 @@ export function UsersPage() {
 																							</Button>
 																						</div>
 																					)}
+																				</TableCell>
+																				<TableCell>
+																					<div className="flex items-center gap-2">
+																						<Badge
+																							variant={
+																								user.strikes.length === 0
+																									? "outline"
+																									: user.strikes.length < 3
+																										? "secondary"
+																										: "destructive"
+																							}
+																							className="px-2 py-1 text-sm font-medium min-w-[40px]"
+																						>
+																							{user.strikes.length}
+																						</Badge>
+																						<Button
+																							variant="ghost"
+																							size="icon"
+																							onClick={() =>
+																								openStrikeModal(
+																									user as unknown as StrikeUser,
+																								)
+																							}
+																							className="hover:bg-gray-100 dark:hover:bg-slate-900"
+																						>
+																							<Edit className="h-4 w-4" />
+																						</Button>
+																					</div>
 																				</TableCell>
 																			</TableRow>
 																		))}
@@ -1227,6 +1452,49 @@ export function UsersPage() {
 					</TabsContent>
 				)}
 			</Tabs>
+
+			<Dialog open={addStrikeModalOpen} onOpenChange={setAddStrikeModalOpen}>
+				<DialogContent className="max-w-md bg-white dark:bg-black text-gray-900 dark:text-slate-200">
+					<DialogHeader>
+						<DialogTitle>Add Strike Reason</DialogTitle>
+						<DialogDescription>
+							Provide a short reason for adding a strike to this user.
+						</DialogDescription>
+					</DialogHeader>
+
+					<div className="mt-4 space-y-4">
+						<label
+							htmlFor="add-strike-reason"
+							className="block text-sm font-medium text-gray-700 dark:text-slate-200"
+						>
+							Reason
+						</label>
+						<textarea
+							id="add-strike-reason"
+							value={newStrikeReason}
+							onChange={(e) => setNewStrikeReason(e.target.value)}
+							rows={4}
+							className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+							placeholder="e.g. NO SHOW"
+						/>
+
+						<div className="flex justify-end gap-2">
+							<Button
+								variant="outline"
+								onClick={() => setAddStrikeModalOpen(false)}
+							>
+								Cancel
+							</Button>
+							<Button
+								onClick={handleConfirmAddStrike}
+								disabled={!newStrikeReason.trim()}
+							>
+								{"Add Strike"}
+							</Button>
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
 			{isCoreModalOpen && (
 				<Dialog open={isCoreModalOpen} onOpenChange={setIsCoreModalOpen}>
 					<DialogContent className="max-w-md bg-white dark:bg-black text-gray-900 dark:text-slate-200">
@@ -1326,6 +1594,81 @@ export function UsersPage() {
 					</DialogContent>
 				</Dialog>
 			)}
+
+			<Dialog open={strikeModalOpen} onOpenChange={setStrikeModalOpen}>
+				<DialogContent className="max-w-md bg-white dark:bg-black text-gray-900 dark:text-slate-200">
+					<DialogHeader>
+						<DialogTitle>Strike Details</DialogTitle>
+						<DialogDescription>
+							View and manage strikes and bans for the user.
+						</DialogDescription>
+					</DialogHeader>
+					<div className="mt-4 space-y-4">
+						<div className="flex justify-between items-center">
+							<span className="text-sm text-gray-700 dark:text-slate-300">
+								Strikes
+							</span>
+							<Badge className="text-sm">{strikeCount}</Badge>
+						</div>
+						<div className="flex justify-between items-center">
+							<span className="text-sm text-gray-700 dark:text-slate-300">
+								Bans
+							</span>
+							<Badge className="text-sm">{banCount}</Badge>
+						</div>
+
+						<div>
+							<h4 className="text-sm font-medium text-gray-800 dark:text-slate-200 mb-2">
+								Reasons
+							</h4>
+							<ul className="list-disc ml-5 text-sm text-gray-700 dark:text-slate-300 space-y-2">
+								{(strikeUser?.strikes ?? []).map((s) => (
+									<li
+										key={`${s.id}`}
+										className="flex items-start justify-between gap-3"
+									>
+										<span className="mr-3">{s.reason}</span>
+										<div className="flex-shrink-0">
+											<Button
+												variant="destructive"
+												size="sm"
+												onClick={() => {
+													if (!strikeUser) return;
+													toast.loading("Deleting strike...");
+													removeStrikeReasonMutation.mutate(
+														{ userId: strikeUser.id, strikeId: s.id },
+														{
+															onSuccess: () => {
+																toast.dismiss();
+																toast.success("Strike removed.");
+																setStrikeModalOpen(false);
+															},
+															onError: () => {
+																toast.dismiss();
+																toast.error("Failed to remove strike.");
+															},
+														},
+													);
+												}}
+											>
+												Delete Strike
+											</Button>
+										</div>
+									</li>
+								))}
+							</ul>
+						</div>
+
+						<div className="flex justify-end gap-2 mt-4">
+							<Button onClick={handleIncreaseStrike}>Add Strike</Button>
+
+							<Button variant="ghost" onClick={() => setStrikeModalOpen(false)}>
+								Close
+							</Button>
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 }

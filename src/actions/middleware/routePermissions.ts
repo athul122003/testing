@@ -55,6 +55,10 @@ export const permissionRoutes = [
 		"user.search",
 		"user.updateOneRole",
 		"user.updateMultipleRoles",
+		"user.addBanStreak",
+		"user.decreaseBanStreak",
+		"user.removeStrikeReason",
+		"user.revokeBan",
 	],
 
 	// MANAGE_ROLE_PERMISSIONS

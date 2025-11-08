@@ -14,6 +14,7 @@ const searchSchema = z.object({
 	sortBy: z.string().default("role"),
 	sortOrder: z.enum(["asc", "desc"]),
 	role: z.string().optional(),
+	bannedOnly: z.boolean().optional(),
 });
 
 const updateRoleSchema = z.object({
@@ -37,8 +38,9 @@ export const searchUser = protectedAction(
 		sortBy: string;
 		sortOrder: "asc" | "desc";
 		role?: string;
+		bannedOnly?: boolean;
 	}) => {
-		const { query, page, limit, sortBy, sortOrder, role } =
+		const { query, page, limit, sortBy, sortOrder, role, bannedOnly } =
 			searchSchema.parse(input);
 
 		const skip = (page - 1) * limit;
@@ -53,6 +55,22 @@ export const searchUser = protectedAction(
 					{ usn: { contains: query, mode: "insensitive" } },
 					!Number.isNaN(Number(query)) ? { id: Number(query) } : undefined,
 				].filter(Boolean) as Prisma.UserWhereInput[],
+			});
+		}
+
+		if (bannedOnly) {
+			const bannedIds = await db.revokedMembers.findMany({
+				select: { userId: true },
+			});
+			const bannedIdsSet = new Set(bannedIds.map((b) => b.userId));
+			baseConditions.push({
+				AND: [
+					{
+						id: {
+							in: Array.from(bannedIdsSet),
+						},
+					},
+				],
 			});
 		}
 
@@ -91,6 +109,15 @@ export const searchUser = protectedAction(
 							name: true,
 						},
 					},
+					banCount: true,
+					strikeCount: true,
+					strikes: {
+						select: {
+							id: true,
+							reason: true,
+							createdAt: true,
+						},
+					},
 				},
 			}),
 			db.user.count({ where }),
@@ -105,6 +132,249 @@ export const searchUser = protectedAction(
 	},
 	{ actionName: "user.search" },
 );
+
+export const addBanStreak = protectedAction(
+	async (input: { userId: number; reason: string }) => {
+		const { userId, reason } = input;
+
+		if (!reason || typeof reason !== "string" || reason.trim().length === 0) {
+			throw new Error("Reason for strike cannot be blank");
+		}
+		const trimmedReason = reason.trim();
+
+		const user = await db.user.findUnique({ where: { id: userId } });
+		if (!user) throw new Error("User not found");
+
+		const updatedUser = await db.user.update({
+			where: { id: userId },
+			data: {
+				strikes: {
+					create: {
+						reason: trimmedReason,
+					},
+				},
+				strikeCount: {
+					increment: 1,
+				},
+			},
+			select: {
+				id: true,
+				name: true,
+				strikes: {
+					select: {
+						id: true,
+						reason: true,
+						createdAt: true,
+					},
+				},
+			},
+		});
+
+		if (updatedUser.strikes.length >= 3) {
+			const userRole = await db.role.findUnique({
+				where: { name: "USER" },
+				select: { id: true },
+			});
+			if (!userRole) throw new Error("USER role not found");
+
+			// Get the user's current role before changing it
+			const currentUser = await db.user.findUnique({
+				where: { id: userId },
+				select: { roleId: true },
+			});
+			if (!currentUser) throw new Error("User not found");
+
+			await db.user.update({
+				where: { id: userId },
+				data: {
+					banCount: {
+						increment: 1,
+					},
+					roleId: userRole.id,
+				},
+			});
+
+			const alreadyRevoked = await db.revokedMembers.findUnique({
+				where: { userId },
+			});
+			if (alreadyRevoked) {
+				return;
+			}
+
+			// Store the original roleId so it can be restored on unban
+			await db.revokedMembers.create({
+				data: {
+					userId: updatedUser.id,
+					roleId: currentUser.roleId,
+				},
+			});
+		}
+	},
+	{ actionName: "user.addBanStreak" },
+);
+
+export const decreaseBanStreak = protectedAction(
+	async (input: { strikeId: string }) => {
+		const deletedStrike = await db.strike.delete({
+			where: { id: input.strikeId },
+			select: { id: true, userId: true },
+		});
+
+		if (!deletedStrike) throw new Error("Strike not found");
+
+		const result = await db.$transaction(async (tx) => {
+			await tx.user.update({
+				where: { id: deletedStrike.userId },
+				data: {
+					strikeCount: {
+						decrement: 1,
+					},
+				},
+			});
+			const totalStrikes = await tx.strike.count({
+				where: { userId: deletedStrike.userId },
+			});
+			if (totalStrikes < 3) {
+				const revoked = await tx.revokedMembers.findUnique({
+					where: { userId: deletedStrike.userId },
+					select: { roleId: true },
+				});
+				if (revoked) {
+					// Restore the original role from revokedMembers
+					await tx.user.update({
+						where: { id: deletedStrike.userId },
+						data: { roleId: revoked.roleId },
+					});
+
+					await tx.revokedMembers.delete({
+						where: { userId: deletedStrike.userId },
+					});
+				}
+			}
+			return { success: true };
+		});
+
+		return result;
+	},
+	{ actionName: "user.decreaseBanStreak" },
+);
+
+export const removeStrikeReason = protectedAction(
+	async (input: { userId: number; strikeId: string }) => {
+		const { userId, strikeId } = input;
+
+		const user = await db.user.findUnique({
+			where: { id: userId },
+			select: {
+				strikes: {
+					select: {
+						id: true,
+					},
+				},
+			},
+		});
+		if (!user) throw new Error("User not found");
+
+		const result = await db.$transaction(async (tx) => {
+			await tx.user.update({
+				where: { id: userId },
+				data: {
+					strikeCount: {
+						decrement: 1,
+					},
+				},
+			});
+			const updated = await tx.strike.delete({
+				where: { id: strikeId },
+			});
+
+			if (user.strikes.length - 1 < 3) {
+				const revoked = await tx.revokedMembers.findUnique({
+					where: { userId },
+					select: { roleId: true },
+				});
+
+				const userRoleId = await tx.role.findUnique({
+					where: { name: "USER" },
+					select: { id: true },
+				});
+				if (revoked) {
+					await tx.user.update({
+						where: { id: userId },
+						data: { roleId: revoked.roleId ?? userRoleId?.id },
+					});
+
+					await tx.revokedMembers.delete({ where: { userId } });
+				}
+			}
+
+			return updated;
+		});
+
+		return result;
+	},
+	{ actionName: "user.removeStrikeReason" },
+);
+
+export const revokeBan = protectedAction(
+	async (input: { userId: number }) => {
+		const { userId } = input;
+
+		const user = await db.user.findUnique({
+			where: { id: userId },
+			select: {
+				strikes: {
+					select: {
+						id: true,
+					},
+				},
+			},
+		});
+		if (!user) throw new Error("User not found");
+
+		const result = await db.$transaction(async (tx) => {
+			const revoked = await tx.revokedMembers.findUnique({
+				where: { userId },
+				select: { roleId: true },
+			});
+
+			const userRoleId = await tx.role.findUnique({
+				where: { name: "USER" },
+				select: { id: true },
+			});
+
+			if (!revoked) {
+				throw new Error("User is not revoked/banned");
+			}
+
+			await tx.user.update({
+				where: { id: userId },
+				data: { roleId: revoked.roleId ?? userRoleId?.id },
+			});
+
+			await tx.revokedMembers.delete({ where: { userId } });
+
+			return { success: true };
+		});
+		return result;
+	},
+	{ actionName: "user.revokeBan" },
+);
+
+export const getStrikesForUser = async (userId: number) => {
+	const strikes = await db.strike.findMany({
+		where: { userId },
+		orderBy: { createdAt: "desc" },
+		select: {
+			reason: true,
+			createdAt: true,
+		},
+	});
+	return {
+		success: true,
+		data: strikes,
+	};
+};
 
 export const updateUserRole = protectedAction(
 	async (session: Session, input: unknown) => {

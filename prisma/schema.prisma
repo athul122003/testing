@@ -25,6 +25,10 @@ model User {
   memberSince         DateTime?
   totalActivityPoints Int       @default(0)
 
+  strikes     Strike[]
+  strikeCount Int      @default(0)
+  banCount    Int      @default(0)
+
   reasonToJoin String?
   expectations String?
   contribution String?
@@ -47,15 +51,36 @@ model User {
   RefreshToken      RefreshToken[]
   VerificationToken VerificationToken[]
 
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  revokedMembers revokedMembers?
+}
+
+model Strike {
+  id        String   @id @default(cuid())
+  reason    String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+
+  userId Int
+  User   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model revokedMembers {
+  id     String @id @default(cuid())
+  userId Int    @unique
+  User   User   @relation(fields: [userId], references: [id])
+  roleId String
+  Role   Role   @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, roleId])
 }
 
 model Role {
-  id          String           @id @default(cuid())
-  name        String
-  users       User[]
-  permissions RolePermission[]
+  id             String           @id @default(cuid())
+  name           String
+  users          User[]
+  permissions    RolePermission[]
+  revokedMembers revokedMembers[]
 
   @@unique([name])
 }

@@ -79,6 +79,19 @@ export async function POST(req: NextRequest) {
 					events,
 				});
 			}
+			case "getStrikes": {
+				const customHeader = req.headers.get("authorization");
+				const data = parseJwtFromAuthHeader(customHeader || "");
+				if (!data || !data.userId) {
+					return NextResponse.json(
+						{ success: false, error: "Invalid or missing authentication data" },
+						{ status: 401 },
+					);
+				}
+				const userId = data.userId;
+				const result = await server.user.getStrikesForUser(userId);
+				return NextResponse.json(result);
+			}
 			default:
 				return NextResponse.json(
 					{ success: false, error: "Unknown action" },

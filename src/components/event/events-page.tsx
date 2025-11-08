@@ -61,8 +61,14 @@ export function EventsPage({
 	const [statusModalOpen, setStatusModalOpen] = useState(false);
 	const [isDetailOpen, setIsDetailOpen] = useState(false);
 
-	const { hasPerm, eventsQuery, refetchEvents, isOrganiser, setEventYear } =
-		useDashboardData();
+	const {
+		hasPerm,
+		eventsQuery,
+		refetchEvents,
+		isOrganiser,
+		setEventYear,
+		refetchUsers,
+	} = useDashboardData();
 	const canManageEvents = hasPerm(perm.MANAGE_EVENTS);
 	const { data: eventsData, isLoading } = eventsQuery;
 
@@ -94,10 +100,19 @@ export function EventsPage({
 		setActivePage("event-form");
 	};
 
-	const handleToggleEventStatus = async (eventId: number) => {
+	const handleToggleEventStatus = async (
+		eventId: number,
+		enableStrikeAdditionOnCompletion?: boolean,
+	) => {
 		console.log("Toggling event status for ID:", eventId);
 		if (selectedEvent === null) return;
-		const res = await toggleEventStatus(eventId);
+		const res = await toggleEventStatus(
+			eventId,
+			enableStrikeAdditionOnCompletion,
+		);
+		if (enableStrikeAdditionOnCompletion) {
+			refetchUsers?.();
+		}
 		toast.success(`Event status updated to ${res.event?.state}`);
 		setSelectedEvent((prev) => {
 			if (!prev || !res.event?.state) return prev;
@@ -707,6 +722,60 @@ export function EventsPage({
 							<p className="text-sm sm:text-base text-gray-600 dark:text-slate-400">
 								Are you sure you want to toggle the status of this event?
 							</p>
+							<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+								<div className="min-w-0 flex-1">
+									<div className="font-medium text-gray-900 dark:text-slate-200">
+										Enable strike addition for participants
+									</div>
+									<p className="text-xs sm:text-sm text-gray-600 dark:text-slate-400 whitespace-normal break-words">
+										When enabled, finishing this event will add a strike to
+										absentee participants (More than 3 strikes will revoke
+										membership)
+									</p>
+								</div>
+
+								{(() => {
+									const disabled = !(selectedEvent?.state === "LIVE");
+
+									return (
+										<button
+											type="button"
+											role="switch"
+											aria-checked={
+												selectedEvent?.enableStrikeAdditionOnCompletion
+											}
+											disabled={disabled}
+											onClick={() => {
+												if (disabled || !selectedEvent) return;
+												const newVal =
+													!selectedEvent.enableStrikeAdditionOnCompletion;
+												setSelectedEvent((prev) => {
+													if (!prev) return prev;
+													return {
+														...prev,
+														enableStrikeAdditionOnCompletion: newVal,
+													};
+												});
+											}}
+											className={`shrink-0 relative w-12 h-7 p-0 rounded-full flex items-center justify-start ${
+												disabled
+													? "opacity-50 cursor-not-allowed"
+													: "cursor-pointer"
+											} ${selectedEvent?.enableStrikeAdditionOnCompletion ? "bg-emerald-500" : "bg-gray-200 dark:bg-slate-800"}`}
+										>
+											<span className="sr-only">Enable strike addition</span>
+											<span
+												aria-hidden
+												className={`block w-5 h-5 bg-white rounded-full shadow transform transition-transform duration-200 ml-1 ${
+													selectedEvent?.enableStrikeAdditionOnCompletion
+														? "translate-x-5"
+														: "translate-x-0"
+												}`}
+											/>
+										</button>
+									);
+								})()}
+							</div>
 							<div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
 								<Button
 									variant="outline"
@@ -718,7 +787,10 @@ export function EventsPage({
 								<Button
 									onClick={() => {
 										if (selectedEvent && typeof selectedEvent.id === "number") {
-											handleToggleEventStatus(selectedEvent.id);
+											handleToggleEventStatus(
+												selectedEvent.id,
+												selectedEvent.enableStrikeAdditionOnCompletion,
+											);
 										}
 									}}
 									className="w-full sm:w-auto order-1 sm:order-2 text-sm py-2"

@@ -23,6 +23,7 @@ export type EventsQuery = Awaited<ReturnType<typeof getAllEvents>>;
 export interface ExtendedEvent extends Event {
 	confirmedTeams: number;
 	prizes?: Prize[];
+	enableStrikeAdditionOnCompletion?: boolean;
 }
 
 function extractPublicIdFromUrl({
@@ -192,7 +193,7 @@ export const createEventAction = protectedAction(
 );
 
 export const toggleEventStatus = protectedAction(
-	async (eventId: number) => {
+	async (eventId: number, enableStrikeAdditionOnCompletion?: boolean) => {
 		try {
 			const event = await db.event.findUnique({
 				where: { id: eventId },
@@ -215,6 +216,12 @@ export const toggleEventStatus = protectedAction(
 				default:
 					return { success: false, error: "Invalid event state" };
 			}
+			if (
+				newState === EventState.COMPLETED &&
+				enableStrikeAdditionOnCompletion
+			) {
+				await addStrike(eventId);
+			}
 			const updatedEvent = await db.event.update({
 				where: { id: eventId },
 				data: { state: newState },
@@ -230,6 +237,102 @@ export const toggleEventStatus = protectedAction(
 	},
 	{ actionName: "event.ALLPERM" },
 );
+
+export async function addStrike(eventId: number) {
+	try {
+		await db.$transaction(async (tx) => {
+			const membersIds = await tx.team.findMany({
+				where: {
+					eventId: eventId,
+					isConfirmed: true,
+					hasAttended: false,
+				},
+				select: {
+					Members: {
+						select: {
+							id: true,
+						},
+					},
+				},
+				distinct: ["id"],
+			});
+
+			const userIds = membersIds.flatMap((team) =>
+				team.Members.map((member) => member.id),
+			);
+
+			await tx.strike.createMany({
+				data: userIds.map((id) => ({
+					reason: "NO-SHOW",
+					userId: id,
+				})),
+			});
+
+			await tx.user.updateMany({
+				where: {
+					id: { in: userIds },
+				},
+				data: {
+					strikeCount: {
+						increment: 1,
+					},
+				},
+			});
+
+			const strikesGrouped = await tx.strike.groupBy({
+				by: ["userId"],
+				where: {
+					userId: { in: userIds },
+				},
+				_count: {
+					id: true,
+				},
+			});
+
+			const userIdsToBan = strikesGrouped
+				.filter((g) => g._count.id >= 3)
+				.map((g) => g.userId);
+
+			console.log(userIdsToBan.length);
+			if (userIdsToBan.length > 0) {
+				const userRoleId = await tx.role.findUnique({
+					where: { name: "USER" },
+					select: { id: true },
+				});
+				if (!userRoleId) {
+					throw new Error("USER role not found");
+				}
+
+				const usersToban = await tx.user.findMany({
+					where: { id: { in: userIdsToBan } },
+					select: { id: true, roleId: true },
+				});
+
+				const bannedIds = userIdsToBan;
+				await tx.user.updateMany({
+					where: {
+						id: { in: bannedIds },
+					},
+					data: {
+						roleId: userRoleId.id,
+						banCount: {
+							increment: 1,
+						},
+					},
+				});
+
+				await tx.revokedMembers.createMany({
+					data: usersToban.map((user) => ({
+						userId: user.id,
+						roleId: user.roleId,
+					})),
+				});
+			}
+		});
+	} catch (error) {
+		console.error("Error in adding streaks:", error);
+	}
+}
 
 export const editEventAction = protectedAction(
 	async (eventId: number, values: CreateEventInput) => {
