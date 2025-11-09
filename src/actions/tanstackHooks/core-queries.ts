@@ -28,13 +28,15 @@ export type CorePageResponse = {
 export const useCoreMembersQuery = ({
 	page,
 	pageSize,
+	search = "",
 }: {
 	page: number;
 	pageSize: number;
+	search?: string;
 }) => {
 	return useQuery<CorePageResponse>({
-		queryKey: ["coreMembers", page, pageSize],
-		queryFn: () => getCoreMembers({ page, pageSize }),
+		queryKey: ["coreMembers", page, pageSize, search],
+		queryFn: () => getCoreMembers({ page, pageSize, search }),
 		placeholderData: (prev) => prev,
 		staleTime: 1000 * 60 * 5,
 	});

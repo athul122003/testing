@@ -59,11 +59,42 @@ export const addToCore = protectedAction(
 );
 
 export const getCoreMembers = protectedAction(
-	async ({ page = 1, pageSize = 20 }: { page?: number; pageSize?: number }) => {
+	async ({
+		page = 1,
+		pageSize = 20,
+		search = "",
+	}: {
+		page?: number;
+		pageSize?: number;
+		search?: string;
+	}) => {
 		try {
 			const skip = (page - 1) * pageSize;
+			const searchFilter = search.trim()
+				? {
+						OR: [
+							{ position: { contains: search, mode: "insensitive" as const } },
+							{ year: { contains: search, mode: "insensitive" as const } },
+							{
+								User: {
+									name: { contains: search, mode: "insensitive" as const },
+								},
+							},
+							{
+								User: {
+									email: { contains: search, mode: "insensitive" as const },
+								},
+							},
+							...(Number.isNaN(Number(search))
+								? []
+								: [{ userId: Number(search) }]),
+						],
+					}
+				: {};
+
 			const [coreMembers, totalCore] = await Promise.all([
 				db.core.findMany({
+					where: searchFilter,
 					skip,
 					take: pageSize,
 					orderBy: { priority: "asc" },
@@ -76,7 +107,7 @@ export const getCoreMembers = protectedAction(
 						},
 					},
 				}),
-				db.core.count(),
+				db.core.count({ where: searchFilter }),
 			]);
 			const totalPages = Math.ceil(totalCore / pageSize);
 			return { coreMembers, totalCore, totalPages, page, pageSize };
