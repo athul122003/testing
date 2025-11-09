@@ -6,6 +6,13 @@ import { PrizeType } from "@prisma/client";
 import { Trash2 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import {
+	Dialog,
+	DialogContent,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { api } from "~/lib/api";
@@ -847,8 +854,9 @@ type User = {
 };
 
 export function AddOrganisersSection({ eventId }: { eventId: number }) {
-	const [usn, setUsn] = useState("");
-	const [searchResult, setSearchResult] = useState<User | null>(null);
+	const [search, setSearch] = useState("");
+	const [searchResults, setSearchResults] = useState<User[]>([]);
+	const [showSearchModal, setShowSearchModal] = useState(false);
 	const [errorMsg, setErrorMsg] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [existingOrganisers, setExistingOrganisers] = useState<User[]>([]);
@@ -871,35 +879,43 @@ export function AddOrganisersSection({ eventId }: { eventId: number }) {
 		fetchOrganisers();
 	}, [fetchOrganisers]);
 
-	// 🔍 Search user by USN
 	const handleSearch = async () => {
 		setLoading(true);
 		setErrorMsg("");
-		setSearchResult(null);
+		setSearchResults([]);
 
 		const res = await api.user.searchUserByUsn({
-			usn: usn.trim().toLowerCase(),
+			search: search.trim().toLowerCase(),
 		});
 
-		if (!res.success || !res.data) {
-			setErrorMsg("User not found");
-		} else if (existingOrganisers.some((org) => org.id === res.data.id)) {
-			setErrorMsg("User is already an organiser");
-		} else if (stagedOrganisers.some((org) => org.id === res.data.id)) {
-			setErrorMsg("User is already staged to be added");
+		if (!res.success || !res.data || res.data.length === 0) {
+			setErrorMsg("No users found");
+			setLoading(false);
 		} else {
-			setSearchResult(res.data);
-		}
+			const filteredResults = res.data.filter(
+				(user) =>
+					!existingOrganisers.some((org) => org.id === user.id) &&
+					!stagedOrganisers.some((org) => org.id === user.id),
+			);
 
-		setLoading(false);
+			if (filteredResults.length === 0) {
+				setErrorMsg("All matching users are already added or staged");
+				setLoading(false);
+			} else {
+				setSearchResults(filteredResults);
+				setShowSearchModal(true);
+				setLoading(false);
+			}
+		}
 	};
 
-	// ➕ Add to staged list
-	const handleStageOrganiser = () => {
-		if (!searchResult) return;
-		setStagedOrganisers((prev) => [...prev, searchResult]);
-		setSearchResult(null);
-		setUsn("");
+	const handleStageOrganiser = (user: User) => {
+		setStagedOrganisers((prev) => [...prev, user]);
+		setSearchResults((prev) => prev.filter((u) => u.id !== user.id));
+		if (searchResults.length === 1) {
+			setShowSearchModal(false);
+			setSearch("");
+		}
 	};
 
 	// Remove from staged list
@@ -985,12 +1001,19 @@ export function AddOrganisersSection({ eventId }: { eventId: number }) {
 
 			<hr className="my-4" />
 
-			<p className="text-base font-semibold">Add Organiser by USN</p>
+			<p className="text-base font-semibold">
+				Add Organiser by USN/FLC ID/Name/Email
+			</p>
 			<div className="flex gap-2">
 				<Input
-					value={usn}
-					onChange={(e) => setUsn(e.target.value)}
-					placeholder="Enter USN"
+					value={search}
+					onChange={(e) => setSearch(e.target.value)}
+					placeholder="Enter USN/FLC ID/Name/Email to search"
+					onKeyDown={(e) => {
+						if (e.key === "Enter") {
+							handleSearch();
+						}
+					}}
 				/>
 				<Button onClick={handleSearch} disabled={loading}>
 					{loading ? "Searching..." : "Search"}
@@ -999,22 +1022,53 @@ export function AddOrganisersSection({ eventId }: { eventId: number }) {
 
 			{errorMsg && <p className="text-red-500 text-xs mt-1">{errorMsg}</p>}
 
-			{searchResult && (
-				<div className="mt-2 border p-3 rounded-md bg-muted">
-					<p>
-						<strong>Name:</strong> {searchResult.name}
-					</p>
-					<p>
-						<strong>Email:</strong> {searchResult.email}
-					</p>
-					<p>
-						<strong>USN:</strong> {searchResult.usn}
-					</p>
-					<Button className="mt-3" onClick={handleStageOrganiser}>
-						Add to Staged
-					</Button>
-				</div>
-			)}
+			<Dialog open={showSearchModal} onOpenChange={setShowSearchModal}>
+				<DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+					<DialogHeader>
+						<DialogTitle>Search Results</DialogTitle>
+					</DialogHeader>
+					<div className="space-y-3">
+						{searchResults && searchResults.length > 0 ? (
+							searchResults.map((user) => (
+								<div
+									key={user.id}
+									className="border p-4 rounded-md bg-muted flex justify-between items-start"
+								>
+									<div>
+										<p>
+											<strong>Name:</strong> {user.name}
+										</p>
+										<p>
+											<strong>Email:</strong> {user.email}
+										</p>
+										<p>
+											<strong>USN:</strong> {user.usn}
+										</p>
+									</div>
+									<Button onClick={() => handleStageOrganiser(user)} size="sm">
+										Add to Staged
+									</Button>
+								</div>
+							))
+						) : (
+							<p className="text-muted-foreground text-center py-4">
+								No results to display
+							</p>
+						)}
+					</div>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => {
+								setShowSearchModal(false);
+								setSearch("");
+							}}
+						>
+							Close
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 
 			{stagedOrganisers.length > 0 && (
 				<div className="mt-4">

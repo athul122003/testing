@@ -603,22 +603,30 @@ export const searchUserById = async (input: { userId: number }) => {
 };
 
 export const searchUserByUsn = protectedAction(
-	async (_session, input: { usn: string }) => {
-		const { usn } = input;
+	async (_session, input: { search: string }) => {
+		const { search } = input;
 
-		const user = await db.user.findFirst({
-			where: {
-				usn: {
-					equals: usn,
-					mode: "insensitive",
-				},
-			},
+		const whereCondition: Prisma.UserWhereInput = {};
+
+		if (Number.isNaN(Number(search))) {
+			whereCondition.OR = [
+				{ usn: { equals: search, mode: "insensitive" } },
+				{ name: { contains: search, mode: "insensitive" } },
+				{ email: { contains: search, mode: "insensitive" } },
+			];
+		} else {
+			whereCondition.AND = [{ id: Number(search) }];
+		}
+
+		const user = await db.user.findMany({
+			where: whereCondition,
 			select: {
 				id: true,
 				name: true,
 				usn: true,
 				email: true,
 			},
+			take: 10, // Ahh not gonna put more pressure on db as people can search some random stuff too, sedd
 		});
 
 		if (!user) {
