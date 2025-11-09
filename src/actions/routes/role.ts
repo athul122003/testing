@@ -57,7 +57,11 @@ export const deleteRole = protectedAction(
 		});
 
 		if (!role) throw new Error("Role not found");
-		if (["USER", "ADMIN", "MEMBER"].includes(role.name))
+		if (
+			["USER", "ADMIN", "MEMBER", "BANNED", "MANAGER", "DEVELOPER"].includes(
+				role.name,
+			)
+		)
 			throw new Error(`Cannot delete default ${role.name} role`);
 
 		const userRole = await db.role.findUnique({

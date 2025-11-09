@@ -177,6 +177,11 @@ export function UsersPage() {
 	const ROLES_PER_PAGE = 4;
 
 	const [bannedOnly, setBannedOnly] = useState(false);
+	const [deleteRoleModalOpen, setDeleteRoleModalOpen] = useState(false);
+	const [roleToDelete, setRoleToDelete] = useState<{
+		id: string;
+		name: string;
+	} | null>(null);
 
 	const filteredRoles = useMemo(() => {
 		return roles.filter((role) =>
@@ -664,14 +669,19 @@ export function UsersPage() {
 																	<Button
 																		variant="ghost"
 																		size="sm"
-																		onClick={() => deleteRole(role.id)}
+																		onClick={() => {
+																			setRoleToDelete({
+																				id: role.id,
+																				name: role.name,
+																			});
+																			setDeleteRoleModalOpen(true);
+																		}}
 																		className="text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-900"
 																	>
 																		<Trash2 className="h-4 w-4 text-red-500 dark:text-red-400" />
 																	</Button>
 																</div>
-															</div>
-
+															</div>{" "}
 															{isEditing ? (
 																<div className="grid gap-2">
 																	{permissions.map((perm) => (
@@ -1664,6 +1674,41 @@ export function UsersPage() {
 
 							<Button variant="ghost" onClick={() => setStrikeModalOpen(false)}>
 								Close
+							</Button>
+						</div>
+					</div>
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={deleteRoleModalOpen} onOpenChange={setDeleteRoleModalOpen}>
+				<DialogContent>
+					<div className="space-y-4">
+						<h2 className="text-xl font-semibold">Delete Role</h2>
+						<p className="text-gray-600 dark:text-slate-400">
+							Are you sure you want to delete the role "{roleToDelete?.name}"?
+							This action cannot be undone.
+						</p>
+						<div className="flex justify-end gap-2">
+							<Button
+								variant="ghost"
+								onClick={() => {
+									setDeleteRoleModalOpen(false);
+									setRoleToDelete(null);
+								}}
+							>
+								Cancel
+							</Button>
+							<Button
+								variant="destructive"
+								onClick={() => {
+									if (roleToDelete) {
+										deleteRole(roleToDelete.id);
+										setDeleteRoleModalOpen(false);
+										setRoleToDelete(null);
+									}
+								}}
+							>
+								Delete
 							</Button>
 						</div>
 					</div>

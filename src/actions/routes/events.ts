@@ -111,6 +111,18 @@ async function registerSoloEvent(userId: number, eventId: number) {
 		};
 	}
 
+	const bannedRole = await db.role.findUnique({
+		where: { name: "BANNED" },
+		select: { id: true },
+	});
+
+	if (bannedRole && user.roleId === bannedRole.id) {
+		return {
+			success: false,
+			error: "Banned users cannot register for events",
+		};
+	}
+
 	const team = await db.team.create({
 		data: {
 			name: user.name,
@@ -153,6 +165,20 @@ export async function soloEventReg(userId: number, eventId: number) {
 		return {
 			success: false,
 			error: "Event is not a solo event",
+		};
+	}
+	const bannedRole = await db.role.findUnique({
+		where: { name: "BANNED" },
+		select: { id: true },
+	});
+	const bannedUser = await db.user.findUnique({
+		where: { id: userId, roleId: bannedRole?.id },
+		select: { roleId: true },
+	});
+	if (bannedUser) {
+		return {
+			success: false,
+			error: "Banned users cannot register for this event",
 		};
 	}
 	const countOfTeams = await db.team.count({
@@ -287,6 +313,23 @@ export async function createTeam(
 			return {
 				success: false,
 				error: "Member role not found",
+			};
+		}
+
+		const bannedRole = await db.role.findUnique({
+			where: { name: "BANNED" },
+			select: { id: true },
+		});
+
+		const bannedUser = await db.user.findUnique({
+			where: { id: userId, roleId: bannedRole?.id },
+			select: { roleId: true },
+		});
+
+		if (bannedUser) {
+			return {
+				success: false,
+				error: "Banned users cannot create teams",
 			};
 		}
 
@@ -534,10 +577,20 @@ export async function joinTeam(
 				error: "Member role not found",
 			};
 		}
+		const bannedRole = await db.role.findUnique({
+			where: { name: "BANNED" },
+			select: { id: true },
+		});
 		const userInfo = await db.user.findUnique({
 			where: { id: userId },
 			select: { id: true, name: true, roleId: true },
 		});
+		if (bannedRole && userInfo?.roleId === bannedRole.id) {
+			return {
+				success: false,
+				error: "Banned users cannot join teams",
+			};
+		}
 		if (!userInfo) {
 			return {
 				success: false,
@@ -773,6 +826,28 @@ export async function confirmTeam(userId: number, teamId: string) {
 			return {
 				success: false,
 				error: "Maximum number of teams reached for this event",
+			};
+		}
+
+		const bannedRole = await db.role.findUnique({
+			where: { name: "BANNED" },
+			select: { id: true },
+		});
+
+		const userInfo = await db.user.findMany({
+			where: {
+				id: { in: team.Members.map((member) => member.id) },
+				roleId: bannedRole ? bannedRole.id : undefined,
+			},
+			select: { id: true, name: true },
+		});
+
+		if (userInfo.length > 0) {
+			return {
+				success: false,
+				error: `Banned users cannot be part of a confirmed team: ${userInfo
+					.map((u) => u.name)
+					.join(", ")}`,
 			};
 		}
 

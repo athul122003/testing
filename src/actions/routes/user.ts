@@ -171,11 +171,11 @@ export const addBanStreak = protectedAction(
 		});
 
 		if (updatedUser.strikes.length >= 3) {
-			const userRole = await db.role.findUnique({
-				where: { name: "USER" },
+			const bannedRoleId = await db.role.findUnique({
+				where: { name: "BANNED" },
 				select: { id: true },
 			});
-			if (!userRole) throw new Error("USER role not found");
+			if (!bannedRoleId) throw new Error("BANNED role not found");
 
 			// Get the user's current role before changing it
 			const currentUser = await db.user.findUnique({
@@ -190,7 +190,7 @@ export const addBanStreak = protectedAction(
 					banCount: {
 						increment: 1,
 					},
-					roleId: userRole.id,
+					roleId: bannedRoleId.id,
 				},
 			});
 
@@ -294,14 +294,10 @@ export const removeStrikeReason = protectedAction(
 					select: { roleId: true },
 				});
 
-				const userRoleId = await tx.role.findUnique({
-					where: { name: "USER" },
-					select: { id: true },
-				});
 				if (revoked) {
 					await tx.user.update({
 						where: { id: userId },
-						data: { roleId: revoked.roleId ?? userRoleId?.id },
+						data: { roleId: revoked.roleId },
 					});
 
 					await tx.revokedMembers.delete({ where: { userId } });
@@ -338,18 +334,13 @@ export const revokeBan = protectedAction(
 				select: { roleId: true },
 			});
 
-			const userRoleId = await tx.role.findUnique({
-				where: { name: "USER" },
-				select: { id: true },
-			});
-
 			if (!revoked) {
 				throw new Error("User is not revoked/banned");
 			}
 
 			await tx.user.update({
 				where: { id: userId },
-				data: { roleId: revoked.roleId ?? userRoleId?.id },
+				data: { roleId: revoked.roleId },
 			});
 
 			await tx.revokedMembers.delete({ where: { userId } });

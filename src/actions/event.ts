@@ -293,14 +293,13 @@ export async function addStrike(eventId: number) {
 				.filter((g) => g._count.id >= 3)
 				.map((g) => g.userId);
 
-			console.log(userIdsToBan.length);
 			if (userIdsToBan.length > 0) {
-				const userRoleId = await tx.role.findUnique({
-					where: { name: "USER" },
+				const bannedRoleId = await tx.role.findUnique({
+					where: { name: "BANNED" },
 					select: { id: true },
 				});
-				if (!userRoleId) {
-					throw new Error("USER role not found");
+				if (!bannedRoleId) {
+					throw new Error("BANNED role not found");
 				}
 
 				const usersToban = await tx.user.findMany({
@@ -314,7 +313,7 @@ export async function addStrike(eventId: number) {
 						id: { in: bannedIds },
 					},
 					data: {
-						roleId: userRoleId.id,
+						roleId: bannedRoleId.id,
 						banCount: {
 							increment: 1,
 						},
