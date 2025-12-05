@@ -34,7 +34,7 @@ try {
 	console.log("------------------------------------------------------");
 
 	if (error instanceof z.ZodError) {
-		for (const issue of error.errors) {
+		for (const issue of error.issues) {
 			console.log(
 				`🚨 Missing or invalid: ${issue.path.join(".")} → ${issue.message}`,
 			);

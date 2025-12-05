@@ -46,3 +46,7 @@ next-env.d.ts
 /generated/prisma
 src/lib/service.json
 src/lib/service.json
+backup1.sql
+backup2.sql
+.gitignore
+try.ts
