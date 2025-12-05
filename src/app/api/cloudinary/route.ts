@@ -3,29 +3,29 @@ import fs from "fs";
 import { type NextRequest, NextResponse } from "next/server";
 import { uploadImageToCloudinary } from "~/lib/cloudinaryImageUploader";
 
-export const config = {
-	api: {
-		bodyParser: false,
-	},
-};
-
+export const runtime = "nodejs";
 // NOT DONE, DONT USE THIS AS IT MIGHT BE REMOVED IN THE FUTURE
 
 export async function POST(req: NextRequest) {
-	const _form = new IncomingForm();
+	const formData = await req.formData();
+	const file = formData.get("file") as File;
 
-	const buffer = await req.arrayBuffer();
-	const tmpFilePath = `/tmp/upload-${Date.now()}`;
-	await fs.promises.writeFile(tmpFilePath, Buffer.from(buffer));
+	if (!file) {
+		return NextResponse.json(
+			{
+				error: "No file uploaded",
+			},
+			{
+				status: 400,
+				headers: {
+					"Content-Type": "application/json",
+				},
+			},
+		);
+	}
 
-	const fileBuffer = fs.readFileSync(tmpFilePath);
-	const fileName = `upload-${Date.now()}.jpg`;
-	const fileType = "image/jpeg";
-	const file = new File([fileBuffer], fileName, { type: fileType });
 	const result = await uploadImageToCloudinary(file, "testing");
 	// TODO[Rahul]: Create action folder inside cloudinary to store images in different folders and get folder name from the request
-
-	fs.unlinkSync(tmpFilePath);
 
 	return NextResponse.json(
 		{

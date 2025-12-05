@@ -118,7 +118,7 @@ export function BlogForm({
 
 		const validatedData = blogSchema.safeParse(blogData);
 		if (!validatedData.success) {
-			const errorMessage = validatedData.error.errors
+			const errorMessage = validatedData.error.issues
 				.map((err) => `${err.path.join(".")}: ${err.message}`)
 				.join("\n");
 			toast.error("Invalid Blog Data: " + errorMessage);
