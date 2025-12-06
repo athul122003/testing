@@ -133,5 +133,8 @@
 		"typescript": "^5.9.3",
 		"zod-prisma-types": "^3.3.10",
 		"@tailwindcss/postcss": "^4.1.17"
+	},
+	"engines": {
+		"node": "25"
 	}
 }
