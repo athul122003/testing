@@ -53,6 +53,8 @@ model User {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   revokedMembers revokedMembers?
+  easterEgg      easterEgg?      @relation(fields: [easterEggId], references: [id])
+  easterEggId    Int?
 }
 
 model Strike {
@@ -375,6 +377,17 @@ model EventDocument {
 
   eventId Int
   Event   Event @relation(fields: [eventId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model easterEgg {
+  id        Int    @id @default(autoincrement())
+  name      String
+  detail    String
+  flcPoints Int    @default(0)
+  foundBy   User[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
