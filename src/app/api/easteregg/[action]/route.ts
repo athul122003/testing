@@ -8,6 +8,7 @@ export async function POST(req: NextRequest) {
 		const action = url.pathname.split("/").pop();
 
 		let body: unknown = {};
+		body = await req.json();
 
 		switch (action) {
 			case "giveflceasterpoints": {
@@ -54,14 +55,14 @@ export async function POST(req: NextRequest) {
 				if (existingEgg) {
 					return NextResponse.json(
 						{ success: false, error: "Easter egg already claimed" },
-						{ status: 204 },
+						{ status: 209 },
 					);
 				}
 
 				const updatedUser = await db.user.update({
 					where: { id: data.userId },
 					data: {
-						flcPoints: { increment: easterEgg.flcPoints },
+						totalActivityPoints: { increment: easterEgg.flcPoints },
 						easterEggId: easterEggId,
 					},
 					select: {
