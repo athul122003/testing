@@ -7,8 +7,14 @@ import {
 	EventCategory,
 } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const db = new PrismaClient();
+const adapter = new PrismaPg({
+	connectionString: process.env.DATABASE_URL!,
+});
+//Updated adapter import and initialization for PrismaPg
+const db = new PrismaClient({ adapter });
+
 const saltRounds = 10; // DEFAULT BE 10, NO CHANGES TO BE MADE HERE
 
 const main = async () => {
