@@ -1,19 +1,8 @@
 // prisma/seed.ts
 
-import {
-	PaymentType,
-	PrismaClient,
-	EventType,
-	EventCategory,
-} from "@prisma/client";
+import { PaymentType, EventType, EventCategory } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { PrismaPg } from "@prisma/adapter-pg";
-
-const adapter = new PrismaPg({
-	connectionString: process.env.DATABASE_URL!,
-});
-//Updated adapter import and initialization for PrismaPg
-const db = new PrismaClient({ adapter });
+import { db } from "~/server/db";
 
 const saltRounds = 10; // DEFAULT BE 10, NO CHANGES TO BE MADE HERE
 
