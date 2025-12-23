@@ -1,14 +1,9 @@
 // prisma/seed.ts
 
-import {
-	PaymentType,
-	PrismaClient,
-	EventType,
-	EventCategory,
-} from "@prisma/client";
+import { PaymentType, EventType, EventCategory } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { db } from "~/server/db";
 
-const db = new PrismaClient();
 const saltRounds = 10; // DEFAULT BE 10, NO CHANGES TO BE MADE HERE
 
 const main = async () => {
