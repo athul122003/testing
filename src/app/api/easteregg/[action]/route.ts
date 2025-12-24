@@ -63,7 +63,9 @@ export async function POST(req: NextRequest) {
 					where: { id: data.userId },
 					data: {
 						totalActivityPoints: { increment: easterEgg.flcPoints },
-						easterEggId: easterEggId,
+						EasterEgg: {
+							connect: { id: easterEggId },
+						},
 					},
 					select: {
 						totalActivityPoints: true,
