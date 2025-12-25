@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
 				const user = await db.user.findUnique({
 					where: { id: data.userId },
-					include: { easterEgg: true },
+					include: { EasterEgg: true },
 				});
 
 				if (!user) {
