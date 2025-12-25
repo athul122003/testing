@@ -3,6 +3,7 @@
 import { PaymentType, EventType, EventCategory } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { db } from "~/server/db";
+import { seedWords } from "./seeds/words";
 
 const saltRounds = 10; // DEFAULT BE 10, NO CHANGES TO BE MADE HERE
 
@@ -327,15 +328,10 @@ const main = async () => {
 			});
 		}
 
-		await db.wordleWord.createMany({
-			data: [
-				{ word: "crane", length: 5 },
-				{ word: "apple", length: 5 },
-				{ word: "brave", length: 5 },
-			],
-		});
-
 		console.log("Teams seeded for events");
+
+		// Seed winter Wordle words
+		await seedWords();
 
 		console.log(
 			"Seed complete: 5 roles, 5 permissions, 35 users, 28 payments, 2 settings, 4 events and branches seeded.",
