@@ -327,6 +327,14 @@ const main = async () => {
 			});
 		}
 
+		await db.wordleWord.createMany({
+			data: [
+				{ word: "crane", length: 5 },
+				{ word: "apple", length: 5 },
+				{ word: "brave", length: 5 },
+			],
+		});
+
 		console.log("Teams seeded for events");
 
 		console.log(

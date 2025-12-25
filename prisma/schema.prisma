@@ -55,6 +55,7 @@ model User {
   revokedMembers revokedMembers?
   easterEgg      EasterEgg?      @relation(fields: [easterEggId], references: [id])
   easterEggId    Int?
+  WordleGame     WordleGame[]
 }
 
 model Strike {
@@ -457,6 +458,55 @@ model Settings {
   @@unique([name])
 }
 
+//Wordle 
+model WordleWord {
+  id        String        @id @default(uuid())
+  word      String        @unique
+  length    Int
+  createdAt DateTime      @default(now())
+
+  games     WordleGame[]
+
+  @@index([length])
+}
+
+model WordleGame {
+  id            String            @id @default(uuid())
+
+  userId        Int
+  wordId        String
+
+  gameDate      DateTime          @db.Date
+  attemptsUsed  Int               @default(0)
+  status        WordleGameStatus  @default(IN_PROGRESS)
+
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  word          WordleWord         @relation(fields: [wordId], references: [id])
+
+  guesses       WordleGuess[]
+
+  @@unique([userId, gameDate])
+  @@index([userId])
+  @@index([status])
+}
+
+model WordleGuess {
+  id        String      @id @default(uuid())
+  gameId   String
+
+  guess     String
+  result    Json
+
+  createdAt DateTime    @default(now())
+
+  game      WordleGame  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@index([gameId])
+}
+
 enum EventCategory {
   WORKSHOP
   COMPETITION
@@ -528,4 +578,10 @@ enum PaymentType {
 enum CoreType {
   OFFICE_BEARER
   FACULTY_COORDINATOR
+}
+
+enum WordleGameStatus {
+  IN_PROGRESS
+  WON
+  LOST
 }
