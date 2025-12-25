@@ -3,6 +3,8 @@ import { db } from "~/server/db";
 import { parseJwtFromAuthHeader } from "~/lib/utils";
 import { evaluateGuess } from "~/lib/evaluateGuess";
 
+const WORDLE_WIN_POINTS = 10;
+
 export async function POST(req: NextRequest) {
 	try {
 		const customHeader = req.headers.get("authorization");
@@ -29,8 +31,8 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		const gameId: string = body.gameId;
-		const guess: string = body.guess.toLowerCase().trim();
+		const gameId = body.gameId;
+		const guess = body.guess.toLowerCase().trim();
 
 		const game = await db.wordleGame.findUnique({
 			where: { id: gameId },
@@ -51,7 +53,7 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		if (game.attemptsUsed > 5) {
+		if (game.attemptsUsed >= 5) {
 			return NextResponse.json(
 				{ success: false, error: "No attempts left" },
 				{ status: 400 },
@@ -68,33 +70,50 @@ export async function POST(req: NextRequest) {
 		const result = evaluateGuess(game.word.word, guess);
 		const isCorrect = result.every((r) => r === "correct");
 
+		const nextStatus = isCorrect
+			? "WON"
+			: game.attemptsUsed + 1 >= 5
+				? "LOST"
+				: "IN_PROGRESS";
+
 		const updatedGame = await db.$transaction(async (tx) => {
 			await tx.wordleGuess.create({
 				data: {
 					gameId: game.id,
-					guess: guess,
+					guess,
 					result,
 				},
 			});
 
-			return tx.wordleGame.update({
+			const updated = await tx.wordleGame.update({
 				where: { id: game.id },
 				data: {
 					attemptsUsed: { increment: 1 },
-					status: isCorrect
-						? "WON"
-						: game.attemptsUsed + 1 >= 5
-							? "LOST"
-							: "IN_PROGRESS",
+					status: nextStatus,
 				},
 			});
+
+			if (nextStatus === "WON") {
+				await tx.user.update({
+					where: { id: userId },
+					data: {
+						totalActivityPoints: {
+							increment: WORDLE_WIN_POINTS,
+						},
+					},
+				});
+			}
+
+			return updated;
 		});
+
 		return NextResponse.json({
 			success: true,
 			data: {
 				result,
 				attemptsUsed: updatedGame.attemptsUsed,
 				status: updatedGame.status,
+				pointsAwarded: nextStatus === "WON" ? WORDLE_WIN_POINTS : 0,
 			},
 		});
 	} catch (error) {
