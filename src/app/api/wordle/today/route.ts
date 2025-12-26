@@ -51,16 +51,23 @@ export async function GET(req: NextRequest) {
 				select: { wordId: true },
 			});
 
-			const word = await tx.wordleWord.findFirst({
+			const availableWords = await tx.wordleWord.findMany({
 				where: {
 					id: { notIn: usedWordIds.map((w) => w.wordId) },
 					length: 5,
 				},
+				select: {
+					id: true,
+					word: true,
+				},
 			});
 
-			if (!word) {
+			if (availableWords.length === 0) {
 				throw new Error("No unused words left");
 			}
+
+			const word =
+				availableWords[Math.floor(Math.random() * availableWords.length)]!;
 
 			// 🔹 Create new game WITH SAME INCLUDE SHAPE
 			return tx.wordleGame.create({

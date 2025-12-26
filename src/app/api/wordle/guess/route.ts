@@ -3,7 +3,7 @@ import { db } from "~/server/db";
 import { parseJwtFromAuthHeader } from "~/lib/utils";
 import { evaluateGuess } from "~/lib/evaluateGuess";
 
-const WORDLE_WIN_POINTS = 10;
+const WORDLE_WIN_POINTS = 5;
 
 export async function POST(req: NextRequest) {
 	try {

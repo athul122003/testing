@@ -50,11 +50,11 @@ model User {
   RefreshToken      RefreshToken[]
   VerificationToken VerificationToken[]
 
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
   revokedMembers revokedMembers?
   WordleGame     WordleGame[]
-  EasterEgg      EasterEgg[]
+  EasterEggFound EasterEggFound[]
 }
 
 model Strike {
@@ -383,14 +383,26 @@ model EventDocument {
 }
 
 model EasterEgg {
-  id        Int    @id @default(autoincrement())
-  name      String
-  detail    String
-  flcPoints Int    @default(0)
-  foundBy   User[]
+  id             Int              @id @default(autoincrement())
+  name           String
+  detail         String
+  flcPoints      Int              @default(0)
+  easterEggFound EasterEggFound[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model EasterEggFound {
+  id          Int       @id @default(autoincrement())
+  easterEgg   EasterEgg @relation(fields: [easterEggId], references: [id])
+  easterEggId Int
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([easterEggId, userId])
 }
 
 // //Quiz
@@ -459,33 +471,33 @@ model Settings {
 
 //Wordle 
 model WordleWord {
-  id        String        @id @default(uuid())
-  word      String        @unique
+  id        String   @id @default(uuid())
+  word      String   @unique
   length    Int
-  createdAt DateTime      @default(now())
+  createdAt DateTime @default(now())
 
-  games     WordleGame[]
+  games WordleGame[]
 
   @@index([length])
 }
 
 model WordleGame {
-  id            String            @id @default(uuid())
+  id String @id @default(uuid())
 
-  userId        Int
-  wordId        String
+  userId Int
+  wordId String
 
-  gameDate      DateTime          @db.Date
-  attemptsUsed  Int               @default(0)
-  status        WordleGameStatus  @default(IN_PROGRESS)
+  gameDate     DateTime         @db.Date
+  attemptsUsed Int              @default(0)
+  status       WordleGameStatus @default(IN_PROGRESS)
 
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  word          WordleWord         @relation(fields: [wordId], references: [id])
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  word WordleWord @relation(fields: [wordId], references: [id])
 
-  guesses       WordleGuess[]
+  guesses WordleGuess[]
 
   @@unique([userId, gameDate])
   @@index([userId])
@@ -493,15 +505,15 @@ model WordleGame {
 }
 
 model WordleGuess {
-  id        String      @id @default(uuid())
-  gameId   String
+  id     String @id @default(uuid())
+  gameId String
 
-  guess     String
-  result    Json
+  guess  String
+  result Json
 
-  createdAt DateTime    @default(now())
+  createdAt DateTime @default(now())
 
-  game      WordleGame  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  game WordleGame @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
   @@index([gameId])
 }

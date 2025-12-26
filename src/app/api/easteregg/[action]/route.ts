@@ -24,7 +24,9 @@ export async function POST(req: NextRequest) {
 
 				const user = await db.user.findUnique({
 					where: { id: data.userId },
-					include: { EasterEgg: true },
+					select: {
+						id: true,
+					},
 				});
 
 				if (!user) {
@@ -45,10 +47,12 @@ export async function POST(req: NextRequest) {
 					);
 				}
 
-				const existingEgg = await db.user.findFirst({
+				const existingEgg = await db.easterEggFound.findUnique({
 					where: {
-						id: data.userId,
-						easterEggId: easterEggId,
+						easterEggId_userId: {
+							easterEggId,
+							userId: user.id,
+						},
 					},
 				});
 
@@ -59,23 +63,22 @@ export async function POST(req: NextRequest) {
 					);
 				}
 
-				const updatedUser = await db.user.update({
+				await db.user.update({
 					where: { id: data.userId },
 					data: {
 						totalActivityPoints: { increment: easterEgg.flcPoints },
-						EasterEgg: {
-							connect: { id: easterEggId },
+						EasterEggFound: {
+							create: {
+								easterEggId,
+							},
 						},
-					},
-					select: {
-						totalActivityPoints: true,
 					},
 				});
 
 				const result = {
 					success: true,
 					message: `Awarded ${easterEgg.flcPoints} FLC points for finding the easter egg!`,
-					totalFLCPoints: updatedUser.totalActivityPoints,
+					flcPoints: easterEgg.flcPoints,
 				};
 
 				return NextResponse.json(result, {
